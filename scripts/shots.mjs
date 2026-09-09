@@ -268,6 +268,43 @@ async function capturarPagina(browser, nombreVp) {
     await shot(page, `${nombreVp}/51-faq-hover`)
   }
 
+  // Contadores: hay que esperar a que el conteo termine (1,8 s) o la captura
+  // muestra cifras a mitad de camino y no se puede juzgar el resultado.
+  const contadores = page.locator('#contadores')
+  if (await contadores.count()) {
+    await page.evaluate(() => {
+      document
+        .getElementById('contadores')
+        ?.scrollIntoView({ behavior: 'instant', block: 'center' })
+    })
+    await page.waitForTimeout(700)
+    await shot(page, `${nombreVp}/40-contadores-contando`)
+    await page.waitForTimeout(2000)
+    await shot(page, `${nombreVp}/41-contadores-final`)
+    console.log(
+      `[shots] ${nombreVp} contadores:`,
+      JSON.stringify(
+        await page.$$eval('#contadores [data-cifra]', (n) =>
+          n.map((e) => e.textContent),
+        ),
+      ),
+    )
+
+    // La franja pasando POR DEBAJO del header: es el momento en que el logo
+    // tiene que ponerse negro. Blanco sobre ámbar no se lee, y el "SHOP" ámbar
+    // directamente desaparece.
+    await page.evaluate(() => {
+      const el = document.getElementById('contadores')
+      if (el) window.scrollTo(0, el.offsetTop - 24)
+    })
+    await page.waitForTimeout(800)
+    await shot(page, `${nombreVp}/42-contadores-bajo-header`)
+    console.log(
+      `[shots] ${nombreVp} tono del header sobre la franja:`,
+      await page.$eval('.header-adapt', (h) => h.dataset.tono),
+    )
+  }
+
   // Footer entero.
   await page.evaluate(() => {
     document.getElementById('footer')?.scrollIntoView({ behavior: 'instant' })

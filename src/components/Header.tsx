@@ -6,11 +6,12 @@ type HeaderProps = {
   /** La intro necesita el nodo real para el Flip: no se mide por id. */
   logoRef?: RefObject<HTMLAnchorElement | null>
   /**
-   * Tono de la sección que está en pantalla. El header es fijo sobre TODA la
-   * página, así que sobre las secciones de fondo bone el blanco del logo
-   * desaparece y solo sobrevive el "SHOP" ámbar.
+   * Color del fondo que le pasa por debajo. El header es fijo sobre TODA la
+   * página: sobre el bone de la FAQ el blanco del logo desaparece y queda
+   * flotando un "SHOP" ámbar suelto, y sobre la franja ámbar de contadores
+   * desaparece justamente ese "SHOP".
    */
-  tono?: 'claro' | 'oscuro'
+  tono?: 'claro' | 'ambar' | 'oscuro'
 }
 
 /**

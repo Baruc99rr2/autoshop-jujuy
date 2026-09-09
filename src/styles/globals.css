@@ -501,6 +501,15 @@
   --logo-white: var(--color-void);
 }
 
+/* Sobre la franja ámbar hay que apagar TAMBIÉN el amarillo: con el blanco ya
+   invertido, lo único que quedaría ámbar sobre ámbar es el "SHOP", o sea el
+   agujero exacto en el medio de la marca. Monocromo negro es la lectura
+   correcta de un logo sobre su propio color de acento. */
+.header-adapt[data-tono='ambar'] {
+  --logo-white: var(--color-void);
+  --logo-yellow: var(--color-void);
+}
+
 /* La transición va sobre `fill`, no sobre la variable: cambiar un custom
    property no se interpola, pero la propiedad que lo consume sí, y así el
    cambio acompaña a los 0.5s del riel y de la malla en vez de ser un salto. */

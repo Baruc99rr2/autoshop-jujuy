@@ -13,16 +13,30 @@ export interface Seccion {
   /** Titular de la sección. */
   titulo: string
   /**
-   * Fondo de la sección. El riel es un overlay fijo sobre toda la página, así
-   * que sobre las secciones claras (FAQ y menú) tiene que invertir sus colores
-   * o desaparece contra el fondo bone.
+   * Tono dominante de la sección, para el RIEL y la MALLA. Solo lo declaran
+   * las secciones que llenan el viewport: el riel va de arriba abajo, así que
+   * invertirlo por una franja que ocupa el medio de la pantalla dejaría mal la
+   * parte de arriba y la de abajo.
    */
   tono?: 'claro'
+  /**
+   * Color del fondo de la sección, para el HEADER. Es otra cosa que `tono`: el
+   * header ocupa 70px arriba de todo, así que lo que importa no es qué sección
+   * domina la pantalla sino cuál le pasa por debajo. La franja de contadores
+   * declara `fondo` y no declara `tono` justamente por eso.
+   */
+  fondo?: 'claro' | 'ambar'
 }
 
 export const SECCIONES: Seccion[] = [
   { indice: '01', id: 'hero', eyebrow: 'INICIO', titulo: 'Tu próximo auto, en Jujuy' },
-  { indice: '02', id: 'contadores', eyebrow: 'NÚMEROS', titulo: 'Nueve años entregando autos' },
+  {
+    indice: '02',
+    id: 'contadores',
+    eyebrow: 'NÚMEROS',
+    titulo: 'Nueve años entregando autos',
+    fondo: 'ambar',
+  },
   { indice: '03', id: 'segmentos', eyebrow: 'SEGMENTOS', titulo: 'Qué estás buscando' },
   { indice: '04', id: 'vehiculos', eyebrow: 'VEHÍCULOS', titulo: 'Unidades disponibles hoy' },
   { indice: '05', id: 'plan', eyebrow: 'FIAT PLAN', titulo: 'Entrá con cuota fija' },
@@ -34,6 +48,7 @@ export const SECCIONES: Seccion[] = [
     eyebrow: 'PREGUNTAS',
     titulo: 'Lo que todos preguntan',
     tono: 'claro',
+    fondo: 'claro',
   },
   { indice: '09', id: 'cta', eyebrow: 'TEST DRIVE', titulo: 'Vení a probarlo' },
   { indice: '10', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },

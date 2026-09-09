@@ -530,6 +530,83 @@ consume sí — así que acompaña a los 0,5 s del riel y de la malla.
 - En `page.evaluate`, `() => tl.pause(t)` **devuelve la timeline** y Playwright
   intenta serializar el grafo entero de GSAP; se cuelga sin error. Van llaves.
 
+
+---
+
+## Fase B — Contadores (fase 4 del plan) ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`** en los dos viewports.
+
+### Hecho
+
+- **`src/data/contadores.ts`** — las cuatro cifras: 500+ unidades entregadas,
+  12 marcas en el salón, 9 años en Jujuy, 100% financiación propia. Del orden
+  de magnitud de una concesionaria de barrio: 15.000 unidades o 40 marcas se
+  leerían como relleno.
+- **`src/components/Contadores.tsx`** — franja ámbar, texto negro, cuatro
+  columnas con separadores verticales de 1px, 2×2 en mobile. El conteo arranca
+  en 0 con `Intl.NumberFormat('es-AR')` y Martian Mono con `tabular-nums`, una
+  sola vez (`once: true`, `start: 'top 78%'`). El sufijo `+` / `%` entra al
+  final con un corte seco: `gsap.set(..., { autoAlpha: 1 })` en el
+  `onComplete`, sin animar.
+- **Un solo tween para las cuatro cifras**, no uno por cifra. El efecto entero
+  es ver las cuatro subir al mismo tiempo; con un ScrollTrigger por columna las
+  de la derecha podrían arrancar un poco después en pantallas angostas.
+- **`prefers-reduced-motion`:** las cifras aparecen en su valor final. El
+  contenido no falta, solo no cuenta.
+
+### Decisiones tomadas sin consultar — Fase B
+
+29. **La franja no lleva eyebrow ni titular.** Es la única sección sin
+    encabezado. La franja **es** el contenido, y un titular arriba le sacaría
+    el golpe de color entre el hero negro y la sección que sigue. El riel la
+    numera igual que a todas, así que no se pierde la referencia.
+
+30. **La franja arranca en el riel, no debajo.** Primero la hice sangrar de
+    borde a borde, como la referencia. Al mirar la captura, el `02` del riel
+    quedaba **ámbar sobre ámbar** —invisible— y el nombre de la sección, gris
+    claro sobre ámbar. Ahora la franja tiene `margin-inline-start:
+    var(--rail-w)` y sangra solo hacia la derecha. Además refuerza lo que el
+    riel es: el único elemento que no cambia en toda la página.
+
+31. **`Seccion.tono` se partió en `tono` y `fondo`.** Son dos preguntas
+    distintas y las estaba respondiendo con un solo campo:
+    - `tono` → **riel y malla**, que van de arriba abajo del viewport. Solo lo
+      declaran las secciones que llenan la pantalla.
+    - `fondo` → **header**, que ocupa 70px arriba de todo. Lo que le importa no
+      es qué sección domina la pantalla sino cuál le pasa por debajo.
+
+    Con la franja de contadores centrada en el viewport, el header todavía está
+    sobre el negro del hero: teñirlo ahí sería el error opuesto al que arreglé
+    en la fase A. Por eso hay un segundo `IntersectionObserver` con
+    `rootMargin: '0px 0px -90% 0px'`, que recorta la zona de observación a la
+    franja superior del viewport. Va en porcentaje porque `rootMargin` no
+    acepta `calc()`, y así se adapta solo a cualquier alto de pantalla.
+
+32. **Sobre la franja ámbar el logo del header va monocromo negro**, no solo
+    con el blanco invertido. Con `--logo-white` en negro y `--logo-yellow`
+    intacto, lo único ámbar sobre ámbar sería el "SHOP": el agujero exacto en
+    el medio de la marca. `data-tono="ambar"` apaga los dos.
+
+33. **Las clases de los separadores se escriben celda por celda** en un array
+    `CELDA`, en vez de calcularlas con condiciones que apilen clases
+    contradictorias. `md:border-l` junto a `md:border-l-0` en el mismo atributo
+    deja el resultado a merced del orden en que Tailwind emita las reglas, no
+    del orden en que uno las escriba.
+
+### Lo que vi en las capturas
+
+- Las cuatro cifras terminan en 500+ / 12 / 9 / 100% en los dos viewports
+  (verificado leyendo el `textContent`, no solo mirando).
+- El bloque entero entra en pantalla en 390×844, que es la condición para que
+  el conteo simultáneo se vea. En mobile los labels de dos palabras largas
+  ("Marcas en el salón", "Financiación propia") se parten en dos líneas; se
+  lee bien.
+- El header pasa a negro monocromo cuando la franja le pasa por debajo, y
+  vuelve a blanco después (`data-tono` verificado: `ambar`).
+- Cero desborde horizontal.
+
 # RESUMEN DE LA SESIÓN
 
 ## Qué quedó hecho
