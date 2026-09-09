@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capturas del arnés de verificación: 3+ MB por corrida y se regeneran con
+# `npm run shots`. Versionarlas infla el repo sin aportar nada.
+docs/shots/

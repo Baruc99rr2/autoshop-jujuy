@@ -18,7 +18,7 @@ export function Faq() {
   return (
     <section
       id="preguntas"
-      className="border-y border-graphite bg-bone py-24 shell md:py-32"
+      className="bg-bone py-24 shell md:py-32"
     >
       <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
         <SectionHeader

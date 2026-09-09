@@ -359,6 +359,177 @@ dibuja la palabra y no como dos animaciones seguidas.
 
 ---
 
+
+---
+
+## Fase A — Arnés de captura y correcciones visuales ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa (2.600 s, 13 ids).
+
+Esta es la primera vez que alguien ve correr el sitio. Las cuatro fases
+anteriores estaban verificadas por build, lint y scripts, pero nunca por ojo, y
+apareció exactamente lo que se temía: **la intro entera era invisible**.
+
+### El arnés
+
+`scripts/shots.mjs`, colgado de `npm run shots` (`-- --fast` reusa `dist/`).
+Corre el build, levanta `vite preview` en `127.0.0.1:4317`, saca todo con
+Playwright y mata el server al terminar. Cuatro pases:
+
+1. **`docs/shots/intro/`** — la intro contra el reloj de pared, una captura cada
+   200 ms durante 3 s en desktop. El nombre lleva el tiempo nominal **y el
+   real**: sacar un PNG cuesta decenas de ms y poner solo el nominal llevaría a
+   conclusiones falsas sobre el timing.
+2. **`docs/shots/beats/`** — la intro **congelada beat por beat**. El muestreo
+   contra el reloj no puede caer justo en el aterrizaje del Flip, que es lo que
+   había que mirar. `Intro.tsx` publica la timeline en `window.__introTl`; el
+   script intercepta esa asignación con un setter, la pausa en el frame cero y
+   después hace `seek()` a cada tiempo exacto del guion.
+3. **`docs/shots/desktop/` y `docs/shots/mobile/`** (1440×900 y 390×844) —
+   full-page, una por sección, la FAQ con un ítem abierto, la FAQ en hover, el
+   footer completo y el footer con el foco puesto **por teclado de verdad**
+   (Tab hasta caer en un `.stagger-link`; `.focus()` programático no siempre
+   activa `:focus-visible`, que es lo que dispara el marcador).
+4. **Mediciones**, que valen más que mirar: desborde horizontal con los
+   elementos culpables, el rectángulo del aterrizaje del Flip contra el del
+   logo del header, y el llenado del logotipo del footer.
+
+Cada contexto de Playwright arranca con `sessionStorage` vacío, así que la
+intro corre de nuevo en cada pase.
+
+`docs/shots/` está en `.gitignore`: 3,3 MB por corrida y se regenera con un
+comando.
+
+### Lo que esperaba / lo que vi / qué hice
+
+**1. La intro entera — invisible. El defecto grave de la sesión.**
+
+*Esperaba:* láser, logo, bandera, respiración, viaje y wipe.
+
+*Vi:* negro absoluto en las capturas de 0 ms a 1600 ms. Ni el láser, ni el
+logo, ni el botón SKIP, que tenía que estar visible desde el primer frame. Lo
+único que se veía era el wipe final revelando el hero — o sea, 2,3 de los 2,6
+segundos eran una pantalla negra.
+
+*Causa:* el panel del wipe estaba **después** del stage en el DOM. Los dos son
+`absolute inset-0` sin `z-index`, así que el orden del DOM es el orden de
+pintado y el panel negro opaco tapaba la intro completa desde el frame cero.
+
+*Qué hice:* el wipe pasó a ir **primero** en el DOM, o sea debajo. Funciona
+porque el stage también es opaco: lo esconde hasta el segundo 2.30, cuando el
+stage se apaga y el wipe queda tapando el hero justo a tiempo para correrse.
+El comentario en `Intro.tsx` explica por qué ese orden no es casual.
+
+**2. La estela del láser se leía como una segunda barra suelta.**
+
+*Esperaba:* una estela pegada a la barra.
+
+*Vi:* a mitad del barrido, la estela quedaba **400 px atrás** del láser, con un
+borde derecho duro. Dos objetos, no uno.
+
+*Causa:* los 0,05 s de retraso literales. En el pico de `power3.inOut` el láser
+va a ~11.500 px/s, así que 0,05 s son ~570 px. Para que la estela alcanzara
+habría que hacerla de 570 px de largo, o sea un manchón sobre el 40% de la
+pantalla.
+
+*Qué hice:* la estela comparte tween con el láser — su borde derecho queda
+siempre clavado en la barra — y lo que varía es el **largo**: `scaleX` de 0.18
+a 1 y de vuelta a 0.18 con `transform-origin: 100% 50%`, así se estira cuando
+el barrido acelera y se recoge cuando frena. Es lo que hace una estela de luz
+de verdad, y ahora se lee como un solo objeto. Es un desvío de la letra de
+CLAUDE.md ("0.05s de retraso"), no del espíritu ("como estela").
+
+**3. El logotipo del footer estaba cortado.**
+
+*Esperaba:* el logotipo de margen a margen, como en `docs/refs/09-footer.png`.
+
+*Vi:* "AUTOSHOP\JU" en desktop y "AUTOSHOP\J" en mobile, comido por el
+`overflow-hidden` del footer. Se lee como un error, no como un recorte
+intencional.
+
+*Causa:* `clamp(2rem, 11.4vw, 13rem)` era un factor adivinado.
+
+*Qué hice:* `src/lib/fit-text.ts` — un hook que **mide** y calcula el
+`font-size` exacto para llenar el ancho disponible. Se vuelve a medir cuando
+termina de cargar la fuente y cuando cambia el ancho del contenedor. Medido:
+llenado 1.000 en los dos viewports (114,9 px en 1440, 29,1 px en 390).
+
+*Trampa que me comí en el camino:* la primera versión medía con `scrollWidth`,
+que **nunca devuelve menos que `clientWidth`**. En desktop el texto entraba
+sobrado, así que informaba el ancho del contenedor, la razón daba 1 y el
+logotipo se quedaba en el tamaño de sonda con 170 px de aire a la derecha. El
+ancho real se mide con un `Range` sobre el contenido.
+
+**4. Sobre la FAQ, el logo del header desaparecía.**
+
+*Esperaba:* el logo legible en toda la página.
+
+*Vi:* sobre el fondo bone quedaba flotando un "SHOP" ámbar suelto: las partes
+blancas del logo se comían con el fondo. Parece un error de carga.
+
+*Causa:* la decisión 19 hizo que el riel y la malla se adaptaran al tono de la
+sección, pero el header quedó afuera y también es un overlay fijo.
+
+*Qué hice:* `Header` recibe `tono` y con `data-tono="claro"` redefine
+`--logo-white: var(--color-void)`. La transición va sobre `fill` (0,45 s), no
+sobre la variable — un custom property no interpola, pero la propiedad que lo
+consume sí — así que acompaña a los 0,5 s del riel y de la malla.
+
+### Lo que miré y está bien
+
+- **El aterrizaje del Flip es exacto.** Medido en t = 2.30:
+  `delta {x: 0, y: 0, w: 0, h: 0}`. La duda de la fase 2 sobre construir el
+  tween dentro de un `onStart` queda cerrada: no hace falta.
+- **La respiración se lee**, y se lee por el glow, no por el `scale`. El 3,5%
+  de escala solo no se notaría; el drop-shadow ámbar en el pico es lo que hace
+  el momento. Vale la pena el `filter` fuera de la lista de propiedades
+  permitidas.
+- **El láser sí se ve sobre negro.** El glow de dos capas alcanza y sobra.
+- **La malla se lee como ambiente, no como ruido**, en las dos tonalidades.
+- **El escalonado del footer se lee como diagonal intencional**, y el foco de
+  teclado dispara lo mismo que el hover: el marcador ámbar entra, el link se
+  corre y pasa a ámbar (medido: `rgb(253,185,22)`).
+- **Cero desborde horizontal** en 390 y en 1440 (`scrollWidth === clientWidth`,
+  lista de culpables vacía).
+- **Las fuentes cargan con el ancho extendido.** Los titulares se ven
+  claramente en Archivo `wdth 125`, no en la fallback.
+- **La línea ámbar bajo el logo** está y es exactamente `#FDB916`, 1 px, al
+  100%. Es fina; contra el glow de la respiración casi no se nota. No la toqué
+  porque es lo que pide el guion, pero si hay que elegir un detalle para subir,
+  es este.
+
+### Decisiones tomadas sin consultar — Fase A
+
+24. **La estela del láser va pegada al láser, no retrasada 0,05 s.** Ver punto
+    2. El retraso literal produce dos barras separadas por 400 px.
+
+25. **El tamaño del logotipo del footer se calcula midiendo, no con un
+    `clamp()`.** Ver punto 3. Un clamp obliga a adivinar el ancho de los
+    glifos, y ese ancho cambia con la fuente, con el eje `wdth` y con el texto
+    — que se va a reemplazar cuando llegue el contenido real de la
+    concesionaria. `useFitText` sobrevive a los tres cambios.
+
+26. **`Intro.tsx` publica la timeline en `window.__introTl`.** Es el gancho que
+    le permite al arnés congelar la intro y hacer `seek()` a cada beat. Sin eso
+    no hay forma de verificar el aterrizaje del Flip. Son dos líneas y no
+    cambia nada en runtime.
+
+27. **`docs/shots/` va al `.gitignore`.** Son 3,3 MB por corrida y se
+    regeneran con `npm run shots`. Versionarlas por fase infla el repo sin
+    aportar nada que no se pueda volver a generar.
+
+28. **Se sacaron los `border-y` del bloque bone de la FAQ**, según lo que
+    respondiste.
+
+### Trampa del arnés, por si alguien lo toca
+
+- `tl.pause(t)` de GSAP asume `suppressEvents = true`. Sin el `false` explícito
+  el `tl.call` del cambio de posta (2.30) no corre, el stage no se apaga y el
+  wipe queda tapado detrás: parece que el wipe está roto y lo único roto es la
+  medición. Va `tl.pause(t, false)`.
+- En `page.evaluate`, `() => tl.pause(t)` **devuelve la timeline** y Playwright
+  intenta serializar el grafo entero de GSAP; se cuelga sin error. Van llaves.
+
 # RESUMEN DE LA SESIÓN
 
 ## Qué quedó hecho

@@ -106,6 +106,14 @@ export function Intro({ headerLogoRef, onDone }: IntroProps) {
 
       tlRef.current = tl
       gsap.set(headerLogoRef.current, { autoAlpha: 0 })
+
+      // Gancho para el arnés de captura (scripts/shots.mjs): con la timeline
+      // expuesta se puede pausar y hacer seek a cada beat exacto, en vez de
+      // muestrear contra el reloj de pared y errarle por 40 ms. Escribir la
+      // propiedad es lo que le da la oportunidad al harness de pausarla en el
+      // frame cero, así que va ANTES del play().
+      ;(window as unknown as { __introTl?: gsap.core.Timeline }).__introTl = tl
+
       tl.play()
 
       if (import.meta.env.DEV) {
@@ -135,7 +143,21 @@ export function Intro({ headerLogoRef, onDone }: IntroProps) {
   return (
     // El root no captura clicks: durante los 0.3 s del wipe la pantalla ya es
     // el sitio, y solo el stage (con el SKIP adentro) tiene que ser clickeable.
-    <div ref={root} className="pointer-events-none fixed inset-0 z-100">
+    <div ref={root} data-intro className="pointer-events-none fixed inset-0 z-100">
+      {/* El wipe va PRIMERO en el DOM, o sea DEBAJO del stage.
+          Los dos son `absolute inset-0` sin z-index, así que el orden del DOM
+          es el orden de pintado: si el wipe va después, tapa la intro entera
+          con un panel negro opaco y no se ve ni el láser ni el logo ni el
+          SKIP — solo el wipe final revelando el hero.
+          Abajo funciona porque el stage también es opaco: lo esconde hasta el
+          segundo 2.30, cuando el stage se apaga y el wipe queda tapando el
+          hero justo para correrse. */}
+      <div
+        ref={wipe}
+        className="pointer-events-none absolute inset-0 bg-void"
+        aria-hidden="true"
+      />
+
       <div
         ref={stage}
         className="pointer-events-auto absolute inset-0 grid place-items-center overflow-hidden bg-void"
@@ -143,7 +165,7 @@ export function Intro({ headerLogoRef, onDone }: IntroProps) {
         {/* El láser y su estela. Dos divs, nada de canvas. */}
         <div
           ref={trail}
-          className="intro-trail pointer-events-none absolute inset-y-0 left-[-140px] w-[140px]"
+          className="intro-trail pointer-events-none absolute inset-y-0 left-[-220px] w-[220px]"
           aria-hidden="true"
         />
         <div
@@ -182,13 +204,6 @@ export function Intro({ headerLogoRef, onDone }: IntroProps) {
         </Bevel>
       </div>
 
-      {/* El panel del wipe vive fuera del stage: cuando el stage se apaga,
-          este sigue tapando el hero hasta que termina de correrse. */}
-      <div
-        ref={wipe}
-        className="pointer-events-none absolute inset-0 bg-void"
-        aria-hidden="true"
-      />
     </div>
   )
 }

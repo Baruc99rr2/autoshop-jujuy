@@ -487,3 +487,29 @@
 .mesh {
   transition: opacity 0.5s ease;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   HEADER SOBRE SECCIÓN CLARA
+   El header es fijo sobre toda la página. Sobre las secciones de fondo bone
+   (la FAQ, y más adelante el menú) el blanco del logo desaparece y queda
+   flotando un "SHOP" ámbar suelto, que se lee como un error de carga.
+   El SVG saca sus colores de --logo-white / --logo-yellow, así que invertir
+   el blanco alcanza para recuperar el logo entero sin tocar los paths.
+   ───────────────────────────────────────────────────────────── */
+
+.header-adapt[data-tono='claro'] {
+  --logo-white: var(--color-void);
+}
+
+/* La transición va sobre `fill`, no sobre la variable: cambiar un custom
+   property no se interpola, pero la propiedad que lo consume sí, y así el
+   cambio acompaña a los 0.5s del riel y de la malla en vez de ser un salto. */
+.header-adapt svg path {
+  transition: fill 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-adapt svg path {
+    transition: none;
+  }
+}

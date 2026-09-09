@@ -10,8 +10,17 @@ import { gsap } from 'gsap'
 export const INTRO = {
   /** Láser: barra de 2px que barre el ancho de la pantalla. */
   laser: { at: 0.15, dur: 0.55 },
-  /** La estela sale 0.05 s más tarde y llega 0.05 s después. */
-  trailLag: 0.05,
+  /**
+   * La estela va PEGADA al láser, no retrasada en el tiempo.
+   *
+   * Con los 0.05 s de retraso literales, en el pico de `power3.inOut` el láser
+   * viaja a ~11.500 px/s: la estela le queda 570 px atrás y se lee como una
+   * segunda barra suelta, no como una estela. Así que comparte tween con el
+   * láser (su borde derecho queda siempre en la barra) y lo que varía es el
+   * LARGO: se estira cuando el barrido acelera y se recoge cuando frena, que
+   * es lo que hace una estela de luz de verdad.
+   */
+  trailStretch: { min: 0.18, max: 1 },
   /** #lg-word se dibuja con la misma curva y dirección que el láser. */
   word: { at: 0.7, dur: 0.45 },
   /** Los 7 cuadros de la bandera: el semáforo de largada. */
@@ -74,7 +83,28 @@ export function buildIntroTimeline(
     t.trail,
     { x: 0, opacity: 1 },
     { x: o.laserDistance, duration: INTRO.laser.dur, ease: 'power3.inOut' },
-    INTRO.laser.at + INTRO.trailLag,
+    INTRO.laser.at,
+  )
+  // El estirón. `transform-origin: 100% 50%` es lo que mantiene el borde
+  // derecho clavado en el láser mientras la estela cambia de largo.
+  tl.fromTo(
+    t.trail,
+    { scaleX: INTRO.trailStretch.min, transformOrigin: '100% 50%' },
+    {
+      keyframes: [
+        {
+          scaleX: INTRO.trailStretch.max,
+          duration: INTRO.laser.dur / 2,
+          ease: 'power2.out',
+        },
+        {
+          scaleX: INTRO.trailStretch.min,
+          duration: INTRO.laser.dur / 2,
+          ease: 'power2.in',
+        },
+      ],
+    },
+    INTRO.laser.at,
   )
   // Se apagan una vez que salieron por el borde derecho.
   tl.to(

@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check": "node scripts/check-logo.mjs && node scripts/check-intro.mjs"
+    "check": "node scripts/check-logo.mjs && node scripts/check-intro.mjs",
+    "shots": "node scripts/shots.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "oxlint": "^1.79.0",
+    "playwright": "^1.63.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
     "vite-plugin-svgr": "^5.2.0"

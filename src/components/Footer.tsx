@@ -1,6 +1,7 @@
-import type { CSSProperties } from 'react'
+import { useRef, type CSSProperties } from 'react'
 import { CONTACTO } from '../data/contacto'
 import { FOOTER } from '../data/nav'
+import { useFitText } from '../lib/fit-text'
 import { scrollTo } from '../lib/smooth'
 
 /**
@@ -13,6 +14,8 @@ import { scrollTo } from '../lib/smooth'
  */
 export function Footer() {
   const año = new Date().getFullYear()
+  const logotipo = useRef<HTMLHeadingElement>(null)
+  useFitText(logotipo)
 
   return (
     <footer
@@ -21,7 +24,13 @@ export function Footer() {
     >
       {/* El logotipo a ancho completo. `\` en ámbar como separador: es el mismo
           marcador del riel, y ata el footer al resto de la página. */}
-      <h2 className="font-hero text-bone" style={{ fontSize: 'clamp(2rem, 11.4vw, 13rem)' }}>
+      <h2
+        ref={logotipo}
+        className="font-hero text-bone whitespace-nowrap"
+        /* El tamaño real lo pone useFitText midiendo. Este clamp es solo el
+           punto de partida del primer frame, antes de la medición. */
+        style={{ fontSize: 'clamp(2rem, 8vw, 9rem)' }}
+      >
         AutoShop
         <span className="text-amber" aria-hidden="true">
           \

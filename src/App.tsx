@@ -71,7 +71,10 @@ function App() {
         label={activa.eyebrow}
         tono={activa.tono === 'claro' ? 'claro' : 'oscuro'}
       />
-      <Header logoRef={headerLogoRef} />
+      <Header
+        logoRef={headerLogoRef}
+        tono={activa.tono === 'claro' ? 'claro' : 'oscuro'}
+      />
 
       {introActiva && (
         <Intro
