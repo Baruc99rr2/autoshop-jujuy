@@ -69,3 +69,28 @@ export const REDES: Red[] = [
     usuario: '+54 9 388 415-2233',
   },
 ]
+
+/**
+ * Opciones del formulario. Viven acá y no en el componente porque son
+ * contenido de negocio: cuando la concesionaria quiera agregar "Plan de ahorro
+ * moto" o sacar "Fiat Plan", se toca este archivo y nada más.
+ */
+export interface Opcion {
+  value: string
+  label: string
+}
+
+export const CONSULTAS: Opcion[] = [
+  { value: 'comprar-0km', label: 'Comprar 0km' },
+  { value: 'comprar-usado', label: 'Comprar usado' },
+  { value: 'cotizar-usado', label: 'Cotizar mi usado' },
+  { value: 'fiat-plan', label: 'Fiat Plan' },
+  { value: 'test-drive', label: 'Test drive' },
+  { value: 'otra', label: 'Otra consulta' },
+]
+
+export const PRESUPUESTOS: Opcion[] = [
+  { value: 'hasta-15', label: 'Hasta $15M' },
+  { value: '15-30', label: '$15M – $30M' },
+  { value: 'mas-30', label: '$30M+' },
+]

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Contacto from './components/Contacto'
 import Contadores from './components/Contadores'
 import Faq from './components/Faq'
 import Footer from './components/Footer'
@@ -16,6 +17,7 @@ import { prefersReducedMotion } from './lib/motion-prefs'
  * placeholder, y el mapa de abajo las va reemplazando fase por fase.
  */
 const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
+  contacto: Contacto,
   contadores: Contadores,
   marcas: Marcas,
   preguntas: Faq,

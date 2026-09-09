@@ -12,6 +12,15 @@ type BevelProps = {
   className?: string
   /** Clases del contenedor exterior en la variante outline. */
   outerClassName?: string
+  /**
+   * Color del borde en la variante `outline`. **Reemplaza** a `bg-amber` en
+   * vez de sumarse: dos utilidades de fondo en el mismo atributo se resuelven
+   * por el orden en que Tailwind emite las reglas, no por el orden en que uno
+   * las escribe, así que "pisar" el ámbar desde `outerClassName` no es
+   * confiable. Lo usan los campos del formulario, que van con borde graphite
+   * y pasan a ámbar al enfocarse.
+   */
+  borderClassName?: string
   style?: CSSProperties
 } & Record<string, unknown>
 
@@ -38,6 +47,7 @@ export function Bevel({
   as: Tag = 'div',
   className = '',
   outerClassName = '',
+  borderClassName = 'bg-amber',
   style,
   ...rest
 }: BevelProps) {
@@ -48,7 +58,7 @@ export function Bevel({
     const inner = { '--bevel': `${Math.max(bevel - 1, 0)}px` } as CSSProperties
     return (
       <Tag
-        className={`bevel bg-amber p-px ${outerClassName}`}
+        className={`bevel ${borderClassName} p-px ${outerClassName}`}
         style={shape}
         {...rest}
       >

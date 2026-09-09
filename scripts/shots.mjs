@@ -364,6 +364,59 @@ async function capturarPagina(browser, nombreVp) {
     )
   }
 
+  // Contacto: formulario vacío, con errores de validación y en estado de éxito.
+  // La validación es todo lo que hay (no hay backend), así que se prueba de
+  // verdad: se envía vacío, se leen los mensajes, y después se completa bien.
+  const form = page.locator('#contacto form')
+  if (await form.count()) {
+    await page.evaluate(() => {
+      document
+        .getElementById('contacto')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    })
+    await page.waitForTimeout(500)
+    await shot(page, `${nombreVp}/70-contacto`)
+
+    await form.locator('button[type=submit]').click()
+    await page.waitForTimeout(400)
+    await page.evaluate(() => {
+      document
+        .getElementById('contacto')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    })
+    await page.waitForTimeout(300)
+    await shot(page, `${nombreVp}/71-contacto-errores`)
+    console.log(
+      `[shots] ${nombreVp} errores de validación:`,
+      JSON.stringify(
+        await page.$$eval('#contacto [id$="-error"]', (n) =>
+          n.map((e) => e.textContent),
+        ),
+      ),
+    )
+
+    await form.locator('input[type=text]').first().fill('Marcelo Quispe')
+    await form.locator('input[type=email]').fill('marcelo@gmail.com')
+    await form.locator('input[type=tel]').fill('388 415 2233')
+    await form.locator('select').selectOption('comprar-usado')
+    await form.locator('button[aria-pressed]').nth(1).click()
+    await form
+      .locator('textarea')
+      .fill('Busco una Toro o una Strada 2021 en adelante, entrego mi Cronos.')
+    await page.waitForTimeout(300)
+    await shot(page, `${nombreVp}/72-contacto-completo`)
+
+    await form.locator('button[type=submit]').click()
+    await page.waitForTimeout(500)
+    await page.evaluate(() => {
+      document
+        .getElementById('contacto')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    })
+    await page.waitForTimeout(300)
+    await shot(page, `${nombreVp}/73-contacto-enviado`)
+  }
+
   // Footer entero.
   await page.evaluate(() => {
     document.getElementById('footer')?.scrollIntoView({ behavior: 'instant' })

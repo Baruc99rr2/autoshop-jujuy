@@ -691,6 +691,82 @@ terceros del camino crítico, mejora el LCP y hace que el `dist/` funcione
 offline — que es justamente el plan B de la reunión. Es trabajo de la fase 13
 del plan, así que queda anotado y no lo hice acá.
 
+
+---
+
+## Fase D — Contacto (fase 11 del plan) ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`**, incluido el recorrido completo del
+formulario: vacío → errores → completo → enviado, en los dos viewports.
+
+### Hecho
+
+- **`src/components/Icono.tsx`** — íconos de línea dibujados a mano en SVG
+  inline: mail, teléfono, ubicación, reloj, y cuatro más para post-venta.
+  Todos comparten grilla de 24, trazo de 1.5, extremos redondeados y
+  `currentColor`. Sin librería (40 KB para usar seis glifos, con su propio
+  grosor y su propia caja) y sin emojis (cambian de dibujo en cada sistema).
+- **`src/data/contacto.ts`** ganó `CONSULTAS` y `PRESUPUESTOS`. Son contenido
+  de negocio: agregar "Plan de ahorro moto" tiene que ser editar este archivo.
+- **`src/components/Contacto.tsx`** — dos columnas. Izquierda: titular, bajada,
+  los cuatro datos con ícono biselado, y las redes. Derecha: el formulario.
+- **`Bevel` ganó `borderClassName`**, que **reemplaza** el `bg-amber` del
+  contenedor exterior en la variante `outline` en vez de sumarse. Dos utilidades
+  de fondo en el mismo atributo se resuelven por el orden en que Tailwind emite
+  las reglas, no por el orden en que uno las escribe, así que "pisar" el ámbar
+  desde `outerClassName` no era confiable. Los campos van con borde graphite y
+  pasan a ámbar al enfocarse, como pide el plan.
+- **Validación real**, no un `required` decorativo: no hay backend, así que es
+  todo lo que hay. Los mensajes dicen qué pasó y cómo se arregla, sin
+  disculpas: "Falta el @ o el dominio. Un ejemplo: nombre@gmail.com".
+- **El foco salta al primer campo con problema.** Sin eso, en mobile el error
+  puede quedar fuera de pantalla y parece que el botón no hizo nada.
+- **Estado de éxito** que aclara que es una demostración y ofrece cargar otra
+  consulta.
+- **Mobile:** una columna, datos arriba del formulario, y todos los inputs a
+  16px para que iOS no haga zoom al enfocar.
+
+### Decisiones tomadas sin consultar — Fase D
+
+36. **Los errores de validación van en ÁMBAR, no en `--color-flag`.** La
+    primera versión los pintaba de rojo, que es el reflejo automático. Pero
+    CLAUDE.md reserva ese rojo para los estados de stock ("Vendido" /
+    "Reservado") y dice explícitamente que no decora. Usarlo en el formulario
+    lo convertiría en un rojo de sistema más y le sacaría el peso al chip de
+    una unidad vendida, que es el único lugar donde tiene que gritar. Quien
+    dice qué pasó es el mensaje, no el color.
+
+37. **El borde de error gana sobre el de foco.** Con `focus-within:bg-amber`
+    aplicado siempre, enfocar un campo con error tapaba la única señal visual
+    de cuál era el campo del problema. Ahora, si hay error, no se aplica la
+    variante de foco: el borde ya está en ámbar y se queda.
+
+38. **Las redes van con el nombre escrito y el usuario al lado, no con el logo
+    redibujado.** Es el mismo criterio que la sección de marcas: un ícono de
+    Instagram trazado a mano se nota, y además es marca registrada. Van como
+    chips biselados con "Instagram @autoshopjujuy".
+
+39. **El presupuesto son chips y no un select.** Son tres opciones: verlas
+    todas de una es más rápido que abrir una lista, y además es el único lugar
+    del formulario donde se puede no contestar sin que sea un error.
+
+### Trampa que me comí
+
+`CampoTexto` estaba definido **adentro** del cuerpo de `Contacto`. Un
+componente definido dentro de otro se vuelve a crear en cada render, así que
+React desmonta y remonta el `<input>` en cada tecla y **el foco se pierde
+después de escribir una letra**. Está a nivel de módulo, con un comentario
+explicando por qué no puede volver adentro.
+
+### Lo que vi en las capturas y corregí
+
+**El titular ocupaba cinco líneas.** Con `<br />` manuales sobre "Contanos qué
+/ auto estás / buscando", en la columna angosta terminaba partiéndose en cinco
+renglones y "ESTÁS" quedaba solo en uno. Copy más corto y más rioplatense:
+"Contanos / qué auto / buscás", tres líneas, y en mobile el bloque de datos
+entra completo en pantalla.
+
 # RESUMEN DE LA SESIÓN
 
 ## Qué quedó hecho
