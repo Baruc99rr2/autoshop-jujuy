@@ -9,6 +9,7 @@ import Marcas from './components/Marcas'
 import Simulador from './components/Simulador'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
 import MeshOverlay from './components/MeshOverlay'
+import Postventa from './components/Postventa'
 import Rail from './components/Rail'
 import SectionHeader from './components/SectionHeader'
 import { SECCIONES } from './data/nav'
@@ -24,6 +25,7 @@ const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
   cotizador: Cotizador,
   marcas: Marcas,
   plan: Simulador,
+  postventa: Postventa,
   preguntas: Faq,
 }
 

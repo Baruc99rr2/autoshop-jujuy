@@ -3,6 +3,14 @@ import Bevel from './Bevel'
 import Icono, { type NombreIcono } from './Icono'
 import SectionHeader from './SectionHeader'
 import { CONSULTAS, CONTACTO, PRESUPUESTOS, REDES } from '../data/contacto'
+import { seccion } from '../data/nav'
+
+/**
+ * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
+ * sección nueva se corren todos los números, y con el índice a mano el riel
+ * diría una cosa y el encabezado de la sección otra.
+ */
+const S = seccion('contacto')
 
 type Campos = {
   nombre: string
@@ -173,6 +181,7 @@ function CampoTexto({
   )
 }
 
+
 export function Contacto() {
   const uid = useId()
   const [campos, setCampos] = useState<Campos>(VACIO)
@@ -212,8 +221,8 @@ export function Contacto() {
         {/* ── Izquierda: titular y datos ────────────────────────────────── */}
         <div>
           <SectionHeader
-            index="10"
-            eyebrow="CONTACTO"
+            index={S.indice}
+            eyebrow={S.eyebrow}
             title={
               <>
                 Contanos

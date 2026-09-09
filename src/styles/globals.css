@@ -741,3 +741,48 @@
   );
   animation: escanear 0.6s cubic-bezier(0.45, 0, 0.55, 1) 2 both;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   TILES DE POST-VENTA
+   El mismo barrido que la FAQ: un pseudo-elemento que crece en scaleX desde
+   el borde izquierdo, y el color del contenido cambiando con `transition-delay`
+   para que el barrido lo alcance en vez de adelantarse.
+
+   El barrido va sobre el hijo (`.tile`), donde está el `clip-path` del bisel,
+   así que respeta las dos diagonales. El estado —hover o foco— lo tiene el
+   contenedor (`.tile-host`), que es el <a>: por eso los selectores son
+   descendentes y no `.tile:hover`.
+   ───────────────────────────────────────────────────────────── */
+
+.tile {
+  /* Crea contexto de apilamiento propio, así el ::before con z-index -1 queda
+     detrás del contenido pero delante del fondo asphalt de la card. */
+  isolation: isolate;
+  position: relative;
+  color: var(--color-bone);
+  transition: color 0.3s ease;
+}
+
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.tile-host:hover .tile::before,
+.tile-host:focus-visible .tile::before {
+  transform: scaleX(1);
+}
+
+/* El ícono y el texto pasan a negro con la demora justa para que el barrido
+   los alcance. Al salir no hay demora: el color vuelve enseguida. */
+.tile-host:hover .tile,
+.tile-host:focus-visible .tile {
+  color: var(--color-void);
+  transition-delay: 0.12s;
+}

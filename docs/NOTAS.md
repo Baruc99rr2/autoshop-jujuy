@@ -871,6 +871,82 @@ una fila desde 360px.
 - Cotizador con Fiat Toro 2021: rango **$34.000.000 – $38.300.000**, que es
   base 52M × 0,93⁵ con el ±6% y el redondeo a 100.000.
 
+
+---
+
+## Fase F — Post-venta (sección nueva) ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`** en los dos viewports.
+
+### Hecho
+
+- **`src/data/postventa.ts`** — los cuatro accesos, con contenido concreto:
+  confirmación de turno en 48 horas, service de 10.000 km en el día, repuestos
+  de Córdoba en 72 horas, los cuatro primeros services del 0km en cuotas fijas,
+  colocación de accesorios en el mismo taller. Nada de "calidad garantizada".
+- **`src/components/Postventa.tsx`** — grilla de cuatro tiles biselados, con el
+  eyebrow y el titular como el resto de las secciones. Ícono SVG en línea de
+  1,5px, nombre en Archivo y una línea de descripción.
+- **El barrido ámbar** es el mismo de la FAQ: `::before` con `scaleX` desde
+  `transform-origin: left`, 0,45 s con `cubic-bezier(.65,0,.35,1)`, y el color
+  del contenido cambiando con `transition-delay: .12s` para que el barrido lo
+  alcance. El ícono y el texto pasan a negro sobre el ámbar.
+- **`src/data/nav.ts`** ganó la sección entre Marcas y Preguntas, y el ítem
+  correspondiente en la columna CONTENIDO del footer.
+
+### Decisiones tomadas sin consultar — Fase F
+
+43. **Los índices de sección salen de `nav.ts`, no escritos en cada
+    componente.** El pedido decía "el riel renumera solo", y no era cierto:
+    cada componente llevaba su `index="08"` a mano, así que insertar Post-venta
+    corría cuatro números en el riel y dejaba los encabezados diciendo otra
+    cosa. Ahora `nav.ts` exporta `seccion(id)` y cada componente lee de ahí su
+    índice y su eyebrow. La función **tira** si el id no existe: es un error de
+    programación, y fallar al importar el módulo lo hace evidente en el acto en
+    vez de dibujar un encabezado vacío.
+
+    Verificado leyendo los índices del DOM real después del cambio:
+    `hero 01 · segmentos 03 · vehiculos 04 · plan 05 · cotizador 06 · marcas 07
+    · postventa 08 · preguntas 09 · cta 10 · contacto 11`. La franja de
+    contadores no tiene encabezado a propósito (decisión 29).
+
+44. **Cada tile es un enlace real a `#contacto`, no un `<div>` con hover.** Con
+    un div, el bloque no se recorre con Tab, el barrido no responde al foco y
+    en un teléfono —donde no hay hover— tocarlo no hace nada. Como enlace, el
+    barrido responde igual al puntero y al teclado, y el tap lleva al
+    formulario. En el sitio real cada acceso iría a su propio flujo de turno.
+
+45. **El barrido va sobre el hijo y el estado lo tiene el padre.** En la
+    variante `outline` de `Bevel`, el `<a>` es el contenedor exterior y el
+    `clip-path` del bisel está en el hijo. El pseudo-elemento del barrido tiene
+    que ir en el hijo para que respete las dos diagonales, pero `:focus-visible`
+    lo recibe el `<a>`. Por eso los selectores son descendentes
+    (`.tile-host:focus-visible .tile::before`) y no `.tile:hover`.
+
+### Lo que vi en las capturas y corregí
+
+**Dos de los cuatro íconos no se leían como lo que eran.**
+
+*Esperaba:* cuatro íconos reconocibles de un vistazo.
+
+*Vi:* el de repuestos era un círculo con ocho rayos radiales — se lee como un
+sol de brillo, no como un repuesto. El de mantenimiento era un auto de frente,
+que no dice nada sobre mantenimiento programado.
+
+*Qué hice:* repuestos pasó a ser un **filtro de aceite** (cilindro con
+nervaduras y cuello) y mantenimiento un **cuentakilómetros** con la aguja,
+porque el mantenimiento programado se cuenta por kilómetros. Accesorios pasó de
+un círculo con rayos —que se leía como llanta, o sea como repuesto, que es el
+tile de al lado— a un **baúl de techo con las correas**. Turnos ya se leía bien
+como calendario con tilde y quedó igual.
+
+**Nota del arnés:** la captura "en reposo" de los tiles salía con uno en hover,
+porque el puntero quedaba donde lo había dejado el paso anterior de la sección
+de marcas. Ahora el arnés mueve el puntero a una esquina antes de esa captura.
+Es un defecto de la medición, no del sitio, pero llevaba a mirar mal la
+captura.
+
 # RESUMEN DE LA SESIÓN
 
 ## Qué quedó hecho

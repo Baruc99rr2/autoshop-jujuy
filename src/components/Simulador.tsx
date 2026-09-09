@@ -9,6 +9,14 @@ import {
   VALOR,
   cuotaMensual,
 } from '../data/financiacion'
+import { seccion } from '../data/nav'
+
+/**
+ * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
+ * sección nueva se corren todos los números, y con el índice a mano el riel
+ * diría una cosa y el encabezado de la sección otra.
+ */
+const S = seccion('plan')
 
 const PESOS = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -86,6 +94,7 @@ function Slider({
  * dejaría un número sin sección. Además el simulador tiene dos sliders, cinco
  * chips y un resultado grande: en media pantalla queda apretado.
  */
+
 export function Simulador() {
   const [valor, setValor] = useState(VALOR.inicial)
   const [anticipoPct, setAnticipoPct] = useState(ANTICIPO.inicial)
@@ -104,8 +113,8 @@ export function Simulador() {
     >
       <div className="grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20">
         <SectionHeader
-          index="05"
-          eyebrow="FIAT PLAN"
+          index={S.indice}
+          eyebrow={S.eyebrow}
           title={
             <>
               Entrá con

@@ -1,6 +1,14 @@
 import { useId, useState } from 'react'
 import SectionHeader from './SectionHeader'
 import { FAQ } from '../data/faq'
+import { seccion } from '../data/nav'
+
+/**
+ * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
+ * sección nueva se corren todos los números, y con el índice a mano el riel
+ * diría una cosa y el encabezado de la sección otra.
+ */
+const S = seccion('preguntas')
 
 /**
  * Preguntas frecuentes con el barrido izquierda→derecha.
@@ -11,6 +19,7 @@ import { FAQ } from '../data/faq'
  * Una sola abierta a la vez. El estado guarda el id, no el índice, así que
  * reordenar `FAQ` no cambia cuál está abierta.
  */
+
 export function Faq() {
   const [abierta, setAbierta] = useState<string | null>(FAQ[0].id)
   const uid = useId()
@@ -22,8 +31,8 @@ export function Faq() {
     >
       <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
         <SectionHeader
-          index="08"
-          eyebrow="PREGUNTAS"
+          index={S.indice}
+          eyebrow={S.eyebrow}
           tone="light"
           title={
             <>

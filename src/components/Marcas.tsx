@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import SectionHeader from './SectionHeader'
 import { MARCAS } from '../data/marcas'
+import { seccion } from '../data/nav'
+
+/**
+ * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
+ * sección nueva se corren todos los números, y con el índice a mano el riel
+ * diría una cosa y el encabezado de la sección otra.
+ */
+const S = seccion('marcas')
 
 /**
  * Listado tipográfico de marcas. Sin logos: ver `src/data/marcas.ts`.
@@ -20,6 +28,7 @@ import { MARCAS } from '../data/marcas'
  *    Al scrollear, las marcas se encienden de a una: se lee como una luz que
  *    recorre la lista, y es el mismo gesto de barrido del resto del sitio.
  */
+
 export function Marcas() {
   const lista = useRef<HTMLUListElement>(null)
   const [enLinea, setEnLinea] = useState<string | null>(null)
@@ -54,8 +63,8 @@ export function Marcas() {
       className="border-b border-graphite/60 py-24 shell md:py-32"
     >
       <SectionHeader
-        index="07"
-        eyebrow="MARCAS"
+        index={S.indice}
+        eyebrow={S.eyebrow}
         title="Trabajamos con"
         lead="Doce marcas pasan por el salón. Estas son las ocho que más entregamos, entre 0km y usados seleccionados."
       />

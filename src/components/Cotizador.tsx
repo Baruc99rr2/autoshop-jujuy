@@ -4,6 +4,14 @@ import Bevel from './Bevel'
 import SectionHeader from './SectionHeader'
 import { ANIOS, MARCAS_USADOS, estimar } from '../data/cotizador'
 import { prefersReducedMotion } from '../lib/motion-prefs'
+import { seccion } from '../data/nav'
+
+/**
+ * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
+ * sección nueva se corren todos los números, y con el índice a mano el riel
+ * diría una cosa y el encabezado de la sección otra.
+ */
+const S = seccion('cotizador')
 
 const PESOS = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -67,6 +75,7 @@ function SelectBiselado({
  * Con `prefers-reduced-motion` el resultado aparece directo: sin escaneo y sin
  * conteo. El contenido es el mismo, solo que instantáneo.
  */
+
 export function Cotizador() {
   const uid = useId()
   const card = useRef<HTMLDivElement>(null)
@@ -140,8 +149,8 @@ export function Cotizador() {
     >
       <div className="grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20">
         <SectionHeader
-          index="06"
-          eyebrow="COTIZADOR"
+          index={S.indice}
+          eyebrow={S.eyebrow}
           title={
             <>
               Cotizá

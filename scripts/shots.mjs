@@ -327,6 +327,33 @@ async function capturarPagina(browser, nombreVp) {
     )
   }
 
+  // Post-venta: los cuatro tiles en reposo y uno con el barrido ámbar. El
+  // barrido responde igual al hover que al foco, así que se prueba con hover
+  // y se verifica el color resultante.
+  const tiles = page.locator('#postventa .tile-host')
+  if (await tiles.count()) {
+    await page.evaluate(() => {
+      document
+        .getElementById('postventa')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    })
+    // El puntero quedó donde lo dejó el paso anterior y puede caer sobre un
+    // tile: sin moverlo, la captura "en reposo" saldría con uno en hover.
+    await page.mouse.move(2, 2)
+    await page.waitForTimeout(600)
+    await shot(page, `${nombreVp}/35-postventa`)
+    await tiles.nth(1).hover()
+    await page.waitForTimeout(700)
+    await shot(page, `${nombreVp}/36-postventa-hover`)
+    console.log(
+      `[shots] ${nombreVp} tile en hover:`,
+      await tiles.nth(1).locator('.tile').evaluate((el) => ({
+        color: getComputedStyle(el).color,
+        barrido: getComputedStyle(el, '::before').transform,
+      })),
+    )
+  }
+
   // Contadores: hay que esperar a que el conteo termine (1,8 s) o la captura
   // muestra cifras a mitad de camino y no se puede juzgar el resultado.
   const contadores = page.locator('#contadores')

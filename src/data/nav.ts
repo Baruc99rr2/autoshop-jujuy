@@ -44,15 +44,38 @@ export const SECCIONES: Seccion[] = [
   { indice: '07', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
   {
     indice: '08',
+    id: 'postventa',
+    eyebrow: 'POST-VENTA',
+    titulo: 'No termina cuando te llevás el auto',
+  },
+  {
+    indice: '09',
     id: 'preguntas',
     eyebrow: 'PREGUNTAS',
     titulo: 'Lo que todos preguntan',
     tono: 'claro',
     fondo: 'claro',
   },
-  { indice: '09', id: 'cta', eyebrow: 'TEST DRIVE', titulo: 'Vení a probarlo' },
-  { indice: '10', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
+  { indice: '10', id: 'cta', eyebrow: 'TEST DRIVE', titulo: 'Vení a probarlo' },
+  { indice: '11', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
 ]
+
+/**
+ * Busca una sección por id.
+ *
+ * Los componentes de sección leen de acá su índice y su eyebrow en vez de
+ * llevarlos escritos. Al insertar "Post-venta" entre Marcas y Preguntas hubo
+ * que correr cuatro números, y con los índices hardcodeados el riel decía una
+ * cosa y el encabezado de la sección otra. Ahora reordenar `SECCIONES` alcanza.
+ *
+ * Tira si el id no existe: es un error de programación, y fallar al importar
+ * el módulo lo hace evidente en el acto en vez de dibujar un encabezado vacío.
+ */
+export function seccion(id: string): Seccion {
+  const s = SECCIONES.find((x) => x.id === id)
+  if (!s) throw new Error(`Sección desconocida en nav.ts: ${id}`)
+  return s
+}
 
 /** Ítems del menú desplegado (fase 3). */
 export interface ItemMenu {
@@ -85,6 +108,7 @@ export const FOOTER: ColumnaFooter[] = [
       { label: 'Fiat Plan', href: '#plan' },
       { label: 'Cotizar usado', href: '#cotizador' },
       { label: 'Marcas', href: '#marcas' },
+      { label: 'Post-venta', href: '#postventa' },
       { label: 'Test drive', href: '#cta' },
     ],
   },

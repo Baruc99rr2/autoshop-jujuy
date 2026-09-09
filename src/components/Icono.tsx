@@ -46,25 +46,32 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
       <path d="M3.25 10h17.5M8 3.25v4M16 3.25v4M8.5 14.5l2.25 2.25L15.5 12" />
     </>
   ),
+  // Filtro de aceite: cilindro con nervaduras y cuello. Antes había un círculo
+  // con ocho rayos radiales que se leía como un sol de brillo, no como un
+  // repuesto.
   pieza: (
     <>
-      <circle cx="12" cy="12" r="3.25" />
-      <path d="M12 2.75v3M12 18.25v3M21.25 12h-3M5.75 12h-3M18.55 5.45l-2.1 2.1M7.55 16.45l-2.1 2.1M18.55 18.55l-2.1-2.1M7.55 7.55l-2.1-2.1" />
+      <path d="M9.25 7.25V5.5h5.5v1.75" />
+      <rect x="6.75" y="7.25" width="10.5" height="11.25" />
+      <path d="M6.75 11h10.5M6.75 14.75h10.5" />
     </>
   ),
+  // Cuentakilómetros: el mantenimiento programado se cuenta por km, así que la
+  // aguja dice más que un auto de frente, que era lo que había antes.
   service: (
     <>
-      <path d="M2.75 16.5v-3l1.9-4.6A2 2 0 0 1 6.5 7.6h11a2 2 0 0 1 1.85 1.3l1.9 4.6v3" />
-      <path d="M2.75 13.5h18.5M5.5 16.5v2.25M18.5 16.5v2.25" />
-      <circle cx="7" cy="16.5" r="0.6" />
-      <circle cx="17" cy="16.5" r="0.6" />
+      <path d="M3.75 17.5a8.25 8.25 0 1 1 16.5 0" />
+      <path d="M12 17.5 16.25 10" />
+      <circle cx="12" cy="17.5" r="1.15" />
     </>
   ),
+  // Baúl de techo con las correas. Un volante o una llanta se leerían como
+  // "repuesto", que es el tile de al lado.
   accesorio: (
     <>
-      <circle cx="12" cy="12" r="8.75" />
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 3.25V9M4.5 16.2l5-2.9M19.5 16.2l-5-2.9" />
+      <path d="M8.75 8V6.25h6.5V8" />
+      <rect x="3.75" y="8" width="16.5" height="9.75" />
+      <path d="M9.25 8v9.75M14.75 8v9.75" />
     </>
   ),
 }
