@@ -1,85 +1,126 @@
-# Assets — la lista mínima
+# Assets — el material real
 
-El logo ya está resuelto. Solo tenés que bajar **2 videos y 3 fotos**, y el resto sale de ahí.
-
----
-
-## El logo (listo)
-
-`logo.svg` → `src/assets/logo.svg`
-
-Vectorizado desde la captura que mandaste. 50 paths, 17 KB, escala a cualquier tamaño sin perder nitidez. Fidelidad medida contra el original: error medio de 6/255, que es prácticamente todo antialiasing de borde.
-
-Grupos con id, y los 7 cuadros de la bandera ordenados de izquierda a derecha en el DOM, así que un `stagger` de GSAP ya produce el barrido de "semáforo de largada" sin calcular nada.
-
-Los colores muestreados: **blanco #FEFDF8**, **ámbar #FDB916**. Ese ámbar ahora es el acento único de todo el sitio.
-
-`logo@4x.png` es el fallback rasterizado, por si lo necesitás para un favicon o para pegarlo en un mail.
-
-> Es un trazado de una captura, no el archivo original. Alcanza de sobra para la demo. Cuando el cliente firme, pedile el vectorial.
+Todo conseguido. Esto describe qué es cada archivo, qué hay que hacerle antes de usarlo, y las dos cosas que cambian decisiones de diseño.
 
 ---
 
-## Videos (2)
+## El logo (listo, sin cambios)
 
-**Dónde:** Pexels Videos, Mixkit o Coverr. Gratuitos, uso comercial permitido, sin atribución obligatoria. No bajes de YouTube: está prohibido por sus términos y el re-encode se ve mal.
+`src/assets/logo.svg`. 50 paths, 13 ids, blanco `#FEFDF8` y ámbar `#FDB916`.
 
-**Video 1 — hero.** Buscá `car driving night city lights` o `headlights night road`. Un plano **lento, con poca cámara**. Un clip agitado compite con el titular y lo vuelve ilegible. Que tenga zonas oscuras donde el texto pueda respirar.
+---
 
-**Video 2 — CTA.** Buscá `drone road mountains` o `desert highway aerial`. Acá sí querés movimiento visible: el texto es una ventana y el video se tiene que notar moviéndose a través de él. `argentina andes road` a veces devuelve material que evoca la Quebrada.
+## Video 1 — Hero
 
-### Optimización (importante)
+`16743471-uhd_2160_3840_30fps.mp4` · 10 s · 11 MB · **2160×3840 (vertical, 9:16)** · 30 fps
 
-Un clip de Pexels en 4K pesa 40-80 MB. Sin comprimir, el hero tarda 20 segundos en datos móviles y perdés la demo en el primer scroll.
+Auto oscuro bajo un farol, cielo nocturno con nubes iluminadas. Plano lento, poco pasa: exactamente lo que necesita un hero. Buena elección.
 
-```bash
-# Hero desktop
-ffmpeg -i original.mp4 -t 10 -vf "scale=1920:-2,fps=30" \
-  -c:v libx264 -crf 28 -preset slow -an -movflags +faststart \
-  public/video/hero-desktop.mp4
+**Dos cosas a resolver:**
 
-# Hero mobile
-ffmpeg -i original.mp4 -t 10 -vf "scale=1280:-2,fps=30" \
-  -c:v libx264 -crf 31 -preset slow -an -movflags +faststart \
-  public/video/hero-mobile.mp4
+**1. Es vertical.** En mobile es ideal, a pantalla completa. En desktop no se puede usar a sangre: escalado a 1920 de ancho, el alto pasa a 3413 px y en un viewport de 1080 verías apenas el 32% del encuadre. Perderías el farol o perderías el auto.
 
-# Poster
-ffmpeg -i original.mp4 -ss 3 -frames:v 1 -vf "scale=1920:-2" -q:v 3 \
-  public/img/hero-poster.jpg
+La solución no es recortar, es cambiar el layout: **hero partido en desktop** — titular a la izquierda sobre negro, panel vertical biselado con el video a la derecha, a altura de viewport. En mobile vuelve a full-bleed, que es su formato natural. Un componente, dos layouts. Queda más distintivo que el video a sangre y usa el bisel que ya está en todo el sitio.
 
-# Lo mismo para el video 2 → public/video/cta.mp4
+**2. No cicla.** En los últimos 3 segundos el auto acelera y sale de cuadro, así que el loop salta. Se recorta a los primeros 7 segundos. Si el corte igual se nota, hay una solución en el prompt.
+
+```powershell
+# Guardá el original con otro nombre antes de comprimir
+ren public\video\hero-desktop.mp4 hero-original.mp4
+
+# Panel de desktop — 1080x1920 sobra para un panel de ~40% del ancho
+ffmpeg -i public\video\hero-original.mp4 -t 7 -vf "scale=1080:-2,fps=30" `
+  -c:v libx264 -crf 28 -preset slow -an -movflags +faststart `
+  public\video\hero-desktop.mp4
+
+# Mobile — 720x1280
+ffmpeg -i public\video\hero-original.mp4 -t 7 -vf "scale=720:-2,fps=30" `
+  -c:v libx264 -crf 30 -preset slow -an -movflags +faststart `
+  public\video\hero-mobile.mp4
+
+# Poster — un frame de los primeros segundos
+ffmpeg -i public\video\hero-original.mp4 -ss 2 -frames:v 1 -vf "scale=1080:-2" `
+  -q:v 3 public\img\hero-poster.jpg
 ```
 
-`-movflags +faststart` mueve el índice al principio para que empiece a reproducir sin descargar todo.
-
-**Objetivo:** hero-desktop < 4 MB, hero-mobile < 2 MB. Verificá con `ls -lh public/video/`. Si te pasás, subí el `-crf` o acortá a 8 segundos.
-
----
-
-## Fotos de auto (3)
-
-Pexels o Unsplash, buscando por carrocería: `pickup truck`, `compact suv`, `hatchback car`. Que sean tres carrocerías **distintas** entre sí — así el catálogo se ve variado con poco material.
-
-Las guardás en `public/img/vehiculos/`. Los planos detalle para el hover salen de recortes de estas mismas fotos por CSS, no necesitás archivos nuevos.
+Objetivo: desktop < 3 MB, mobile < 1,5 MB. Verificá con `dir public\video`.
+Después de comprimir, borrá `hero-original.mp4` de `public/` — si queda ahí, se sube al deploy.
 
 ---
 
-## Los frames gratis (el truco que te ahorra la búsqueda)
+## Video 2 — CTA
 
-El carrusel de segmentos necesita 4 imágenes y no las vas a buscar. Salen de los videos que ya bajaste:
+`15003049_3840_2160_60fps.mp4` · 18 s · **50 MB** · 3840×2160 · 60 fps
 
-```bash
-ffmpeg -i public/video/hero-desktop.mp4 -vf "fps=1/2,scale=1600:-2" \
-  -q:v 3 public/img/segmentos/frame_%02d.jpg
+Valle andino con río trenzado y cumbres nevadas. Es el archivo más pesado del proyecto por lejos y hay que bajarlo mucho: se ve **solo a través de las letras del titular**, así que la resolución alta no aporta nada.
+
+```powershell
+ren public\video\cta.mp4 cta-original.mp4
+
+ffmpeg -i public\video\cta-original.mp4 -t 12 -vf "scale=1280:-2,fps=25" `
+  -c:v libx264 -crf 30 -preset slow -an -movflags +faststart `
+  public\video\cta.mp4
 ```
 
-Te va a escupir un frame cada 2 segundos. Elegís los 4 mejores, borrás el resto. Ventaja real: vienen con el mismo grado de color que el hero, así que el sitio se ve coherente en vez de collage de stock.
+De 50 MB tiene que bajar a 2-3 MB. Si queda arriba de 4, subí el `crf` a 33.
+Borrá el original después.
+
+**Un aviso, no un problema:** ese paisaje es cordillera patagónica, con nieve y vegetación. La Quebrada de Humahuaca es árida y ocre — se ve bastante distinto. A través de una máscara de texto vas a ver franjas de montaña en movimiento y va a funcionar igual, pero **el copy de esa sección no debe decir que es Jujuy**. Que hable de comprar auto, no del paisaje.
 
 ---
 
-## Logos de marcas: no van
+## Las 3 fotos de vehículos
 
-Recrearlos en SVG da resultados imprecisos y es un problema de marca registrada. La sección de marcas es tipográfica: los nombres en Archivo extendido, apagados en gris, encendiéndose en ámbar al pasar. Encaja mejor con el lenguaje del sitio que una grilla de logos ajenos, y no depende de ningún asset.
+Tres carrocerías bien distintas, que es justo lo que hacía falta:
+
+| Archivo | Qué es | Nota |
+|---|---|---|
+| `car-1.jpg` | **Hyundai Tucson** gris oscuro, 3/4 delantero, atardecer | SUV. Se vende en Argentina, usado plausible. |
+| `car-2.jpg` | **Suzuki Swift Sport** blanco, 3 puertas, camino rural | Hatchback deportivo. Patente checa visible. |
+| `car-3.jpg` | **RAM 1500** gris, 3/4 delantero, atardecer | Pick-up grande. Se vende en Argentina. |
+
+**Importante: hay que nombrarlos por lo que realmente son.** La tentación es escribir "Fiat Cronos" debajo de la foto de un Tucson porque el Cronos se vende más en Jujuy. No lo hagas: cualquiera del rubro lo ve al instante, y en la reunión eso quema la credibilidad de toda la demo. Un catálogo con tres unidades reales bien etiquetadas se defiende solo.
+
+El Swift Sport es el más raro para el mercado argentino — Suzuki se retiró del país. Para un lote de usados con una unidad importada es creíble; si no te convence, es la primera que reemplazarías cuando lleguen las fotos del stock real.
+
+La patente checa del `car-2` se ve, pero en una card de ~500 px es un detalle chico. Baja prioridad.
+
+---
+
+## Las 4 imágenes de segmentos
+
+Elección muy buena: las cuatro son nocturnas o de luz baja, así que entran en la paleta del sitio sin pelearse con el negro.
+
+| Archivo | Qué es |
+|---|---|
+| `segmento-1.jpg` | Mazda CX-5 de atrás, camino nevado, sol bajo entre montañas |
+| `segmento-2.jpg` | Alfa Romeo 159 bajo la Vía Láctea, campo abierto |
+| `segmento-3.jpg` | VW Tiguan de noche bajo lluvia, puente iluminado, azules y rojos |
+| `segmento-4.jpg` | Toyota Land Cruiser en desierto con cardones, cielo estrellado, telescopio |
+
+**Cambio de criterio para los segmentos:** tres de las cuatro son SUV, así que no se pueden llamar por carrocería — las fotos no lo sostienen. Van por **uso**, que además le habla mejor a alguien que está por comprar:
+
+1. **Ciudad** → `segmento-3` (Tiguan, lluvia, puente)
+2. **Ruta** → `segmento-1` (CX-5, camino de montaña)
+3. **Aventura** → `segmento-4` (Land Cruiser, cardones)
+4. **Escapada** → `segmento-2` (Alfa, cielo estrellado)
+
+El `segmento-4` es el hallazgo del conjunto: cardones, cerros y cielo estrellado leen como la Puna jujeña sin que nadie tenga que decirlo.
+
+---
+
+## Optimización de imágenes
+
+Tu build de ffmpeg tiene `libwebp`, así que no hace falta instalar nada:
+
+```powershell
+Get-ChildItem public\img\vehiculos\*.jpg, public\img\segmentos\*.jpg | ForEach-Object {
+  $out = Join-Path $_.DirectoryName ($_.BaseName + ".webp")
+  ffmpeg -y -i $_.FullName -vf "scale=1600:-2" -c:v libwebp -quality 82 $out
+}
+```
+
+Después borrá los `.jpg` originales de `public/`. Ninguna imagen arriba de 250 KB.
 
 ---
 
@@ -89,23 +130,8 @@ Recrearlos en SVG da resultados imprecisos y es un problema de marca registrada.
 public/
 ├─ video/  hero-desktop.mp4 · hero-mobile.mp4 · cta.mp4
 └─ img/    hero-poster.jpg
-   ├─ vehiculos/  (3 fotos)
-   └─ segmentos/  (4 frames extraídos)
-
-src/assets/logo.svg
+   ├─ vehiculos/  car-1.webp · car-2.webp · car-3.webp
+   └─ segmentos/  segmento-1.webp … segmento-4.webp
 ```
 
-Optimizá las imágenes al final:
-```bash
-for f in public/img/**/*.jpg; do cwebp -q 82 -resize 1400 0 "$f" -o "${f%.jpg}.webp"; done
-```
-
-Ninguna imagen arriba de 250 KB. Poné `width` y `height` explícitos en cada `<img>`: el layout shift rompe los cálculos de ScrollTrigger.
-
----
-
-## Datos de la concesionaria
-
-No hay ninguno y no hacen falta. Que Claude Code invente todo: dirección plausible del centro de San Salvador de Jujuy, horario comercial, teléfono con característica 0388, redes. En el footer queda la nota de "sitio de demostración" y en la reunión lo aclarás en una frase.
-
-**No uses lorem ipsum.** En un sitio en español se lee como algo sin terminar. Copy inventado pero verosímil no cuesta nada y hace que la demo se vea entregada.
+Verificá que no quede ningún `-original.mp4` ni ningún `.jpg` suelto: todo lo que esté en `public/` se sube al deploy.

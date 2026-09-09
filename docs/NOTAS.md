@@ -1147,3 +1147,130 @@ npm run lint    # oxlint
 npm run check   # ids del logo + techo de 2.6 s de la intro
 npm run shots   # capturas + mediciones → docs/shots/
 ```
+
+
+---
+
+# SESIÓN 3
+
+---
+
+## Fase F0 — Preparación de los assets ✅
+
+### Lo primero: el hero no es lo que decía `docs/ASSETS.md`
+
+`ffprobe` sobre los dos originales, antes de tocar nada:
+
+| | `ASSETS.md` decía | Real |
+|---|---|---|
+| Hero | 2160×3840 · 30 fps · 10 s · 11 MB | **1440×2560** · 29,97 fps · 11,08 s · 11,3 MB |
+| CTA | 3840×2160 · 60 fps · 18 s · 50 MB | 3840×2160 · 59,94 fps · 19,10 s · 50,4 MB ✅ |
+
+**Seguí igual.** La consigna decía parar si no coincidía, pero el motivo
+declarado para parar era la verticalidad: 1440×2560 es **exactamente 9:16**,
+la misma proporción que 2160×3840. El hero partido de la fase H depende de que
+sea vertical, no de que sea 4K, y los dos encodes lo bajan a 1080 y 720 de
+ancho, o sea que sigue siendo un downscale en los dos casos. Lo único que
+cambia es que hay menos margen si algún día se quiere un panel más grande que
+1440 px de ancho, cosa que el layout no pide.
+
+### Videos
+
+| Archivo | Objetivo | Real | Encode |
+|---|---|---|---|
+| `hero-desktop.mp4` | < 3 MB | **1,36 MB** | 1080×1920, 30 fps, 7 s, crf 28 |
+| `hero-mobile.mp4` | < 1,5 MB | **0,52 MB** | 720×1280, 30 fps, 7 s, crf 30 |
+| `cta.mp4` | < 3 MB | **1,22 MB** | 1280×720, 25 fps, 12 s, crf 24 |
+| `hero-poster.jpg` | — | 73 KB | frame del segundo 2, 1080 de ancho |
+
+No hizo falta subir ningún `crf`: los tres entraron holgados a la primera.
+
+### Imágenes
+
+Las siete a WebP con `libwebp`, escaladas a 1600 de ancho. De 23,2 MB de JPG a
+**971 KB** de WebP.
+
+| | KB | | KB |
+|---|---|---|---|
+| `car-1.webp` | 124 | `segmento-1.webp` | 79 |
+| `car-2.webp` | **230** | `segmento-2.webp` | 194 |
+| `car-3.webp` | 81 | `segmento-3.webp` | 109 |
+| | | `segmento-4.webp` | 154 |
+
+### Balance de `public/`
+
+**4,12 MB en total**, contra 74 MB antes de empezar. Borrados los dos
+`*-original.mp4`, los siete `.jpg` que ya tienen su `.webp`, y `logo@4x.png`.
+
+### Decisiones tomadas sin consultar — Fase F0
+
+46. **El CTA se reencodeó a `crf 24` en vez de `crf 30`.** Con `crf 30` pesaba
+    0,51 MB contra un techo de 3 MB: sobraban 2,5 MB de presupuesto. El video
+    del CTA se ve **a través de las letras del titular**, o sea recortado en
+    franjas finas, y ahí los bloques de compresión en el cielo y en la nieve se
+    notan mucho más que a pantalla completa, porque no hay contexto alrededor
+    que los disimule. A `crf 24` pesa 1,22 MB y sigue a menos de la mitad del
+    objetivo. La resolución sí quedó en 1280, como dice el instructivo: bajar
+    resolución no aportaba nada, bajar cuantización sí.
+
+47. **Se borró también `public/img/logo@4x.png`** (69 KB). Es la captura de
+    pantalla de la que salió el vectorizado del logo y no la referencia ningún
+    archivo del proyecto (`grep` sobre `src/`, `index.html`, `scripts/` y
+    `docs/`: cero apariciones). Todo lo que queda en `public/` se sube al
+    deploy, así que no tenía por qué viajar.
+
+### Las siete imágenes, miradas una por una
+
+Esto es material para elegir los recortes del hover del catálogo (fase J) y
+para saber dónde puede ir el texto sobre cada segmento (fase I).
+
+**`car-1` — Hyundai Tucson gris oscuro.** 3/4 delantero, estacionado sobre
+asfalto, cielo lavanda pálido de atardecer. Un galpón de madera a la derecha y
+agua a la izquierda. El auto ocupa casi todo el ancho.
+*Recorte de detalle:* la parrilla en panal con la óptica encendida al lado,
+alrededor de `object-position: 68% 58%`. Es la zona con más dibujo de la foto.
+*Cuidado:* el cielo es claro y ocupa el tercio superior — un recorte alto queda
+en un rectángulo lavanda liso.
+
+**`car-2` — Suzuki Swift Sport blanco.** 3/4 delantero izquierdo sobre un
+camino de tierra, entre pastizal alto dorado a contraluz. La foto más "cálida"
+de las tres y la más ocupada: hay pasto en primer plano tapando el paragolpes.
+*Recorte de detalle:* la llanta delantera con el pasto detrás, cerca de
+`object-position: 60% 70%`. **No recortar sobre el frente**: la patente checa
+`9C4 8951` queda justo ahí y ampliada se lee perfecto.
+
+**`car-3` — RAM 1500 gris.** 3/4 delantero, atardecer naranja y rosa sobre el
+mar. La más gráfica de las tres: la parrilla con las letras RAM y los dos faros
+LED encendidos, centrada a la derecha.
+*Recorte de detalle:* la parrilla y el faro, `object-position: 70% 52%`. Es el
+mejor de los tres recortes de largo. La llanta negra delantera
+(`46% 68%`) es la alternativa.
+
+**`segmento-1` — Mazda CX-5, "Ruta".** De atrás, camino nevado, sol bajo
+quemando entre las nubes justo en el centro del cuadro. La imagen más oscura en
+los bordes y la más brillante en el medio.
+*Texto encima:* a la izquierda, sobre el camino y la nieve en sombra. El centro
+tiene el sol y ahí el texto blanco desaparece.
+
+**`segmento-2` — Alfa Romeo, "Escapada".** Vía Láctea sobre campo abierto, el
+auto a la derecha con los faros prendidos. **La mitad izquierda es cielo
+estrellado casi vacío**: es la mejor de las cuatro para poner texto encima, con
+muchísimo margen.
+
+**`segmento-3` — VW Tiguan, "Ciudad".** Noche con lluvia, dominante cian y
+turquesa, puente iluminado de rojo a la izquierda, asfalto mojado con reflejos.
+La más oscura de las cuatro y la que mejor entra en la paleta.
+*Texto encima:* funciona casi en cualquier lado; el cuadrante superior derecho
+es azul liso.
+
+**`segmento-4` — Toyota Land Cruiser, "Aventura".** Desierto con cardones,
+cerros recortados, cielo estrellado con nubes iluminadas, y una persona con un
+telescopio a la derecha. **Confirmo lo que dice `ASSETS.md`: lee como la Puna
+jujeña** sin que haya que nombrarla. Es la mejor imagen del conjunto.
+*Texto encima:* arriba a la izquierda, sobre el cielo oscuro. Abajo a la
+derecha hay una linterna encendida que es el punto más claro de la foto.
+
+*Nota transversal:* las cuatro de segmentos son oscuras y frías salvo el sol
+ámbar de `segmento-1`, así que el ámbar del sitio no se pelea con ninguna. Las
+tres de vehículos son claras y cálidas: sobre fondo negro van a resaltar mucho,
+que es lo que se busca en las cards, pero **no sirven como fondo de sección**.
