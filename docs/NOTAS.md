@@ -767,6 +767,110 @@ renglones y "ESTÁS" quedaba solo en uno. Copy más corto y más rioplatense:
 "Contanos / qué auto / buscás", tres líneas, y en mobile el bloque de datos
 entra completo en pantalla.
 
+
+---
+
+## Fase E — Simulador y cotizador (fase 7 del plan) ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`**, incluidos los dos recorridos completos:
+mover los sliders y cambiar el plazo, y elegir marca/modelo/año, escanear y ver
+el rango.
+
+### Hecho
+
+- **`src/data/financiacion.ts`** — rangos de los sliders, plazos, la TNA como
+  constante de archivo (59%, inventada) y `cuotaMensual()`, sistema francés.
+  Los dos casos que indefinen la fórmula —capital cero y tasa cero— tienen
+  salida propia.
+- **`src/data/cotizador.ts`** — seis marcas con sus modelos y un precio de
+  referencia de 0km, diez años, y `estimar()`, que aplica una curva de
+  retención del 93% anual y devuelve un **rango**, redondeado a 100.000. Un
+  número cerrado se leería como un precio prometido, que es justo lo que una
+  concesionaria no puede dar sin ver el auto.
+- **`src/components/Simulador.tsx`** — dos sliders y cinco chips de plazo.
+  Resultado en vivo, en Martian Mono grande, con anticipo, monto a financiar y
+  TNA debajo. La leyenda "Cálculo estimativo. No constituye una oferta." está
+  siempre visible.
+- **`src/components/Cotizador.tsx`** — tres selects biselados encadenados
+  (elegir marca resetea el modelo), botón de escaneo, y el rango contando desde
+  0 al terminar.
+- **Los sliders son `<input type="range">` reales**, estilizados. Con el input
+  nativo vienen gratis las flechas del teclado, Home/End, el rol correcto y el
+  valor anunciado por el lector de pantalla; un div con eventos de mouse no
+  tiene nada de eso. El porcentaje lleno viaja por una variable `--fill` que la
+  hoja de estilos usa como `background-size`: una escritura por render, sin
+  tocar el layout.
+- **Las barras /// diagonales** son un `repeating-linear-gradient` con
+  `background-position` animada, como pide el plan. Lo único que se anima es
+  esa capa.
+- **El escaneo** es una banda que recorre la card dos veces en 1,2 s con puro
+  `transform`. Con `prefers-reduced-motion` el resultado aparece directo, sin
+  escaneo y sin conteo: el contenido es el mismo, solo que instantáneo.
+
+### Decisiones tomadas sin consultar — Fase E
+
+40. **El simulador y el cotizador van en dos secciones apiladas, no lado a
+    lado.** El prompt de la fase 7 pedía "dos bloques lado a lado en desktop",
+    pero se escribió antes de que existiera `src/data/nav.ts`, donde son dos
+    secciones distintas (05 FIAT PLAN y 06 COTIZADOR) y el riel las numera por
+    separado. Meterlas en una sola pantalla dejaría un número del riel sin
+    sección a la que apuntar. Además el simulador solo tiene dos sliders, cinco
+    chips y un resultado grande: en media pantalla queda apretado. Cada una
+    quedó con el mismo layout de dos columnas que la FAQ, titular sticky a la
+    izquierda y la card a la derecha.
+
+41. **Cambiar cualquier dato del cotizador borra el resultado anterior.** Si el
+    rango quedara en pantalla después de cambiar el año, sería la cotización de
+    un auto que ya no es el elegido. Es el tipo de error que en una demo se
+    nota enseguida y en producción genera un reclamo.
+
+42. **La pista del slider se define dos veces en el CSS**, una para
+    `::-webkit-slider-runnable-track` y otra para `::-moz-range-track`. No se
+    pueden agrupar con coma: un selector con un pseudo-elemento desconocido
+    invalida **toda** la regla, así que Chromium descartaría la que incluye el
+    selector de Firefox y viceversa.
+
+### Lo que vi en las capturas y corregí
+
+**1. La banda del escaneo se leía como un lavado ámbar, no como una línea.**
+
+*Esperaba:* una línea recorriendo la card.
+
+*Vi:* un degradado ámbar cubriendo casi toda la card.
+
+*Causa:* las paradas del gradiente estaban en porcentajes, así que el ancho de
+la banda escalaba con el alto del elemento. La card del cotizador vacía mide
+~310px: el "halo" del 44% al 56% se comía la caja entera.
+
+*Qué hice:* las paradas van en px alrededor del 50% (`calc(50% - 40px)`, etc.),
+así el núcleo mide siempre 6px y el halo 80, sea cual sea el alto de la card.
+Verificado con dos capturas del escaneo a distinto tiempo: la banda está arriba
+en una y abajo en la otra.
+
+*Queda dicho:* incluso corregida, la banda se lee más como una luz que pasa que
+como una línea dura. Sobre la card real se ve; en una captura reducida es
+sutil. Me parece mejor así —una línea dura sobre una card casi vacía se vería
+como un artefacto— pero es una interpretación, no lo que dice literalmente el
+guion.
+
+**2. El quinto chip de plazo se caía a una segunda fila en mobile.**
+
+*Vi:* en 390px, "60" solo abajo a la izquierda, con los otros cuatro arriba.
+Se lee como un error de layout.
+
+*Qué hice:* grilla de cinco columnas iguales en vez de `flex-wrap`, y los chips
+dicen solo el número (la leyenda pasó a "Plazo en cuotas"). Entran los cinco en
+una fila desde 360px.
+
+### Números verificados
+
+- Simulador con valor $42.000.000, anticipo 15% y 60 cuotas: anticipo
+  $6.300.000, a financiar $35.700.000, **cuota $1.859.666**. Comprobado a mano
+  contra la fórmula del sistema francés con TNA 59%.
+- Cotizador con Fiat Toro 2021: rango **$34.000.000 – $38.300.000**, que es
+  base 52M × 0,93⁵ con el ±6% y el redondeo a 100.000.
+
 # RESUMEN DE LA SESIÓN
 
 ## Qué quedó hecho

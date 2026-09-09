@@ -364,6 +364,61 @@ async function capturarPagina(browser, nombreVp) {
     )
   }
 
+  // Simulador: estado inicial y después de mover los dos sliders y cambiar el
+  // plazo, para ver que la cuota se recalcula y que la pista llena acompaña.
+  const sliders = page.locator('#plan .slider')
+  if (await sliders.count()) {
+    await page.evaluate(() => {
+      document.getElementById('plan')?.scrollIntoView({ behavior: 'instant' })
+    })
+    await page.waitForTimeout(500)
+    await shot(page, `${nombreVp}/20-simulador`)
+
+    await sliders.nth(0).fill('42000000')
+    await sliders.nth(1).fill('15')
+    await page.locator('#plan button[aria-pressed]').nth(4).click()
+    await page.waitForTimeout(400)
+    await shot(page, `${nombreVp}/21-simulador-movido`)
+    console.log(
+      `[shots] ${nombreVp} cuota simulada:`,
+      await page.$eval('#plan [data-cuota]', (e) => e.textContent),
+    )
+  }
+
+  // Cotizador: vacío, escaneando y con el resultado ya contado.
+  const cotizador = page.locator('#cotizador')
+  if (await cotizador.count()) {
+    await page.evaluate(() => {
+      document
+        .getElementById('cotizador')
+        ?.scrollIntoView({ behavior: 'instant' })
+    })
+    await page.waitForTimeout(400)
+    await shot(page, `${nombreVp}/25-cotizador`)
+
+    const selects = cotizador.locator('select')
+    await selects.nth(0).selectOption('fiat')
+    await selects.nth(1).selectOption('toro')
+    await selects.nth(2).selectOption('2021')
+    await page.waitForTimeout(250)
+    await cotizador.locator('button[type=button]').last().click()
+    // Dos momentos del escaneo: la línea cruza la card dos veces en 1,2 s, y
+    // con una sola captura es puro azar dónde cae.
+    await page.waitForTimeout(160)
+    await shot(page, `${nombreVp}/26a-cotizador-escaneando`)
+    // +140 ms cae a mitad de la primera pasada; el segundo tramo espera lo
+    // suficiente para agarrar la segunda. Sumar 600 justos volvería a caer en
+    // la misma fase y las dos capturas saldrían iguales.
+    await page.waitForTimeout(140)
+    await shot(page, `${nombreVp}/26b-cotizador-escaneando`)
+    await page.waitForTimeout(2400)
+    await shot(page, `${nombreVp}/27-cotizador-resultado`)
+    console.log(
+      `[shots] ${nombreVp} rango cotizado:`,
+      await cotizador.locator('[aria-live] .num').first().innerText(),
+    )
+  }
+
   // Contacto: formulario vacío, con errores de validación y en estado de éxito.
   // La validación es todo lo que hay (no hay backend), así que se prueba de
   // verdad: se envía vacío, se leen los mensajes, y después se completa bien.
