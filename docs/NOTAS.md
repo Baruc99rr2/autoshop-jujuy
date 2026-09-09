@@ -947,7 +947,7 @@ de marcas. Ahora el arnés mueve el puntero a una esquina antes de esa captura.
 Es un defecto de la medición, no del sitio, pero llevaba a mirar mal la
 captura.
 
-# RESUMEN DE LA SESIÓN
+# RESUMEN DE LA SESIÓN 1
 
 ## Qué quedó hecho
 
@@ -1013,4 +1013,137 @@ Están todas numeradas arriba; estas cuatro son las que cambian algo visible:
 npm run build   # tsc + vite
 npm run lint    # oxlint
 npm run check   # ids del logo + techo de 2.6 s de la intro
+```
+
+---
+
+# RESUMEN DE LA SESIÓN 2
+
+## Qué quedó hecho
+
+Seis fases, seis commits, build y lint limpios en cada uno.
+
+| Commit | Fase | Estado |
+|---|---|---|
+| `44c7395` | A — Arnés de captura + correcciones visuales | ✅ |
+| `688ce16` | B — Contadores | ✅ |
+| `6731e3f` | C — Marcas tipográficas | ✅ |
+| `e7bc607` | D — Contacto | ✅ |
+| `877eedf` | E — Simulador y cotizador | ✅ |
+| `5c31b53` | F — Post-venta | ✅ |
+
+De las once secciones del riel, **siete están terminadas**: contadores,
+Fiat Plan, cotizador, marcas, post-venta, preguntas y contacto, más la intro y
+el footer. Las cuatro que faltan —hero, segmentos, vehículos y CTA— son
+exactamente las cuatro que dependen de los 2 videos y las 3 fotos.
+
+Bundle: 417 KB de JS (145 KB gzip) y 35 KB de CSS (7,6 KB gzip). Subió 62 KB
+desde la sesión anterior, casi todo React de las secciones nuevas. La fase 13
+del plan tiene que revisar si GSAP entra entero.
+
+## Lo primero: ahora se puede mirar el trabajo
+
+`npm run shots` levanta el build con Playwright y saca ~60 capturas a
+`docs/shots/`: la intro contra el reloj y congelada beat por beat, las once
+secciones en 1440×900 y en 390×844, y los recorridos completos del formulario,
+del simulador, del cotizador y de la FAQ.
+
+Además **mide** lo que a ojo no se ve: desborde horizontal con los elementos
+culpables, el rectángulo del aterrizaje del Flip contra el del logo del header,
+el llenado del logotipo del footer, si Archivo cargó de verdad o quedó la
+fallback, y el resultado numérico de cada cálculo.
+
+`npm run shots -- --fast` reusa el `dist/` y tarda la mitad. Las capturas están
+en `.gitignore`: 3,3 MB por corrida y se regeneran con un comando.
+
+## Qué vi que estaba mal y corregí
+
+Ocho cosas. Las tres primeras son las que importan.
+
+1. **La intro entera era invisible.** El panel del wipe iba después del stage en
+   el DOM y, sin `z-index`, lo tapaba con un rectángulo negro opaco desde el
+   frame cero: 2,3 de los 2,6 segundos eran pantalla negra, y el botón SKIP no
+   se veía nunca. Esto no lo agarraba ningún test: el build pasaba, la duración
+   medía 2,600 s exactos y los 13 ids del logo estaban. Solo se veía mirando.
+
+2. **El logotipo del footer estaba cortado** en "AUTOSHOP\JU". El `clamp()` era
+   un factor adivinado. Ahora se calcula midiendo (`src/lib/fit-text.ts`) y
+   llena el ancho exacto en los dos viewports.
+
+3. **El logo del header desaparecía sobre las secciones claras.** Sobre el bone
+   de la FAQ quedaba flotando un "SHOP" ámbar suelto. El header ahora sabe qué
+   color tiene debajo y se adapta: negro sobre bone, monocromo negro sobre la
+   franja ámbar.
+
+4. **La estela del láser se leía como una segunda barra suelta**, 400 px atrás.
+   Los 0,05 s de retraso literales, con el láser a ~11.500 px/s.
+5. **La franja de contadores a sangre completa** dejaba el `02` del riel ámbar
+   sobre ámbar. Ahora arranca en el riel.
+6. **La banda del escaneo del cotizador se leía como un lavado**, porque las
+   paradas del gradiente estaban en porcentajes y escalaban con el alto de la
+   card.
+7. **Cosas que tocaban el borde o se caían de fila en 390px:** "VOLKSWAGEN" en
+   marcas y el quinto chip de plazo en el simulador.
+8. **Dos íconos de post-venta no se leían como lo que eran:** el de repuestos
+   era un sol y el de mantenimiento un auto de frente.
+
+Cada uno está contado en su fase con la forma "lo que esperaba / lo que vi /
+qué hice".
+
+## Lo que miré y está bien
+
+- **El Flip de la intro aterriza exacto:** `delta {x: 0, y: 0, w: 0, h: 0}`
+  contra el logo del header. La duda de la fase 2 sobre construir el tween
+  dentro de un `onStart` queda cerrada.
+- **La respiración se lee**, y se lee por el glow, no por el 3,5% de escala.
+- **Cero desborde horizontal** en 390 y en 1440.
+- **Las fuentes cargan con el ancho extendido** de Archivo.
+- **Los números dan:** cuota de $1.859.666 para 42M al 15% en 60 cuotas, y
+  Toro 2021 entre $34.000.000 y $38.300.000. Comprobados contra la fórmula.
+- **El riel renumera solo**, ahora de verdad: los índices salen de `nav.ts`.
+
+## Lo que necesito de vos
+
+1. **Los assets. Es lo único que bloquea.** `public/img/` y `public/video/`
+   siguen vacíos. Sin los 2 videos y las 3 fotos no se pueden hacer hero,
+   segmentos, vehículos ni CTA, que son las cuatro secciones que más pesan en
+   la reunión. El instructivo está en `docs/ASSETS.md`.
+
+2. **Decidir sobre las fuentes.** En una de las corridas del arnés, el pedido a
+   `fonts.googleapis.com` falló y **todo el sitio se dibujó en Arial**: sin el
+   ancho extendido de Archivo, la identidad tipográfica desaparece. Fue
+   intermitente y no es un bug del código, pero el plan dice de abrir la demo
+   en el celular con datos móviles, que es la condición donde más probable es
+   que pase. **Recomiendo servir las fuentes desde `public/fonts/`**: saca una
+   dependencia de terceros del camino crítico, mejora el LCP y hace que el
+   `dist/` funcione offline, que es el plan B de la reunión. Es trabajo de la
+   fase 13 del plan, así que no lo hice por mi cuenta; decime y lo hago.
+
+3. **Mirar cuatro capturas**, si tenés cinco minutos. Son las que más
+   interpretación tuvieron de mi parte:
+   - `docs/shots/beats/1.78-respiracion-pico.png` — el momento grande de la
+     intro. ¿Alcanza el glow o hay que subirlo?
+   - `docs/shots/desktop/31-marcas-hover.png` — las marcas apagadas en graphite
+     están casi invisibles a propósito. ¿Te convence, o las querés un punto más
+     legibles en reposo?
+   - `docs/shots/desktop/26b-cotizador-escaneando.png` — el escaneo se lee más
+     como una luz que pasa que como una línea dura. Me parece mejor así, pero
+     es una interpretación del guion.
+   - `docs/shots/desktop/71-contacto-errores.png` — los errores del formulario
+     van en ámbar y no en rojo, porque CLAUDE.md reserva `--color-flag` para
+     "Vendido" y "Reservado". Si preferís el rojo, es una línea.
+
+4. **Confirmar dos números inventados** que quedaron en el sitio: la TNA del
+   59% del simulador (`src/data/financiacion.ts`) y la curva de retención del
+   93% anual del cotizador (`src/data/cotizador.ts`). Los dos están en un solo
+   lugar y se cambian en un minuto, pero si en la reunión el dueño mira la
+   cuota y le parece disparatada, se nota.
+
+## Cómo verificar
+
+```bash
+npm run build   # tsc + vite
+npm run lint    # oxlint
+npm run check   # ids del logo + techo de 2.6 s de la intro
+npm run shots   # capturas + mediciones → docs/shots/
 ```
