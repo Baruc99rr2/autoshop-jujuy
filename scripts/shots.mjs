@@ -233,6 +233,32 @@ async function capturarPagina(browser, nombreVp) {
   await page.goto(BASE, { waitUntil: 'load' })
   await esperarFinDeIntro(page)
 
+  // ¿Cargó la tipografía de verdad o quedó la fallback? Todo el lenguaje
+  // visual del sitio depende del eje de ancho de Archivo, y si el pedido a
+  // Google Fonts falla el sitio se cae a Arial sin avisar. Se chequea midiendo
+  // el ancho de una misma cadena en Archivo y en la fallback: si dan lo mismo,
+  // Archivo no está.
+  const fuentes = await page.evaluate(async () => {
+    await document.fonts.ready
+    const medir = (familia) => {
+      const s = document.createElement('span')
+      s.textContent = 'AUTOSHOPJUJUY'
+      s.style.cssText = `position:absolute;visibility:hidden;font-size:100px;font-weight:700;font-variation-settings:'wdth' 125;font-family:${familia}`
+      document.body.append(s)
+      const w = s.getBoundingClientRect().width
+      s.remove()
+      return Math.round(w)
+    }
+    return {
+      archivo: medir("'Archivo', sans-serif"),
+      fallback: medir('sans-serif'),
+      cargadas: [...document.fonts]
+        .filter((f) => f.status === 'loaded')
+        .map((f) => f.family),
+    }
+  })
+  console.log(`[shots] ${nombreVp} fuentes:`, JSON.stringify(fuentes))
+
   // Full page. Lenis usa transform en el wrapper en algunas configuraciones;
   // acá scrollea el documento, así que el full-page nativo sirve.
   await shot(page, `${nombreVp}/00-fullpage`, { fullPage: true })
@@ -266,6 +292,39 @@ async function capturarPagina(browser, nombreVp) {
     await botones.nth(2).hover()
     await page.waitForTimeout(700)
     await shot(page, `${nombreVp}/51-faq-hover`)
+  }
+
+  // Marcas: en reposo son casi invisibles, así que hay que capturar las dos
+  // caras — la lista apagada y una marca encendida por hover.
+  const marcas = page.locator('#marcas .marca')
+  if (await marcas.count()) {
+    await page.evaluate(() => {
+      document
+        .getElementById('marcas')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    })
+    await page.waitForTimeout(600)
+    await shot(page, `${nombreVp}/30-marcas`)
+    console.log(
+      `[shots] ${nombreVp} marcas encendidas en reposo:`,
+      JSON.stringify(
+        await page.$$eval('#marcas .marca', (ns) =>
+          ns
+            .filter((n) => getComputedStyle(n).color === 'rgb(253, 185, 22)')
+            .map((n) => n.textContent),
+        ),
+      ),
+    )
+    await marcas.nth(2).hover()
+    await page.waitForTimeout(400)
+    await shot(page, `${nombreVp}/31-marcas-hover`)
+    console.log(
+      `[shots] ${nombreVp} marca encendida por la línea central:`,
+      await page.$eval('#marcas', (s) => {
+        const on = s.querySelector('[data-encendida="true"]')
+        return on ? on.textContent : 'ninguna'
+      }),
+    )
   }
 
   // Contadores: hay que esperar a que el conteo termine (1,8 s) o la captura

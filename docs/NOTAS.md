@@ -607,6 +607,90 @@ consume sí — así que acompaña a los 0,5 s del riel y de la malla.
   vuelve a blanco después (`data-tono` verificado: `ambar`).
 - Cero desborde horizontal.
 
+
+---
+
+## Fase C — Marcas tipográficas (fase 8 del plan) ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`** en los dos viewports.
+
+### Hecho
+
+- **`src/data/marcas.ts`** — ocho nombres: Fiat, Peugeot, Volkswagen, Toyota,
+  Chevrolet, Renault, Ford, Citroën. Sin logos, por lo que dice el plan:
+  recrearlos da resultados imprecisos y es un problema de marca registrada.
+- **`src/components/Marcas.tsx`** — listado a ancho completo, un nombre por
+  fila en Archivo extendido. En reposo `--color-graphite`, casi fundidos con el
+  negro; encendidos en ámbar.
+- **La micro-distorsión** son dos pseudo-elementos con
+  `content: attr(data-marca)` en ámbar, desplazados 2px en direcciones opuestas
+  y apagándose en 90 ms con `ease-out`. Corto y seco, un solo disparo. Las
+  copias no duplican el texto en el DOM, y con `prefers-reduced-motion` la
+  regla global las deja en 0.01 ms: el encendido en ámbar se sigue viendo.
+- **El texto de contexto resuelve la contradicción con los contadores:** la
+  franja dice 12 marcas y acá hay 8 nombres, así que la bajada aclara "Doce
+  marcas pasan por el salón. Estas son las ocho que más entregamos".
+
+### Decisiones tomadas sin consultar — Fase C
+
+34. **El encendido por línea central del viewport corre en TODOS los
+    dispositivos, no solo en mobile.** El plan lo pedía como sustituto del
+    hover donde no hay puntero. Pero con los nombres en graphite sobre negro
+    —contraste ~1,1:1, o sea prácticamente invisibles— dejar el encendido atado
+    solo al hover haría que en desktop la sección se leyera como un bloque
+    vacío hasta que alguien mueva el mouse por encima. Con el disparo por
+    scroll, las marcas se encienden de a una y se lee como una luz que recorre
+    la lista: es el mismo gesto de barrido del resto del sitio y además cumple
+    el piso de calidad de que nada dependa del hover.
+
+    Está implementado con un `IntersectionObserver` de
+    `rootMargin: '-50% 0px -50% 0px'`, que deja una franja de observación de
+    altura cero —la línea central exacta— así que hay una sola marca encendida
+    a la vez sin comparar distancias en cada scroll.
+
+35. **Los nombres no son focusables.** Puse `tabIndex={0}` y lo saqué: no
+    llevan a ninguna parte, así que serían ocho paradas de Tab sin acción. La
+    accesibilidad la resuelve el disparo por scroll del punto anterior, no el
+    foco.
+
+### Lo que vi en las capturas y corregí
+
+**El nombre más largo tocaba el borde en mobile.**
+
+*Esperaba:* los ocho nombres dentro del ancho de contenido.
+
+*Vi:* "VOLKSWAGEN" llegaba exacto al borde derecho de la pantalla de 390px, sin
+un pixel de aire. El chequeo de desborde no lo agarraba porque técnicamente no
+desbordaba: quedaba justo en el límite.
+
+*Causa:* `clamp(2.5rem, 8.5vw, 6.5rem)`. En 390px, 8,5vw son 33px, o sea
+**menos** que el mínimo de 2,5rem = 40px, así que el que ganaba era el mínimo y
+el `vw` no hacía nada. Un clamp cuyo mínimo es más grande que el valor
+preferido en el viewport chico es un clamp que no adapta.
+
+*Qué hice:* mínimo a 1,9rem. Con Archivo a `wdth 125` un carácter mide 0,886em
+—medido, no estimado—, así que "VOLKSWAGEN" son 8,86em: 269px contra 334
+disponibles.
+
+### Riesgo detectado (no es de esta fase, pero apareció acá)
+
+En una de las corridas del arnés, **las fuentes de Google no cargaron** y todo
+el sitio se dibujó con la fallback: el logotipo del footer en Arial normal en
+vez de Archivo extendido, y la identidad tipográfica entera perdida. Las
+corridas siguientes cargaron bien, así que es un fallo de red intermitente y no
+un bug del código.
+
+Se agregó al arnés una verificación explícita: se mide la misma cadena en
+Archivo y en la fallback y se informan las dos. Si dan lo mismo, Archivo no
+está. Hoy informa `{archivo: 1152, fallback: 887}`, o sea que carga.
+
+**Recomendación:** servir las fuentes desde el propio sitio (`public/fonts/`)
+en vez de pedirlas a `fonts.googleapis.com`. Saca una dependencia de red de
+terceros del camino crítico, mejora el LCP y hace que el `dist/` funcione
+offline — que es justamente el plan B de la reunión. Es trabajo de la fase 13
+del plan, así que queda anotado y no lo hice acá.
+
 # RESUMEN DE LA SESIÓN
 
 ## Qué quedó hecho

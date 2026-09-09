@@ -522,3 +522,66 @@
     transition: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   MARCAS
+   Los nombres viven casi fundidos con el negro y se encienden en ámbar con
+   una micro-distorsión de 90 ms: dos copias desplazadas 2px en direcciones
+   opuestas que se apagan enseguida. Corto y seco, no un glitch continuo.
+   Las copias son pseudo-elementos con `content: attr(data-marca)`: no
+   duplican el texto en el DOM.
+   ───────────────────────────────────────────────────────────── */
+
+.marca {
+  position: relative;
+  width: fit-content;
+  color: var(--color-graphite);
+  transition: color 0.18s ease-out;
+}
+
+.marca::before,
+.marca::after {
+  content: attr(data-marca);
+  position: absolute;
+  inset: 0;
+  color: var(--color-amber);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes marca-izq {
+  from {
+    opacity: 0.9;
+    transform: translate(-2px, -1px);
+  }
+  to {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes marca-der {
+  from {
+    opacity: 0.9;
+    transform: translate(2px, 1px);
+  }
+  to {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+
+.marca:hover,
+.marca[data-encendida='true'] {
+  color: var(--color-amber);
+}
+
+.marca:hover::before,
+.marca[data-encendida='true']::before {
+  animation: marca-izq 90ms ease-out 1;
+}
+
+.marca:hover::after,
+.marca[data-encendida='true']::after {
+  animation: marca-der 90ms ease-out 1;
+}

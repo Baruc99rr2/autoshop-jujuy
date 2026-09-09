@@ -3,6 +3,7 @@ import Contadores from './components/Contadores'
 import Faq from './components/Faq'
 import Footer from './components/Footer'
 import Header from './components/Header'
+import Marcas from './components/Marcas'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
 import MeshOverlay from './components/MeshOverlay'
 import Rail from './components/Rail'
@@ -16,6 +17,7 @@ import { prefersReducedMotion } from './lib/motion-prefs'
  */
 const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
   contadores: Contadores,
+  marcas: Marcas,
   preguntas: Faq,
 }
 
