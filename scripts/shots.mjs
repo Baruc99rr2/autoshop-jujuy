@@ -276,6 +276,177 @@ async function capturarPagina(browser, nombreVp) {
     await shot(page, `${nombreVp}/${String(i + 1).padStart(2, '0')}-${id}`)
   }
 
+  // ── HERO ───────────────────────────────────────────────────────────
+  // El video es vertical y el layout de desktop depende de eso. Se mide el
+  // rectángulo real del panel: si el aspecto se aleja de 0.5625 (9:16), el
+  // video está estirado o recortado y se pierde el farol o el auto.
+  // Hay DOS <video> en el DOM —el de mobile a sangre y el del panel de
+  // desktop— y uno de los dos está siempre en display:none. Buscar el primero
+  // del DOM devolvía el oculto, con rectángulo 0x0, y eso parecía un bug del
+  // layout cuando era un bug de la medición.
+  const hero = await page.evaluate(() => {
+    const visibles = [...document.querySelectorAll('#hero video')].filter(
+      (v) => v.getBoundingClientRect().width > 0,
+    )
+    const v = visibles[0]
+    if (!v) return { video: 'ningún <video> visible' }
+    const r = v.getBoundingClientRect()
+    return {
+      src: v.getAttribute('src'),
+      w: Math.round(r.width),
+      h: Math.round(r.height),
+      aspecto: +(r.width / r.height).toFixed(4),
+      videosEnDom: document.querySelectorAll('#hero video').length,
+      dentroDelViewport: r.bottom <= window.innerHeight + 1,
+    }
+  })
+  console.log(`[shots] ${nombreVp} hero video:`, JSON.stringify(hero))
+
+  // El titular del hero vive en una columna angosta y con un clamp mal
+  // calculado se parte en renglones de más. Se mide cada línea contra el ancho
+  // disponible: `llenado` arriba de 1 significa que esa línea se partió.
+  const titular = await page.evaluate(() => {
+    const h1 = document.querySelector('#hero h1')
+    if (!h1) return null
+    const disponible = h1.clientWidth
+    return {
+      disponible,
+      fontSize: getComputedStyle(h1).fontSize,
+      alto: Math.round(h1.getBoundingClientRect().height),
+      lineas: [...h1.children].map((n) => {
+        const r = document.createRange()
+        r.selectNodeContents(n)
+        return {
+          t: n.textContent,
+          llenado: +(r.getBoundingClientRect().width / disponible).toFixed(3),
+        }
+      }),
+    }
+  })
+  console.log(`[shots] ${nombreVp} hero titular:`, JSON.stringify(titular))
+
+  // El corte del loop. Se saltea el video a 0,2 s del final para ver si la
+  // atenuación se lee como un faro que pasa o como un apagón.
+  const conVideo = await page.locator('#hero video').count()
+  if (conVideo) {
+    await page.evaluate(() => {
+      document
+        .getElementById('hero')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    })
+    await page.waitForTimeout(300)
+    await shot(page, `${nombreVp}/01a-hero-normal`)
+
+    // Sin atenuación, para poder comparar contra el corte pelado.
+    await page.evaluate(() => {
+      const v = document.querySelector('#hero video')
+      if (!v) return
+      v.pause()
+      v.currentTime = Math.max(0, (v.duration || 7) - 0.2)
+    })
+
+    await page.waitForTimeout(500)
+    await shot(page, `${nombreVp}/01b-hero-corte-atenuado`)
+    console.log(
+      `[shots] ${nombreVp} opacidad en el corte:`,
+      await page.$eval('#hero video', (v) => v.style.opacity || '1'),
+    )
+
+    // El último frame contra el primero: si son muy parecidos, la atenuación
+    // sobra. Se comparan como data URL de un canvas de 16x16.
+    const salto = await page.evaluate(async () => {
+      const v = document.querySelector('#hero video')
+      if (!v) return null
+      const muestra = async (t) => {
+        v.currentTime = t
+        await new Promise((r) => v.addEventListener('seeked', r, { once: true }))
+        const c = document.createElement('canvas')
+        c.width = 16
+        c.height = 16
+        c.getContext('2d').drawImage(v, 0, 0, 16, 16)
+        return c.getContext('2d').getImageData(0, 0, 16, 16).data
+      }
+      const fin = await muestra(Math.max(0, (v.duration || 7) - 0.05))
+      const ini = await muestra(0.05)
+      let dif = 0
+      for (let i = 0; i < fin.length; i += 4) {
+        dif += Math.abs(fin[i] - ini[i]) + Math.abs(fin[i + 1] - ini[i + 1]) + Math.abs(fin[i + 2] - ini[i + 2])
+      }
+      return { difMediaPorCanal: +(dif / (16 * 16 * 3)).toFixed(1) }
+    })
+    console.log(
+      `[shots] ${nombreVp} salto del loop (0=idéntico, 255=opuesto):`,
+      JSON.stringify(salto),
+    )
+
+    await page.evaluate(() => {
+      const v = document.querySelector('#hero video')
+      if (v) {
+        v.currentTime = 0
+        v.style.opacity = '1'
+        v.play().catch(() => {})
+      }
+    })
+  }
+
+  // ── MENÚ ───────────────────────────────────────────────────────────
+  const botonMenu = page.locator('.menu-btn')
+  if (await botonMenu.count()) {
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.waitForTimeout(400)
+    await botonMenu.hover()
+    await page.waitForTimeout(400)
+    await shot(page, `${nombreVp}/80-menu-boton-hover`)
+
+    await botonMenu.click()
+    // A mitad del dibujado de los ítems: es donde se ve si las barras entran
+    // antes que el texto o si todo aparece junto.
+    await page.waitForTimeout(430)
+    await shot(page, `${nombreVp}/81-menu-dibujandose`)
+    await page.waitForTimeout(900)
+    await shot(page, `${nombreVp}/82-menu-abierto`)
+
+    console.log(
+      `[shots] ${nombreVp} menú abierto — riel/header:`,
+      JSON.stringify(
+        await page.evaluate(() => ({
+          tonoHeader: document.querySelector('header')?.dataset.tono,
+          // La variable se redefine en el <header data-tono>, NO en :root:
+          // leerla de documentElement devolvía siempre el bone y hacía parecer
+          // que la adaptación no corría.
+          logoBlanco: (() => {
+            const h = document.querySelector('header')
+            return h ? getComputedStyle(h).getPropertyValue('--logo-white').trim() : '?'
+          })(),
+          rielVisible: (() => {
+            const riel = document.querySelector('[aria-hidden="true"].fixed.inset-y-0')
+            if (!riel) return 'no encontrado'
+            const z = +getComputedStyle(riel).zIndex
+            const panel = document.querySelector('[role="dialog"]')
+            return panel ? `riel z=${z} vs panel z=${getComputedStyle(panel).zIndex}` : 'sin panel'
+          })(),
+          scrollBloqueado: getComputedStyle(document.documentElement).overflow,
+          foco: document.activeElement?.textContent?.trim().slice(0, 24),
+        })),
+      ),
+    )
+
+    await page.locator('.menu-item').nth(2).hover()
+    await page.waitForTimeout(400)
+    await shot(page, `${nombreVp}/83-menu-item-hover`)
+
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(700)
+    console.log(
+      `[shots] ${nombreVp} menú tras Escape:`,
+      JSON.stringify({
+        panel: await page.locator('[role="dialog"]').count(),
+        scroll: await page.evaluate(() => getComputedStyle(document.documentElement).overflow),
+        focoVuelto: await page.evaluate(() => document.activeElement?.className?.includes?.('menu-btn') ?? false),
+      }),
+    )
+  }
+
   // FAQ con un ítem abierto: se abre el segundo, así se ve uno abierto y los
   // otros cerrados en la misma captura.
   const botones = page.locator('.faq-button')
@@ -538,8 +709,19 @@ async function capturarPagina(browser, nombreVp) {
   const desborde = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
+    // Se ignora lo que YA está recortado por un ancestro con overflow oculto.
+    // La pista del ticker mide el doble del viewport a propósito —es el
+    // mecanismo de la marquesina— y aparecía como culpable en cada corrida,
+    // ocho líneas de ruido que tapaban un desborde real si aparecía.
     culpables: Array.from(document.querySelectorAll('body *'))
       .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
+      .filter((el) => {
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          const ov = getComputedStyle(p).overflowX
+          if (ov === 'hidden' || ov === 'clip' || ov === 'auto' || ov === 'scroll') return false
+        }
+        return true
+      })
       .slice(0, 8)
       .map((el) => `${el.tagName.toLowerCase()}.${el.className}`.slice(0, 90)),
   }))

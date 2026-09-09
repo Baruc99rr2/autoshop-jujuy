@@ -5,7 +5,9 @@ import Contadores from './components/Contadores'
 import Faq from './components/Faq'
 import Footer from './components/Footer'
 import Header from './components/Header'
+import Hero from './components/Hero'
 import Marcas from './components/Marcas'
+import Menu from './components/Menu'
 import Simulador from './components/Simulador'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
 import MeshOverlay from './components/MeshOverlay'
@@ -23,6 +25,7 @@ const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
   contacto: Contacto,
   contadores: Contadores,
   cotizador: Cotizador,
+  hero: Hero,
   marcas: Marcas,
   plan: Simulador,
   postventa: Postventa,
@@ -54,6 +57,7 @@ function App() {
   const [fondoHeader, setFondoHeader] = useState<'claro' | 'ambar' | 'oscuro'>(
     'oscuro',
   )
+  const [menuAbierto, setMenuAbierto] = useState(false)
   const headerLogoRef = useRef<HTMLAnchorElement>(null)
 
   // El riel muestra el índice de la sección en pantalla. IntersectionObserver
@@ -109,15 +113,24 @@ function App() {
     return () => io.disconnect()
   }, [])
 
+  // El menú es un overlay de fondo bone a pantalla completa, así que mientras
+  // está abierto el riel y el header tienen encima el mismo blanco que la FAQ
+  // y necesitan el mismo tratamiento (decisiones 19 y 31). Es la sección
+  // activa la que decide el tono el resto del tiempo.
+  const claro = menuAbierto || activa.tono === 'claro'
+
   return (
     <>
-      <MeshOverlay tono={activa.tono === 'claro' ? 'claro' : 'oscuro'} />
+      <MeshOverlay tono={claro ? 'claro' : 'oscuro'} />
       <Rail
         index={activa.indice}
         label={activa.eyebrow}
-        tono={activa.tono === 'claro' ? 'claro' : 'oscuro'}
+        tono={claro ? 'claro' : 'oscuro'}
       />
-      <Header logoRef={headerLogoRef} tono={fondoHeader} />
+      <Header
+        logoRef={headerLogoRef}
+        tono={menuAbierto ? 'claro' : fondoHeader}
+      />
 
       {introActiva && (
         <Intro
@@ -151,6 +164,12 @@ function App() {
       </main>
 
       <Footer />
+
+      <Menu
+        abierto={menuAbierto}
+        onAbrir={() => setMenuAbierto(true)}
+        onCerrar={() => setMenuAbierto(false)}
+      />
     </>
   )
 }

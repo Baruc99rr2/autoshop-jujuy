@@ -17,13 +17,18 @@ type RailProps = {
  *
  * En mobile queda solo la línea vertical — el `\` pasa a ser prefijo inline
  * del eyebrow de cada sección (ver SectionHeader).
+ *
+ * APILADO: va en z-50, por ENCIMA de la malla (40) y del overlay del menú
+ * (45). Si el menú lo tapara, el único elemento constante de la página
+ * desaparecería justo cuando el usuario está navegando. Por encima del riel
+ * solo quedan el header (55) y la barra MENU (60).
  */
 export function Rail({ index, label, tono = 'oscuro' }: RailProps) {
   const claro = tono === 'claro'
 
   return (
     <div
-      className={`pointer-events-none fixed inset-y-0 left-0 z-30 w-(--rail-w) border-r transition-colors duration-500 ${
+      className={`pointer-events-none fixed inset-y-0 left-0 z-50 w-(--rail-w) border-r transition-colors duration-500 ${
         claro ? 'border-void/15' : 'border-graphite/80'
       }`}
       aria-hidden="true"

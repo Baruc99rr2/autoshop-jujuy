@@ -1392,3 +1392,195 @@ exactamente el peso del base64 que ya no viaja.
 - `@fontsource-variable/*` quedan como dependencias aunque en runtime no se
   importe nada de ellas: son la fuente de los binarios y la referencia de
   versión. Si algún día molesta, pasan a `devDependencies`.
+
+
+---
+
+## Fase H — Hero partido, ticker y menú ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`** en los dos viewports, con cuatro mediciones
+nuevas en el arnés.
+
+### El hero
+
+**Desktop: partido.** Columna de texto al 56% (64% en `md`, donde el panel es
+más angosto) con eyebrow, titular, bajada y dos botones. A la derecha, el video
+en un panel vertical biselado con borde ámbar de 1px. Medido: **334×594 px,
+aspecto 0.5625 exacto** — o sea 9:16 sin estirar ni recortar, que era la
+condición para no perder ni el farol ni el auto.
+
+**Mobile: a sangre.** El 9:16 es el formato de la pantalla. Video de fondo,
+overlay fuerte, titular encima.
+
+**Ticker** arriba, en Martian Mono, marquesina infinita con `xPercent` de 0 a
+**-50** sobre el contenedor de dos copias del contenido: cuando la primera
+copia terminó de salir, la segunda está exactamente donde arrancó, así que el
+reinicio cae en un punto donde el dibujo es idéntico. Cruza el riel de borde a
+borde, que es lo que lo hace leer como instrumento y no como una línea de texto
+más. Se detiene con `prefers-reduced-motion`.
+
+**Botón MENU** flotante abajo al centro, `<Bevel variant="solid">`, con las
+tres barras corriéndose en secuencia al hover (demoras de 0, 0.05 y 0.1 s: es
+el escalonado lo que produce la lectura de barrido y no la de "todo se mueve").
+
+**Menú desplegado:** overlay bone con texto negro, siete ítems, cada uno
+dibujado de izquierda a derecha — las barras entran primero y el texto se
+revela detrás con `clip-path: inset()` en la misma dirección, con 0.1 s de
+ventaja y stagger de 0.05 s. Barra CLOSE abajo. Cierra con Escape, con click
+en el fondo y con CLOSE; trampa de foco; el foco entra al primer ítem y vuelve
+al botón MENU al cerrar. Verificado en el arnés:
+
+```
+menú abierto — {"tonoHeader":"claro","logoBlanco":"#000",
+                "riel z=50 vs panel z=45","scrollBloqueado":"hidden",
+                "foco":"Vehículos"}
+menú tras Escape — {"panel":0,"scroll":"visible","focoVuelto":true}
+```
+
+### El corte del loop: **la atenuación se queda**
+
+La consigna pedía mirar el corte y sacar la atenuación si el corte pelado ya
+era invisible. **No lo es.** Extraje el último y el primer frame del clip con
+ffmpeg y los miré uno al lado del otro: entre los dos, **el auto está
+visiblemente más chico y más lejos, y el farol se corre de posición y cambia de
+blanco a naranja**. Son dos encuadres distintos, no un ciclo. Medido además
+sobre el canvas: 12 de diferencia media por canal en un clip cuyos valores
+viven casi todos por debajo de 60, o sea ~20% de variación sobre el rango real.
+
+Así que la atenuación se queda: a 0,45 s del final la opacidad baja a 0,25 y
+vuelve sola cuando el loop reinicia. Con el overlay oscuro encima se lee como
+un faro que pasa.
+
+### Lo que vi en las capturas y corregí
+
+**1. El video no aparecía. Altura 0.**
+
+*Esperaba:* el panel vertical a la derecha con el clip corriendo.
+
+*Vi:* nada. La medición del arnés informaba `w: 0, h: 0`.
+
+*Causa:* dos, encadenadas.
+- `HeroVideo` traía `relative` en su raíz y el llamador le pasaba `absolute
+  inset-0` por `className`. **Dos utilidades de `position` en el mismo
+  atributo**, resueltas por el orden en que Tailwind emite las reglas y no por
+  el orden en que uno las escribe: es exactamente la trampa de la decisión 33 y
+  la del `borderClassName` de `Bevel`, por tercera vez en el proyecto. Ganaba
+  `relative`, el elemento quedaba en el flujo y como todos sus hijos son
+  absolutos su alto era cero.
+- El panel de desktop sacaba el **alto del aspecto y el ancho del contenedor**,
+  y el contenedor era un ítem flex cuyo ancho salía del contenido: circular,
+  colapsa a cero.
+
+*Qué hice:* `HeroVideo` ya no lleva `position` propia —la caja la decide quien
+lo usa y el contexto de apilamiento va en un hijo— y el panel saca el tamaño de
+la **altura**, con `aspect-ratio` derivando el ancho.
+
+**2. El titular se salía del viewport.**
+
+*Esperaba:* tres líneas dentro de la pantalla.
+
+*Vi:* cuatro líneas gigantes que se cortaban abajo, con el botón MENU
+atravesando la palabra "JUJUY". La bajada y los botones quedaban fuera de
+pantalla.
+
+*Causa:* el token `--text-hero` es `clamp(3rem, 11vw, 10rem)`, calculado para
+un hero a sangre. Acá el titular vive en una columna del 56%, así que a 1440 px
+pedía 158 px de cuerpo contra 739 px de ancho disponible y "Tu próximo" se
+partía en dos.
+
+*Qué hice:* clase `.hero-titulo` con un clamp propio, calculado contra la línea
+más larga, y una medición nueva en el arnés que informa el llenado de cada
+línea. Hoy: desktop `{Tu próximo: 0.945, auto, en: 0.7, Jujuy.: 0.49}` con
+87,84 px de cuerpo; mobile `{0.857, 0.634, 0.444}` con 36 px. Ninguna línea
+llega a 1, o sea ninguna se parte.
+
+**3. En mobile el texto competía con los reflejos del asfalto.**
+
+*Esperaba:* la bajada legible sobre el video.
+
+*Vi:* "financiación propia y toma de tu usado como" cruzándose con el reflejo
+del faro y con la línea blanca del pavimento.
+
+*Causa:* un solo overlay para los dos layouts, con el centro a apenas 20% de
+negro.
+
+*Qué hice:* `HeroVideo` recibe `overlay="fuerte" | "suave"`. Son dos problemas
+distintos: en mobile hay **texto encima** y el overlay va al 55% con viñeta,
+como pide CLAUDE.md; en el panel de desktop no hay texto encima y taparlo al
+55% desperdiciaría la única imagen en movimiento del hero.
+
+**4. Se montaban dos `<video>` y el oculto igual pedía metadata.**
+
+*Vi:* la medición informaba `videosEnDom: 2`.
+
+*Causa:* las dos variantes del hero estaban en el DOM y una se ocultaba con
+`md:hidden`. `display: none` no impide que el elemento pida la metadata del
+archivo.
+
+*Qué hice:* `src/lib/use-media.ts` y el layout se elige en JS. Hoy:
+`videosEnDom: 1` en los dos viewports.
+
+**5. En el menú, "Cotizar usado" se parte en dos líneas y el marcador quedaba
+flotando entre las dos.**
+
+*Qué hice:* el marcador se alinea con la primera línea, con una caja del alto
+de una línea del titular y las barras centradas adentro. Sirve para cualquier
+ítem que se parta en el futuro, no solo para este.
+
+### Decisiones tomadas sin consultar — Fase H
+
+51. **Escala de apilamiento explícita, con el riel y el header subidos.**
+    Quedó: malla 40 · overlay del menú 45 · **riel 50** (venía de 30) ·
+    **header 55** (venía de 50) · botón MENU 60 · intro 100. El pedido decía
+    que el riel y el header tienen que adaptarse mientras el menú está abierto
+    (decisiones 19 y 31), y para adaptarse tienen que **verse**: si el overlay
+    los tapa, el único elemento constante de la página desaparece justo cuando
+    el usuario está navegando. La malla queda debajo del overlay a propósito:
+    sobre el bone ya se había visto en la FAQ que se lee como ruido.
+
+52. **`Bevel` ganó `surfaceClassName`.** Mismo motivo y misma forma que
+    `borderClassName` en la fase D: reemplaza el color de superficie de la
+    variante en vez de sumarse. La barra CLOSE es una barra oscura sobre fondo
+    bone, y `bg-void` sumado a un `ghost` que ya trae `bg-transparent` daba un
+    resultado a merced del orden de emisión de Tailwind.
+
+53. **El dibujado de los ítems del menú va en CSS con `@keyframes`, no con
+    `motion`.** Son dos animaciones encadenadas por ítem con un stagger: en CSS
+    eso es `animation-delay: calc(var(--i) * .05s)` y nada más. Con variantes
+    de `motion` haría falta un nodo animado por parte y coordinar dos delays en
+    JS. `motion` sigue haciendo lo que hace bien: el `clip-path` de entrada y
+    salida del panel, con `AnimatePresence`.
+
+54. **El overlay del hero no es un valor, son dos presets.** Ver el punto 3.
+
+55. **El eyebrow del hero se acortó a "San Salvador de Jujuy".** El original
+    ("Concesionaria en San Salvador de Jujuy") se partía en dos renglones en
+    390 px y quedaba apretado contra el titular. Además los eyebrows del resto
+    del sitio son de una o dos palabras: este desentonaba.
+
+### Mediciones nuevas en el arnés
+
+- **`hero video`** — src elegido, rectángulo real y aspecto. Filtra por
+  elementos visibles: buscar el primer `<video>` del DOM devolvía el oculto,
+  con rectángulo 0×0, y eso parecía un bug del layout cuando era un bug de la
+  medición.
+- **`hero titular`** — cuerpo, alto y llenado de cada línea contra el ancho
+  disponible. Arriba de 1 significa que esa línea se partió.
+- **`salto del loop`** — diferencia media por canal entre el último frame y el
+  primero, sobre un canvas de 16×16.
+- **`menú abierto` / `menú tras Escape`** — tono del header, valor real de
+  `--logo-white` (leído del `<header>`, que es donde se redefine, y no de
+  `:root`, que es donde lo leía mal la primera versión), z-index del riel
+  contra el del panel, bloqueo del scroll y dónde quedó el foco.
+- **`overflow-x`** ahora **ignora lo que ya está recortado por un ancestro con
+  overflow oculto.** La pista del ticker mide el doble del viewport a propósito
+  —es el mecanismo de la marquesina— y aparecía como culpable en cada corrida:
+  ocho líneas de ruido que habrían tapado un desborde real.
+
+### Pendiente
+
+- **El bundle saltó de 409 KB a 543 KB (185 KB gzip).** Los ~133 KB nuevos son
+  `motion`, que hoy se usa para una sola cosa: el `clip-path` de entrada y
+  salida del panel del menú. Es candidato número uno de la fase L: o se importa
+  solo lo necesario, o esa animación se hace con GSAP, que ya está en el bundle.

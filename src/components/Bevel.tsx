@@ -21,6 +21,15 @@ type BevelProps = {
    * y pasan a ámbar al enfocarse.
    */
   borderClassName?: string
+  /**
+   * Reemplaza el color de superficie que trae la variante, por el mismo
+   * motivo que `borderClassName`: dos utilidades de `background-color` en el
+   * mismo atributo las resuelve el orden en que Tailwind emite las reglas, no
+   * el orden en que uno las escribe, así que sumar `bg-void` a un `ghost` que
+   * ya trae `bg-transparent` da un resultado a merced del build. Lo usa la
+   * barra CLOSE del menú, que es una barra oscura sobre el fondo bone.
+   */
+  surfaceClassName?: string
   style?: CSSProperties
 } & Record<string, unknown>
 
@@ -48,6 +57,7 @@ export function Bevel({
   className = '',
   outerClassName = '',
   borderClassName = 'bg-amber',
+  surfaceClassName,
   style,
   ...rest
 }: BevelProps) {
@@ -70,7 +80,11 @@ export function Bevel({
   }
 
   return (
-    <Tag className={`bevel ${SURFACE[variant]} ${className}`} style={shape} {...rest}>
+    <Tag
+      className={`bevel ${surfaceClassName ?? SURFACE[variant]} ${className}`}
+      style={shape}
+      {...rest}
+    >
       {children}
     </Tag>
   )

@@ -17,12 +17,16 @@ type HeaderProps = {
 /**
  * Header mínimo y fijo: solo el logo chico. El resto de la navegación vive en
  * la barra MENU flotante, así que acá no compite nada con el hero.
+ *
+ * APILADO: z-55, por encima del overlay del menú (45) y del riel (50). Con el
+ * menú abierto el logo queda sobre el fondo bone, así que recibe tono
+ * `claro` y se dibuja en negro — la decisión 19 aplicada al menú.
  */
 export function Header({ logoRef, tono = 'oscuro' }: HeaderProps) {
   return (
     <header
       data-tono={tono}
-      className="header-adapt fixed top-0 right-0 left-0 z-50 flex items-center justify-between py-4 shell"
+      className="header-adapt fixed top-0 right-0 left-0 z-55 flex items-center justify-between py-4 shell"
     >
       <a
         ref={logoRef}

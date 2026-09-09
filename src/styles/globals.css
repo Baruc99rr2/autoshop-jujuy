@@ -826,3 +826,186 @@
   color: var(--color-void);
   transition-delay: 0.12s;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   BARRAS ///
+   El marcador diagonal del sitio. Se dibuja con tres <i> rotados y no con el
+   texto "///" porque cada barra tiene que poder moverse por separado: el
+   hover del botón MENU las corre en secuencia y los ítems del menú las usan
+   como cabeza del barrido.
+   ───────────────────────────────────────────────────────────── */
+
+.barras {
+  display: inline-flex;
+  gap: 3px;
+  flex: none;
+}
+
+.barras > i {
+  display: block;
+  width: 3px;
+  height: 0.85em;
+  background: currentColor;
+  transform: skewX(-18deg);
+  transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* En hover las tres se corren EN SECUENCIA, no juntas: la demora escalonada
+   es lo que produce la lectura de "barrido" en vez de la de "todo se mueve". */
+.menu-btn:hover .barras > i,
+.menu-btn:focus-visible .barras > i {
+  transform: skewX(-18deg) translateX(5px);
+}
+.menu-btn:hover .barras > i:nth-child(2),
+.menu-btn:focus-visible .barras > i:nth-child(2) {
+  transition-delay: 0.05s;
+}
+.menu-btn:hover .barras > i:nth-child(3),
+.menu-btn:focus-visible .barras > i:nth-child(3) {
+  transition-delay: 0.1s;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MENÚ DESPLEGADO
+   Cada ítem se DIBUJA de izquierda a derecha: primero entran las barras y el
+   texto se revela detrás con clip-path inset en la misma dirección. Es el
+   mismo gesto que el láser de la intro y que el barrido de la FAQ.
+
+   Va con @keyframes y no con `motion` porque son dos animaciones encadenadas
+   por ítem con un stagger de 0.05s: en CSS eso es `animation-delay:
+   calc(var(--i) * .05s)` y nada más. Resolverlo con variantes de motion
+   obligaría a un nodo animado por parte y a coordinar dos delays en JS.
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes menu-barras-entran {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes menu-texto-revela {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 -0.1em 0 0);
+  }
+}
+
+/* El marcador se alinea con la PRIMERA línea del ítem, no con el centro del
+   bloque. En 390 px "Cotizar usado" se parte en dos renglones y el /// quedaba
+   flotando entre los dos, que se lee como un error de alineación en una lista
+   donde todos los demás están en su renglón. La caja tiene el alto de una
+   línea del titular y las barras van centradas adentro, así que la regla
+   sirve para cualquier ítem que se parta en el futuro. */
+.menu-item-barras {
+  color: var(--color-amber);
+  align-self: flex-start;
+  height: calc(var(--text-h1) * 0.95);
+  align-items: center;
+  animation: menu-barras-entran 0.3s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+  animation-delay: calc(0.28s + var(--i) * 0.05s);
+}
+
+.menu-item-texto {
+  /* El inset derecho negativo deja respirar el overshoot de la itálica y de
+     los acentos; con inset(0) exacto se comen un pelo de la última letra. */
+  animation: menu-texto-revela 0.42s cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  /* Las barras entran PRIMERO: 0.1s de ventaja sobre el texto. */
+  animation-delay: calc(0.38s + var(--i) * 0.05s);
+  transition: transform 0.25s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* El hover corre el ítem entero a la derecha, como el footer escalonado. El
+   foco de teclado dispara exactamente lo mismo. */
+.menu-item:hover .menu-item-texto,
+.menu-item:focus-visible .menu-item-texto {
+  transform: translateX(10px);
+}
+.menu-item:hover .menu-item-barras > i,
+.menu-item:focus-visible .menu-item-barras > i {
+  transform: skewX(-18deg) translateX(4px);
+}
+.menu-item:hover .menu-item-barras > i:nth-child(2),
+.menu-item:focus-visible .menu-item-barras > i:nth-child(2) {
+  transition-delay: 0.05s;
+}
+.menu-item:hover .menu-item-barras > i:nth-child(3),
+.menu-item:focus-visible .menu-item-barras > i:nth-child(3) {
+  transition-delay: 0.1s;
+}
+
+/* Sobre el bone del menú el anillo de foco ámbar no contrasta: va negro, el
+   mismo criterio que la decisión 20 para los botones de la FAQ. */
+.menu-item:focus-visible {
+  outline: 2px solid var(--color-void);
+  outline-offset: 4px;
+}
+
+.close-flecha {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.menu-close:hover .close-flecha,
+.menu-close:focus-visible .close-flecha {
+  transform: translateY(3px);
+}
+
+/* Con reduced-motion los ítems aparecen enteros y quietos. El contenido es el
+   mismo: lo único que se pierde es el dibujado. */
+@media (prefers-reduced-motion: reduce) {
+  .menu-item-barras,
+  .menu-item-texto {
+    animation: none;
+    clip-path: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TITULAR DEL HERO
+   El token --text-hero (clamp 3rem, 11vw, 10rem) está calculado para un hero
+   a sangre. El hero de este sitio es PARTIDO en desktop —el video es vertical
+   y no se puede usar de fondo— así que el titular vive en una columna del 56%
+   y con 11vw se parte en cuatro renglones que no entran en el viewport.
+
+   Este clamp está calculado contra la línea más larga del titular y contra el
+   ancho real de la columna en los dos extremos, y el arnés lo verifica en cada
+   corrida con la medición `hero titular`.
+   ───────────────────────────────────────────────────────────── */
+
+.hero-titulo {
+  font-size: clamp(2.25rem, 6.1vw, 6.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL DEL VIDEO DEL HERO (desktop)
+
+   El tamaño sale de la ALTURA y el ancho lo deriva `aspect-ratio`. Al revés
+   —ancho del contenedor, alto por aspecto— el alto depende de un ancho que a
+   su vez depende del contenido, y el panel colapsa a cero.
+
+   La altura tiene DOS topes y se toma el menor:
+   - `vw` acota el ANCHO del panel, para que en md no se coma la columna del
+     titular. Sin este tope, en una tablet alta (768×1366) el panel pedía 300+
+     px de ancho contra los ~200 que quedaban libres.
+   - `svh` acota el ALTO, para que en un notebook de pantalla baja el panel no
+     empuje el hero más allá del viewport y choque con la barra MENU.
+   ───────────────────────────────────────────────────────────── */
+
+.hero-panel {
+  aspect-ratio: 9 / 16;
+  height: min(38vw, 52svh);
+}
+
+@media (min-width: 1024px) {
+  .hero-panel {
+    height: min(46vw, 66svh);
+  }
+}
