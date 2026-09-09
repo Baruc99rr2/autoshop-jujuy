@@ -70,7 +70,7 @@ El amarillo se sampleó del logo real: **#FDB916**, un ámbar cálido y dorado. 
   --color-amber:    #FDB916;  /* ACENTO ÚNICO — muestreado del logo */
   --color-filament: #FFF0C4;  /* núcleo caliente del glow, solo dentro de gradientes */
   --color-bone:     #FEFDF8;  /* texto sobre oscuro, y fondo de las 2 secciones claras */
-  --color-flag:     #FF3B1F;  /* SOLO estados de stock: "Vendido" / "Reservado" */
+  --color-flag:     #FF3B1F;  /* SEÑALES: estados de stock y errores de validación */
 }
 ```
 
@@ -79,7 +79,12 @@ Reglas duras:
 - `--color-filament` no se usa como color plano nunca. Existe solo como parada interna de un gradiente o del glow, para que la luz tenga un núcleo más caliente que su halo. Es lo que hace que el ámbar se lea como luz encendida y no como amarillo plano.
 - El glow va con dos capas de sombra, una cerrada y saturada y otra abierta y tenue:
   `filter: drop-shadow(0 0 4px var(--color-amber)) drop-shadow(0 0 22px rgb(253 185 22 / .45))`
-- `--color-flag` no decora. Aparece solo si una unidad está reservada o vendida.
+- `--color-flag` **no decora nunca**, pero sí señala. Aparece en dos lugares y solo
+  en esos dos: el chip de una unidad reservada o vendida, y los errores de
+  validación de un formulario (borde del campo y texto del mensaje). Las dos
+  cosas son avisos, no adorno. Un error de validación no puede ir en ámbar
+  porque el ámbar ya significa "activo" en todo el sitio —hover, foco, chip
+  elegido— y un campo con borde ámbar sería ambiguo con un campo enfocado.
 - Texto sobre ámbar: **siempre negro**, nunca blanco.
 
 ### Tipografía

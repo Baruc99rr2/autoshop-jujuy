@@ -568,6 +568,69 @@ async function capturarPagina(browser, nombreVp) {
   await ctx.close()
 }
 
+/**
+ * Pase OFFLINE: se bloquea toda petición que no sea al propio origen y se
+ * captura la portada.
+ *
+ * Existe porque la demo se muestra en una reunión, probablemente con datos
+ * móviles. Mientras las fuentes se pedían a fonts.googleapis.com, un fallo de
+ * red dibujaba el sitio entero en Arial y la identidad tipográfica desaparecía
+ * — pasó de verdad en una corrida de la sesión 2. Ahora las fuentes son
+ * propias, y esto lo prueba en vez de suponerlo.
+ *
+ * Se informan las peticiones bloqueadas: la lista tiene que quedar vacía.
+ */
+async function capturarOffline(browser, nombreVp) {
+  const viewport = VIEWPORTS[nombreVp]
+  const { ctx, page } = await nuevaPagina(browser, viewport)
+
+  const bloqueadas = []
+  await ctx.route('**/*', (route) => {
+    const url = route.request().url()
+    if (url.startsWith(BASE) || url.startsWith('data:') || url.startsWith('blob:')) {
+      return route.continue()
+    }
+    bloqueadas.push(url)
+    return route.abort()
+  })
+
+  await page.goto(BASE, { waitUntil: 'load' })
+  await esperarFinDeIntro(page)
+
+  // La misma medición que el pase normal. Si Archivo cargó con todo lo externo
+  // cortado, es porque sale del propio origen.
+  const fuentes = await page.evaluate(async () => {
+    await document.fonts.ready
+    const medir = (familia) => {
+      const s = document.createElement('span')
+      s.textContent = 'AUTOSHOPJUJUY'
+      s.style.cssText = `position:absolute;visibility:hidden;font-size:100px;font-weight:700;font-variation-settings:'wdth' 125;font-family:${familia}`
+      document.body.append(s)
+      const w = s.getBoundingClientRect().width
+      s.remove()
+      return Math.round(w)
+    }
+    return {
+      archivo: medir("'Archivo', sans-serif"),
+      mono: medir("'Martian Mono', monospace"),
+      fallback: medir('sans-serif'),
+    }
+  })
+
+  console.log(
+    `[shots] ${nombreVp} OFFLINE fuentes:`,
+    JSON.stringify(fuentes),
+    fuentes.archivo === fuentes.fallback ? '✗ ARCHIVO NO CARGÓ' : '✓',
+  )
+  console.log(
+    `[shots] ${nombreVp} OFFLINE peticiones externas bloqueadas:`,
+    bloqueadas.length === 0 ? 'ninguna ✓' : JSON.stringify(bloqueadas),
+  )
+
+  await shot(page, `${nombreVp}/00-offline-fullpage`, { fullPage: true })
+  await ctx.close()
+}
+
 async function main() {
   await rm(OUT, { recursive: true, force: true })
   await mkdir(path.join(OUT, 'intro'), { recursive: true })
@@ -593,6 +656,8 @@ async function main() {
     await capturarBeats(browser)
     await capturarPagina(browser, 'desktop')
     await capturarPagina(browser, 'mobile')
+    await capturarOffline(browser, 'desktop')
+    await capturarOffline(browser, 'mobile')
 
     console.log(`[shots] listo → ${OUT}`)
   } finally {

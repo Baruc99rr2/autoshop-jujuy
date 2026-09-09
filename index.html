@@ -10,11 +10,31 @@
       content="Automotores AutoShop Jujuy — 0km y usados en San Salvador de Jujuy. Financiación propia, Fiat Plan y toma de tu usado como parte de pago."
     />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Fuentes autoalojadas. Antes esto era un <link> a fonts.googleapis.com con
+      su preconnect; se sacó porque si Google no responde el sitio se dibuja en
+      Arial y la identidad tipográfica desaparece. Ahora salen de public/fonts/
+      y el sitio funciona sin red.
+
+      Las dos van precargadas porque las dos se usan arriba del pliegue:
+      Archivo en el titular del hero y Martian Mono en el ticker.
+      `crossorigin` es obligatorio aun siendo del mismo origen — las fuentes se
+      piden en modo CORS, y sin el atributo el navegador descarga el archivo
+      dos veces en vez de reusar el precargado.
+    -->
     <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Martian+Mono:wght@400..700&display=swap"
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/archivo-latin-wdth.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/martian-mono-latin-wght.woff2"
+      crossorigin
     />
 
     <title>Automotores AutoShop Jujuy — 0km y usados</title>

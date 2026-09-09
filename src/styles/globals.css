@@ -11,7 +11,7 @@
   --color-amber: #fdb916; /* ACENTO ÚNICO — muestreado del logo */
   --color-filament: #fff0c4; /* núcleo caliente del glow, solo dentro de gradientes */
   --color-bone: #fefdf8; /* texto sobre oscuro, y fondo de las 2 secciones claras */
-  --color-flag: #ff3b1f; /* SOLO estados de stock: "Vendido" / "Reservado" */
+  --color-flag: #ff3b1f; /* SEÑALES: estados de stock y errores de validación */
 
   --font-sans: 'Archivo', 'Archivo Fallback', system-ui, sans-serif;
   --font-mono: 'Martian Mono', ui-monospace, 'Consolas', monospace;
@@ -51,8 +51,48 @@
    de Google Fonts: el @font-face vuelve con `font-stretch: 62% 125%`. Por eso
    el display extendido se resuelve con font-variation-settings y NUNCA con
    transform: scaleX(), que deforma los trazos.
+
+   AUTOALOJADAS desde public/fonts/, no pedidas a fonts.googleapis.com. En una
+   corrida del arnés de la sesión 2 el pedido a Google falló y el sitio entero
+   se dibujó en Arial: sin el ancho extendido de Archivo la identidad
+   tipográfica desaparece. En una demo mostrada con datos móviles eso es un
+   riesgo real, y además saca un tercero del camino crítico del LCP.
+
+   Los .woff2 los copia scripts/sync-fonts.mjs desde @fontsource-variable.
+   Los nombres de familia se mantienen 'Archivo' y 'Martian Mono' —no
+   'Archivo Variable', que es como los llama fontsource— para no tocar los
+   tokens ni ninguna utilidad.
    ───────────────────────────────────────────────────────────── */
 
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  src: url('/fonts/archivo-latin-wdth.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Martian Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url('/fonts/martian-mono-latin-wght.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* La fallback sigue existiendo por el instante entre el primer paint y el
+   decodificado del woff2. Con las fuentes autoalojadas y precargadas esa
+   ventana es de milisegundos, pero un titular a clamp(3rem, 11vw, 10rem)
+   que salta de tamaño rompe los cálculos de ScrollTrigger igual. */
 @font-face {
   font-family: 'Archivo Fallback';
   src: local('Arial');

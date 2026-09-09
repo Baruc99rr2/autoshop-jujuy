@@ -126,9 +126,11 @@ function CampoTexto({
   inputMode?: 'text' | 'email' | 'tel'
   textarea?: boolean
 }) {
-  // El error NO va en --color-flag: CLAUDE.md reserva ese rojo para los
-  // estados de stock ("Vendido" / "Reservado") y usarlo acá lo convertiría en
-  // un rojo de sistema más. Va en ámbar, y quien dice qué pasó es el mensaje.
+  // El error va en --color-flag. El rojo del sitio es para SEÑALES, no para
+  // decoración: un chip "Vendido" y un campo inválido son la misma clase de
+  // aviso. Además el ámbar ya significa "activo" en todo el sitio —hover, foco,
+  // chip elegido—, así que un borde ámbar en un campo con error es ambiguo con
+  // un campo simplemente enfocado.
   // El borde de error gana sobre el de foco: si no, enfocar el campo tapa la
   // única señal visual de que ese campo es el del problema.
   const props = {
@@ -150,7 +152,7 @@ function CampoTexto({
       <Bevel
         variant="outline"
         bevel={12}
-        borderClassName={error ? 'bg-amber' : 'bg-graphite'}
+        borderClassName={error ? 'bg-flag' : 'bg-graphite'}
         outerClassName={`block transition-colors duration-200 ${
           error ? '' : 'focus-within:bg-amber'
         }`}
@@ -171,7 +173,7 @@ function CampoTexto({
       </Bevel>
 
       {error && (
-        <p id={idError} className="font-hud mt-2 text-amber">
+        <p id={idError} className="font-hud mt-2 text-flag">
           <span aria-hidden="true" className="mr-2">
                       </span>
           {error}
@@ -369,7 +371,7 @@ export function Contacto() {
                 <Bevel
                   variant="outline"
                   bevel={12}
-                  borderClassName={errores.consulta ? 'bg-amber' : 'bg-graphite'}
+                  borderClassName={errores.consulta ? 'bg-flag' : 'bg-graphite'}
                   outerClassName={`block transition-colors duration-200 ${
                     errores.consulta ? '' : 'focus-within:bg-amber'
                   }`}
@@ -403,7 +405,7 @@ export function Contacto() {
                   </select>
                 </Bevel>
                 {errores.consulta && (
-                  <p id={idError('consulta')} className="font-hud mt-2 text-amber">
+                  <p id={idError('consulta')} className="font-hud mt-2 text-flag">
                     <span aria-hidden="true" className="mr-2">
                                           </span>
                     {errores.consulta}

@@ -1274,3 +1274,121 @@ derecha hay una linterna encendida que es el punto más claro de la foto.
 ámbar de `segmento-1`, así que el ámbar del sitio no se pelea con ninguna. Las
 tres de vehículos son claras y cálidas: sobre fondo negro van a resaltar mucho,
 que es lo que se busca en las cards, pero **no sirven como fondo de sección**.
+
+
+---
+
+## Fase G — Fuentes propias, rojo en errores, limpieza del logo ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa (13 ids, 2.600 s).
+**Verificado con `npm run shots`**, incluido el pase offline nuevo.
+
+### 1. Las fuentes ahora son propias
+
+**El paquete sirve: `@fontsource-variable/archivo` SÍ expone el eje de ancho.**
+Era la condición crítica. Verificado en dos lugares del paquete instalado:
+`wdth.css` declara `font-stretch: 62% 125%` junto con `font-weight: 100 900`
+—o sea que ese archivo trae los dos ejes— y `metadata.json` lista
+`wdth: {min: 62, max: 125}`. No hizo falta bajar nada a mano.
+
+**Pero los `.woff2` igual se copiaron a `public/fonts/`,** con
+`scripts/sync-fonts.mjs`. El motivo es la precarga: si se importa el CSS del
+paquete, Vite hashea los archivos y los deja en `dist/assets/` con un nombre
+que no se conoce al escribir `index.html`, así que no se puede poner
+`<link rel="preload">`. Con los archivos en `public/fonts/` la URL es estable.
+El paquete de npm sigue siendo la fuente de verdad de los binarios.
+
+Qué se copia y por qué:
+
+| Archivo | KB | Variante | Motivo |
+|---|---|---|---|
+| `archivo-latin-wdth.woff2` | 88,0 | `wdth` | Trae los DOS ejes. La variante `wght` pesa 35 KB, pero sin el eje de ancho el display extendido —la firma del sitio— no existe. |
+| `martian-mono-latin-wght.woff2` | 23,0 | `wght` | Solo se usan pesos 400–700 y el ancho no se toca nunca. |
+
+**Solo el subconjunto `latin`,** 111 KB en total. Se verificó que alcanza en
+vez de suponerlo: un script recorrió `src/` e `index.html` buscando glifos
+fuera del rango del subconjunto y encontró exactamente dos, `─` (U+2500) y `→`
+(U+2192), **los dos dentro de comentarios de código**, o sea que no se
+renderizan nunca. El español entero —á é í ó ú ñ ü ¿ ¡ ° · —— cae dentro de
+U+0000–00FF y de U+2000–206F, que están los dos incluidos.
+
+Sacados del `index.html` el `<link>` a `fonts.googleapis.com` y los dos
+`preconnect`. En su lugar, `preload` de los dos `.woff2`, los dos con
+`crossorigin`: sin ese atributo el navegador pide la fuente dos veces —una
+para la precarga y otra en modo CORS para usarla— y la precarga no sirve de
+nada.
+
+### El pase offline del arnés
+
+`capturarOffline()` en `scripts/shots.mjs`. Bloquea en el contexto de
+Playwright **toda** petición que no sea al propio origen, carga el sitio, mide
+las fuentes y saca una captura full-page.
+
+Resultado en los dos viewports:
+
+```
+desktop OFFLINE fuentes: {"archivo":1152,"mono":910,"fallback":887} ✓
+desktop OFFLINE peticiones externas bloqueadas: ninguna ✓
+mobile  OFFLINE fuentes: {"archivo":1152,"mono":910,"fallback":887} ✓
+mobile  OFFLINE peticiones externas bloqueadas: ninguna ✓
+```
+
+`archivo: 1152` es **el mismo número que en el pase con red**, y difiere de la
+fallback (887), así que Archivo carga con todo lo externo cortado. Y la lista
+de peticiones bloqueadas está vacía: el sitio no le pide nada a nadie.
+
+Además, medición estructural: `00-fullpage.png` y `00-offline-fullpage.png`
+miden **1440×10987 los dos**, píxel por píxel el mismo alto de documento. Si
+la tipografía hubiera cambiado, el alto no podría coincidir.
+
+Mirada la captura offline: el titular se dibuja en Archivo `wdth 125`, sin
+diferencia con la versión online.
+
+### 2. Los errores de validación pasaron a `--color-flag`
+
+Borde del campo y texto del mensaje. Se mantiene la decisión 37: el borde de
+error gana sobre el de foco.
+
+**Lo que se ve en `docs/shots/desktop/71-contacto-errores.png`** confirma que
+el cambio era necesario y que la solución funciona: el campo "Nombre y
+apellido" está enfocado *y* con error al mismo tiempo, y ahora muestra
+**borde rojo** (el error) con **anillo ámbar interior** (el foco). Son dos
+señales distintas y las dos se leen. Con el error en ámbar, ese campo tenía
+ámbar afuera y ámbar adentro y no había forma de saber cuál cosa decía qué.
+
+La regla corregida en `CLAUDE.md` y en el comentario del token en
+`globals.css`: el rojo es para **señales** —estados de stock y errores de
+validación— y no para decoración.
+
+### 3. El logo perdió la metadata C2PA
+
+`src/assets/logo.svg`: **25.301 → 17.527 bytes**, 7.774 bytes menos. Se borró
+el bloque `<metadata>` con el manifiesto en base64 y el `xmlns:c2pa` del `<svg>`
+que quedaba sin uso. `npm run check` sigue informando **13/13 ids**, 7 paths en
+`#lg-flag`, en orden y con `#lg-word` antes.
+
+El bundle bajó de 417 KB a **409,5 KB** de JS (142,1 KB gzip), que es
+exactamente el peso del base64 que ya no viaja.
+
+### Decisiones tomadas sin consultar — Fase G
+
+48. **Las fuentes se copian a `public/fonts/` en vez de importar el CSS del
+    paquete.** Ver arriba: sin nombre de archivo estable no hay `preload`, y la
+    precarga del titular es justo lo que evita el salto de la fallback en el
+    primer render. El script `scripts/sync-fonts.mjs` documenta de dónde salió
+    cada archivo y hace reproducible la actualización.
+
+49. **Solo el subconjunto `latin`, no `latin-ext` ni `vietnamese`.** Sumar los
+    otros dos duplicaba el peso para cubrir glifos que este sitio no escribe.
+    Verificado con un barrido de todo el código fuente, no supuesto.
+
+50. **Martian Mono va en la variante `wght` y Archivo en la `wdth`.** No es
+    simetría: son dos decisiones distintas. Archivo necesita el eje de ancho
+    porque el display extendido es la firma del sitio; Martian Mono no lo toca
+    nunca, así que pagar 15 KB extra por un eje muerto no tiene sentido.
+
+### Pendiente
+
+- `@fontsource-variable/*` quedan como dependencias aunque en runtime no se
+  importe nada de ellas: son la fuente de los binarios y la referencia de
+  versión. Si algún día molesta, pasan a `devDependencies`.
