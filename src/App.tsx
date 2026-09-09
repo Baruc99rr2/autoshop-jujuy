@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Faq from './components/Faq'
 import Footer from './components/Footer'
 import Header from './components/Header'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
@@ -7,6 +8,14 @@ import Rail from './components/Rail'
 import SectionHeader from './components/SectionHeader'
 import { SECCIONES } from './data/nav'
 import { prefersReducedMotion } from './lib/motion-prefs'
+
+/**
+ * Secciones que ya tienen componente propio. El resto todavía se dibuja como
+ * placeholder, y el mapa de abajo las va reemplazando fase por fase.
+ */
+const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
+  preguntas: Faq,
+}
 
 /**
  * La intro corre una sola vez por pestaña. Durante la demo el sitio se recarga
@@ -56,8 +65,12 @@ function App() {
 
   return (
     <>
-      <MeshOverlay />
-      <Rail index={activa.indice} label={activa.eyebrow} />
+      <MeshOverlay tono={activa.tono === 'claro' ? 'claro' : 'oscuro'} />
+      <Rail
+        index={activa.indice}
+        label={activa.eyebrow}
+        tono={activa.tono === 'claro' ? 'claro' : 'oscuro'}
+      />
       <Header logoRef={headerLogoRef} />
 
       {introActiva && (
@@ -68,22 +81,27 @@ function App() {
       )}
 
       <main>
-        {SECCIONES.map((s) => (
-          <section
-            key={s.id}
-            id={s.id}
-            className="flex min-h-svh flex-col justify-center border-b border-graphite/60 py-24 shell"
-          >
-            <SectionHeader
-              index={s.indice}
-              eyebrow={s.eyebrow}
-              title={s.titulo}
-            />
-            <p className="font-hud mt-8 text-bone/30">
-              Placeholder — sección {s.indice}
-            </p>
-          </section>
-        ))}
+        {SECCIONES.map((s) => {
+          const Componente = IMPLEMENTADAS[s.id]
+          if (Componente) return <Componente key={s.id} />
+
+          return (
+            <section
+              key={s.id}
+              id={s.id}
+              className="flex min-h-svh flex-col justify-center border-b border-graphite/60 py-24 shell"
+            >
+              <SectionHeader
+                index={s.indice}
+                eyebrow={s.eyebrow}
+                title={s.titulo}
+              />
+              <p className="font-hud mt-8 text-bone/30">
+                Placeholder — sección {s.indice}
+              </p>
+            </section>
+          )
+        })}
       </main>
 
       <Footer />

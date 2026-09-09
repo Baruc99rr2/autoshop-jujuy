@@ -12,6 +12,12 @@ export interface Seccion {
   eyebrow: string
   /** Titular de la sección. */
   titulo: string
+  /**
+   * Fondo de la sección. El riel es un overlay fijo sobre toda la página, así
+   * que sobre las secciones claras (FAQ y menú) tiene que invertir sus colores
+   * o desaparece contra el fondo bone.
+   */
+  tono?: 'claro'
 }
 
 export const SECCIONES: Seccion[] = [
@@ -22,7 +28,13 @@ export const SECCIONES: Seccion[] = [
   { indice: '05', id: 'plan', eyebrow: 'FIAT PLAN', titulo: 'Entrá con cuota fija' },
   { indice: '06', id: 'cotizador', eyebrow: 'COTIZADOR', titulo: 'Cotizá tu usado' },
   { indice: '07', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
-  { indice: '08', id: 'preguntas', eyebrow: 'PREGUNTAS', titulo: 'Lo que todos preguntan' },
+  {
+    indice: '08',
+    id: 'preguntas',
+    eyebrow: 'PREGUNTAS',
+    titulo: 'Lo que todos preguntan',
+    tono: 'claro',
+  },
   { indice: '09', id: 'cta', eyebrow: 'TEST DRIVE', titulo: 'Vení a probarlo' },
   { indice: '10', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
 ]

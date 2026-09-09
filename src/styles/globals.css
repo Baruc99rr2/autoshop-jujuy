@@ -376,3 +376,114 @@
   opacity: 1;
   transform: translateX(0);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   FAQ — el barrido
+   El gesto compartido del sitio es el barrido izquierda→derecha. Acá es un
+   ::before con scaleX desde origin left, no un fade.
+   ───────────────────────────────────────────────────────────── */
+
+.faq-item {
+  --bevel: 12px;
+  position: relative;
+  isolation: isolate;
+  border-bottom: 1px solid rgb(0 0 0 / 0.12);
+}
+
+.faq-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.faq-item:hover::before,
+.faq-item:focus-within::before,
+.faq-item[data-open='true']::before {
+  transform: scaleX(1);
+}
+
+.faq-button {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 1.25rem 1.5rem 1.5rem;
+  text-align: left;
+}
+
+/* El color del texto va con transition-delay para que el barrido lo alcance:
+   si cambia al mismo tiempo, el negro pleno aparece sobre el fondo claro y se
+   ve como un parpadeo. La demora solo aplica al entrar, no al salir.
+   Texto sobre ámbar: siempre negro. */
+.faq-q,
+.faq-a {
+  color: color-mix(in srgb, var(--color-void) 68%, transparent);
+  transition: color 0.25s ease;
+}
+
+.faq-item:hover .faq-q,
+.faq-item:focus-within .faq-q,
+.faq-item[data-open='true'] .faq-q,
+.faq-item[data-open='true'] .faq-a {
+  color: var(--color-void);
+  transition-delay: 0.12s;
+}
+
+.faq-icon {
+  --bevel: 5px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-top: 0.15rem;
+  border: 1px solid rgb(0 0 0 / 0.25);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--color-void);
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* El + se convierte en × rotando: es transform, no un cambio de glifo. */
+.faq-item[data-open='true'] .faq-icon {
+  transform: rotate(45deg);
+}
+
+/* Altura del contenido con grid-template-rows 0fr → 1fr: sin medir alturas en
+   JS y sin animar `height`, que además no interpola desde `auto`. */
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.faq-item[data-open='true'] .faq-panel {
+  grid-template-rows: 1fr;
+}
+
+.faq-a {
+  max-width: 62ch;
+  padding: 0 3.5rem 1.75rem 1.5rem;
+}
+
+/* Adentro de un .bevel el anillo de foco va negro y hacia adentro: la regla
+   general lo dibuja en ámbar, y acá el fondo del ítem YA es ámbar cuando tiene
+   el foco, así que el anillo ámbar sería invisible. Texto y foco sobre ámbar:
+   siempre negro. */
+.faq-item .faq-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-void);
+}
+
+/* La malla se apaga sobre las secciones claras: ámbar al 28% sobre bone se
+   lee como ruido, no como ambiente. */
+.mesh {
+  transition: opacity 0.5s ease;
+}

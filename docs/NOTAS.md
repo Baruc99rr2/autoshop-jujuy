@@ -289,3 +289,70 @@ dibuja la palabra y no como dos animaciones seguidas.
 - "Política de privacidad" y "Términos y condiciones" apuntan a `#contacto`
   porque no hay páginas. En producción son rutas reales.
 - Sin verificación visual, igual que la fase 2.
+
+---
+
+## Fase 4 — Preguntas frecuentes (fase 9 del plan) ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+
+### Hecho
+
+- **`src/data/faq.ts`** — las 6 preguntas pedidas: usado como parte de pago,
+  financiación sin recibo de sueldo, transferencia y patentamiento, garantía de
+  los usados, permuta, y demora de entrega de un 0km. Respuestas inventadas
+  pero concretas: plazos, porcentajes y condiciones que una concesionaria de
+  Jujuy podría sostener. Nada de generalidades.
+- **`src/components/Faq.tsx`** — dos columnas en desktop
+  (`lg:grid-cols-[0.9fr_1.1fr]`), apiladas en mobile. Fondo `--color-bone` con
+  texto negro: es la segunda sección clara del sitio y funciona como respiro.
+  El titular queda `sticky` mientras se recorre el acordeón.
+- **El barrido**, exacto a la receta: `::before` con `scaleX(0)` desde
+  `transform-origin: left` a `scaleX(1)` en 0.45s con
+  `cubic-bezier(.65,0,.35,1)`, y el color del texto con `transition-delay: .12s`
+  para que el barrido lo alcance. La demora solo aplica al entrar.
+- **La altura con `grid-template-rows: 0fr → 1fr`**, sin medir nada en JS y sin
+  animar `height`, que además no interpola desde `auto`.
+- **Accesibilidad:** `<button>` reales con `aria-expanded` y `aria-controls`,
+  panel con `role="region"` + `aria-labelledby`, y `aria-hidden` cuando está
+  cerrado. Una sola abierta a la vez, guardada por id y no por índice, así que
+  reordenar `FAQ` no cambia cuál abre.
+
+### Decisiones tomadas sin consultar — Fase 4
+
+19. **El riel y la malla ahora reaccionan al tono de la sección.**
+    El riel y la malla son overlays **fijos sobre toda la página**, y la FAQ es
+    la primera sección de fondo claro: el riel blanco desaparecía contra el
+    bone y la malla ámbar al 28% sobre blanco se leía como ruido, no como
+    ambiente. Se agregó `tono: 'claro'` a la sección en `nav.ts` — el
+    `IntersectionObserver` de `App` ya sabía cuál está activa — y con eso el
+    riel invierte sus colores y la malla baja a .1, los dos con una transición
+    de 0.5s para que el cambio no sea un salto. El menú desplegado (fase 3 del
+    plan) va a necesitar lo mismo.
+
+20. **El anillo de foco del botón de FAQ va negro, no ámbar.**
+    La regla general dibuja el foco en ámbar, pero cuando el ítem tiene el foco
+    su fondo YA es ámbar por el `:focus-within` del barrido, así que el anillo
+    ámbar quedaba invisible. Sobre ámbar va negro, igual que el texto.
+
+21. **El `+` se convierte en `×` rotando 45°**, no cambiando de glifo. Es
+    `transform`, entra en el presupuesto de animación y no produce reflow.
+
+22. **El barrido también responde a `:focus-within`,** no solo a `:hover`.
+    Quien navega con Tab ve exactamente lo mismo que quien usa el mouse.
+
+23. **`App.tsx` ahora tiene un mapa `IMPLEMENTADAS`** de id de sección →
+    componente. Las secciones que todavía no existen siguen saliendo como
+    placeholder. Cada fase que viene agrega una entrada a ese mapa y nada más.
+
+### Pendiente
+
+- Sin verificación visual, igual que las fases 2 y 3.
+- El `sticky` del titular está en `lg:top-28`, calculado a ojo contra la altura
+  del header. Si el header cambia de alto hay que revisarlo.
+
+### Dudas
+
+- El fondo bone de la FAQ arranca y termina con `border-y border-graphite`.
+  Contra el negro puede resultar innecesario: hay que verlo. Si molesta, se
+  sacan las dos líneas.

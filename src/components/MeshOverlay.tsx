@@ -2,6 +2,11 @@ import { useEffect } from 'react'
 import { gsap } from 'gsap'
 import { prefersReducedMotion } from '../lib/motion-prefs'
 
+type MeshOverlayProps = {
+  /** Tono de la sección visible: sobre fondo claro la malla se apaga. */
+  tono?: 'oscuro' | 'claro'
+}
+
 /**
  * Malla ámbar con linterna. Ambiente, no protagonista: opacidad baja y solo
  * se revela bajo el cursor.
@@ -10,7 +15,17 @@ import { prefersReducedMotion } from '../lib/motion-prefs'
  * throttleado con rAF, una escritura por frame. Nunca estado de React acá: un
  * setState por pointermove re-renderiza el árbol entero 120 veces por segundo.
  */
-export function MeshOverlay() {
+export function MeshOverlay({ tono = 'oscuro' }: MeshOverlayProps) {
+  // La opacidad se separa del resto porque cambia con la sección activa,
+  // mientras que los listeners del puntero se montan una sola vez.
+  useEffect(() => {
+    if (prefersReducedMotion()) return
+    document.documentElement.style.setProperty(
+      '--mesh-opacity',
+      tono === 'claro' ? '.1' : '.28',
+    )
+  }, [tono])
+
   useEffect(() => {
     const root = document.documentElement
     const reduced = prefersReducedMotion()
@@ -23,7 +38,6 @@ export function MeshOverlay() {
       return
     }
 
-    root.style.setProperty('--mesh-opacity', '.28')
     root.style.removeProperty('--mesh-mask')
 
     let x = window.innerWidth / 2
