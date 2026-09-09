@@ -1009,3 +1009,63 @@
     height: min(46vw, 66svh);
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   CARRUSEL DE SEGMENTOS
+
+   El ítem activo pasa a ámbar con el mismo barrido de izquierda a derecha que
+   la FAQ y los tiles de post-venta; los inactivos quedan en graphite, casi
+   fundidos con el negro. El estado lo escribe React en `data-activo`, no el
+   hover: acá lo que manda es el scroll.
+   ───────────────────────────────────────────────────────────── */
+
+.seg-item {
+  /* Crea contexto de apilamiento propio, así el ::before con z-index -1 queda
+     detrás del contenido pero delante del fondo de la sección. */
+  isolation: isolate;
+  position: relative;
+  color: var(--color-graphite);
+  transition: color 0.3s ease;
+}
+
+.seg-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.seg-item[data-activo='true']::before {
+  transform: scaleX(1);
+}
+
+.seg-item[data-activo='true'] {
+  color: var(--color-void);
+  transition-delay: 0.12s;
+}
+
+/* Riel horizontal de mobile. `mandatory` y no `proximity`: con cuatro cards de
+   85vw, proximity deja la card a medio mostrar si el gesto fue corto.
+
+   El padding de arranque repite el del `shell` para que la primera card quede
+   alineada con el titular, y `scroll-padding-inline-start` hace que el snap
+   respete ese mismo margen en vez de pegar la card al borde. */
+.seg-riel {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline-start: calc(var(--rail-w) + var(--shell-pad));
+  padding-inline: calc(var(--rail-w) + var(--shell-pad)) var(--shell-pad);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.seg-riel::-webkit-scrollbar {
+  display: none;
+}
+
+.seg-card {
+  scroll-snap-align: start;
+}

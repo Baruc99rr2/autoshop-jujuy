@@ -1584,3 +1584,124 @@ de una línea del titular y las barras centradas adentro. Sirve para cualquier
   `motion`, que hoy se usa para una sola cosa: el `clip-path` de entrada y
   salida del panel del menú. Es candidato número uno de la fase L: o se importa
   solo lo necesario, o esa animación se hace con GSAP, que ya está en el bundle.
+
+
+---
+
+## Fase I — Carrusel de segmentos ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`**, con el recorrido completo del pin en
+desktop y del riel en mobile.
+
+### Hecho
+
+- **`src/data/segmentos.ts`** — los cuatro, por uso y no por carrocería:
+  Ciudad (`segmento-3`, Tiguan bajo la lluvia), Ruta (`segmento-1`, CX-5 en
+  camino nevado), Aventura (`segmento-4`, Land Cruiser entre cardones) y
+  Escapada (`segmento-2`, Alfa bajo la Vía Láctea). El copy de cada uno nombra
+  un lugar real: el centro y Belgrano, la 9 hasta Salta y Perico, la Quebrada y
+  Salinas Grandes, Termas de Reyes y Tilcara. Nada de adjetivos.
+- **Las medidas de cada imagen salen de `ffprobe`, no estimadas.** Y no son
+  todas iguales: `segmento-2` es 1600×954 contra 1600×1066 de las otras tres.
+  Poner 1066 en las cuatro habría metido un layout shift de 112 px justo en la
+  sección pinneada, que es donde más caro sale.
+- **`src/components/Segmentos.tsx`** — la receta completa. En desktop, sección
+  pinneada con `end: +=(n-1) * innerHeight * 0.8`, `scrub: .6` y
+  `snap: 1/(n-1)`. Cada imagen entrante sube y tapa a la anterior con
+  `clip-path: inset(100% 0 0 0)` → `inset(0)`.
+- **Un solo scrub controla lista e imagen, de verdad.** El `onUpdate` del
+  ScrollTrigger calcula un progreso y de ese único número salen las dos cosas:
+  el recorte de cada imagen y el índice del ítem encendido. La lista no tiene
+  animación propia, así que no puede desincronizarse.
+- **`will-change: clip-path`** se pone en `onToggle` cuando el pin se activa y
+  se saca cuando se desactiva, como pide el piso de calidad.
+- **Mobile:** sin pin. Riel horizontal con `scroll-snap-type: x mandatory` y
+  cards de 85vw. `scroll-padding-inline-start` alineado con el `shell` para que
+  el snap respete el margen del riel en vez de pegar la card al borde.
+
+### La sincronía, medida
+
+Es lo único que importaba verificar, y se verificó leyendo el DOM en los cuatro
+puntos de snap, no mirando:
+
+```
+paso 1: {progreso: 0,     encendido: "Ciudad",   imagenVisible: 0, contador: "01 / 04"}
+paso 2: {progreso: 0.333, encendido: "Ruta",     imagenVisible: 1, contador: "02 / 04"}
+paso 3: {progreso: 0.667, encendido: "Aventura", imagenVisible: 2, contador: "03 / 04"}
+paso 4: {progreso: 1,     encendido: "Escapada", imagenVisible: 3, contador: "04 / 04"}
+```
+
+`imagenVisible` se calcula leyendo el `clip-path` computado de las cuatro
+imágenes y quedándose con la última que no está recortada del todo. En los
+cuatro pasos el índice del ítem encendido, el de la imagen y el contador dicen
+lo mismo.
+
+Riel de mobile: `{anchoVisible: 390, anchoTotal: 1430, snap: "x mandatory",
+cards: 4}`.
+
+### Lo que vi en las capturas y corregí
+
+**La caja de la imagen era el único rectángulo de esquinas rectas del sitio.**
+
+*Esperaba:* la imagen con el mismo recorte biselado que todo lo demás.
+
+*Vi:* un rectángulo puro al lado de una lista, un botón y un header que sí
+tienen las dos diagonales. Contra el resto de la página se leía como un
+elemento de otro proyecto.
+
+*Qué hice:* la utilidad `.bevel` directamente en la caja, con 20 px en desktop
+y 16 en las cards de mobile. **Sin borde ámbar**: el panel del hero ya tiene
+uno y dos marcos encendidos en la misma página compiten entre sí. Por eso va la
+utilidad y no `<Bevel variant="outline">`.
+
+### Decisiones tomadas sin consultar — Fase I
+
+56. **El índice del ítem activo lo escribe React, pero el que manda es el
+    scroll.** El `data-activo` sale de un `useState` que solo escribe el
+    `onUpdate` del ScrollTrigger. Es un `setState` por frame de scrub, que en
+    React 19 se agrupa y solo re-renderiza cuando el índice cambia de verdad
+    —cuatro veces en todo el recorrido—. La alternativa, escribir la clase a
+    mano desde GSAP, evitaría el estado pero dejaría el DOM y React
+    discrepando, que es peor de mantener.
+
+57. **La caja de la imagen va con `.bevel` y sin borde.** Ver arriba.
+
+58. **La lista no es interactiva.** Se puede leer, no clickear. Un ítem
+    clickeable tendría que scrollear a la posición exacta del pin que le
+    corresponde, y eso es una segunda fuente de verdad sobre el progreso —
+    exactamente lo que la sección evita. Si en la reunión se pide, es un
+    `scrollTo(start + i * paso)` y se agrega.
+
+### Trampas del arnés, por si alguien lo toca
+
+Dos, y las dos hicieron parecer que el carrusel estaba roto cuando lo que
+estaba roto era la medición:
+
+- **`offsetTop` no sirve para ubicar una sección pinneada.** Es relativo al
+  `offsetParent`, y con el pin-spacer de ScrollTrigger en el medio devolvía
+  1848 donde el documento decía 1132. Con 716 px de error el recorrido
+  arrancaba en el segundo segmento. Ahora el arranque sale de
+  **`window.__segST.start`**, o sea del propio ScrollTrigger, que es el único
+  que sabe dónde empieza su pin. `Segmentos.tsx` publica la instancia igual que
+  `Intro.tsx` publica su timeline (decisión 26).
+
+- **El `snap` de ScrollTrigger es DIRECCIONAL por defecto.** Al llegar
+  scrolleando hacia abajo no se queda donde uno cae: avanza al siguiente punto.
+  Para el usuario está bien —scrolleás hacia abajo, el carrusel avanza— pero
+  para medir hacía que el primer paso informara el segundo segmento. El arnés
+  scrollea **dos veces al mismo destino**: el segundo salto sale de un punto ya
+  asentado, no tiene dirección, y el snap lo deja donde cae.
+
+### Pendiente
+
+- Los ítems inactivos quedan en `--color-graphite`, como pide la consigna, y
+  contra el negro son casi ilegibles. Es el mismo nivel que las marcas de la
+  fase C, que quedó dicho que lo mirás vos. Acá el caso es un poco distinto:
+  en marcas la lista apagada es el efecto, mientras que en segmentos los tres
+  ítems apagados son las otras tres opciones que el usuario va a ver. Si te
+  parece, se suben a `--color-bone` al 25% y se sigue leyendo el contraste con
+  el ámbar del activo.
+- La barra MENU flotante se superpone con la última línea del copy en las cards
+  de mobile. No es de esta sección —el botón es fijo sobre toda la página— así
+  que va a la fase L, con el resto de la pasada de mobile.
