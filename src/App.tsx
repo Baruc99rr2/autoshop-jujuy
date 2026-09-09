@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Footer from './components/Footer'
 import Header from './components/Header'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
 import MeshOverlay from './components/MeshOverlay'
@@ -85,10 +86,7 @@ function App() {
         ))}
       </main>
 
-      <footer className="min-h-svh py-24 shell">
-        <SectionHeader index="11" eyebrow="FOOTER" title="AutoShop Jujuy" />
-        <p className="font-hud mt-8 text-bone/30">Placeholder — footer</p>
-      </footer>
+      <Footer />
     </>
   )
 }

@@ -234,3 +234,58 @@ dibuja la palabra y no como dos animaciones seguidas.
   tiene alto fijo (`h-8`/`h-10`), independiente de la carga de las fuentes. Si
   al ver la intro el logo aterriza corrido, la causa más probable es esa y la
   solución es construir el tween dentro de un `onStart`.
+
+---
+
+## Fase 3 — Footer (fase 12 del plan) ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+
+### Hecho
+
+- **`src/data/contacto.ts`** — dirección, teléfonos, mail, horarios, redes y
+  coordenadas. Todo inventado y verosímil para San Salvador de Jujuy. Las fases
+  3 (ticker del hero) y 11 (formulario) van a leer de acá.
+- **`src/data/nav.ts`** ganó `FOOTER`, con las tres columnas: CONTENIDO,
+  UTILIDAD, REDES. El **orden de los ítems ES el escalonado**, así que
+  reordenar la lista reordena la diagonal.
+- **`src/components/Footer.tsx`** — logotipo a ancho completo en Archivo
+  extendido (`clamp(2rem, 11.4vw, 13rem)`), tres columnas escalonadas, barra
+  inferior con el © y "Volver arriba", y la nota de sitio de demostración.
+- **CSS del escalonado** en `globals.css`: `.stagger-item` con
+  `padding-left: calc(var(--i) * .6rem)` y `.stagger-link` con el `\` como
+  pseudo-elemento entrando desde `translateX(-10px)` + `opacity: 0`, el link
+  corriéndose 8px y pasando a ámbar, todo en 0.25s.
+
+### Decisiones tomadas sin consultar — Fase 3
+
+14. **El `\` del pseudo-elemento va como escape unicode `\005C`, no como `\`.**
+    Esto **rompió el build** y costó encontrarlo: el parser CSS de Tailwind v4
+    corta en el backslash escapado a mano y tira
+    `CssSyntaxError: Unterminated string`. Con `content: "\005C"` compila, y el
+    minificador lo emite como `content:"\\"`, que es el escape correcto.
+    Si alguien "arregla" esa línea escribiendo `'\'`, el build vuelve a romper.
+
+15. **El logotipo del footer lleva un `\` ámbar como separador:**
+    `AUTOSHOP\JUJUY`. Es el mismo marcador del riel y de los eyebrows, así que
+    ata el footer al resto de la página en vez de ser un bloque suelto. Va con
+    `aria-hidden` para que el lector de pantalla lea "AutoShop Jujuy".
+
+16. **El foco de teclado dispara exactamente el mismo movimiento que el hover.**
+    `.stagger-link:focus-visible` repite lo de `:hover`. Sin eso, quien navega
+    con Tab por el footer pierde la mitad de la respuesta visual.
+
+17. **"Volver arriba" es un `<button>`, no un `<a href="#">`.** No navega a
+    ningún lado: ejecuta `scrollTo(0)`, que usa Lenis si está y cae al scroll
+    nativo si `prefers-reduced-motion` lo desactivó.
+
+18. **Los links internos del footer interceptan el click** y llaman a
+    `scrollTo(href)` en vez de dejar que el navegador salte. Un salto nativo
+    con Lenis andando descoloca la posición interna del scroll suave.
+    Los externos (redes) salen con `target="_blank"` y `rel="noreferrer"`.
+
+### Pendiente
+
+- "Política de privacidad" y "Términos y condiciones" apuntan a `#contacto`
+  porque no hay páginas. En producción son rutas reales.
+- Sin verificación visual, igual que la fase 2.

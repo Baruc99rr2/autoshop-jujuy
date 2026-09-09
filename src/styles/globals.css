@@ -327,3 +327,52 @@
   );
   will-change: transform;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   LISTA ESCALONADA (Footer)
+   Sangría creciente por ítem: la columna dibuja una diagonal que rima con el
+   `\` del riel. En hover el `\` entra desde la izquierda, el link se corre
+   8px y pasa a ámbar. El `\` es pseudo-elemento: no ensucia el DOM ni lo lee
+   el lector de pantalla.
+   ───────────────────────────────────────────────────────────── */
+
+.stagger-item {
+  padding-left: calc(var(--i, 0) * 0.6rem);
+}
+
+.stagger-link {
+  position: relative;
+  display: inline-block;
+  color: color-mix(in srgb, var(--color-bone) 78%, transparent);
+  transition:
+    transform 0.25s cubic-bezier(0.65, 0, 0.35, 1),
+    color 0.25s ease;
+}
+
+.stagger-link::before {
+  /* U+005C, el marcador del riel. Va por escape unicode y no por backslash
+     escapado a mano: el parser de Tailwind v4 corta ahí y rompe el build. */
+  content: "\005C";
+  position: absolute;
+  left: -1.1em;
+  color: var(--color-amber);
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    transform 0.25s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0.25s ease;
+}
+
+/* El foco de teclado hace exactamente lo mismo que el hover: si no, quien
+   navega con Tab pierde la mitad de la respuesta. */
+.stagger-link:hover,
+.stagger-link:focus-visible {
+  color: var(--color-amber);
+  transform: translateX(8px);
+}
+
+.stagger-link:hover::before,
+.stagger-link:focus-visible::before {
+  opacity: 1;
+  transform: translateX(0);
+}

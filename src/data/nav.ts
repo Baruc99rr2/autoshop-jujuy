@@ -42,3 +42,48 @@ export const MENU: ItemMenu[] = [
   { label: 'Nosotros', href: '#contadores' },
   { label: 'Contacto', href: '#contacto' },
 ]
+
+/** Columnas del footer. El orden de los ítems ES el escalonado. */
+export interface ColumnaFooter {
+  titulo: string
+  items: { label: string; href: string; externo?: boolean }[]
+}
+
+export const FOOTER: ColumnaFooter[] = [
+  {
+    titulo: 'CONTENIDO',
+    items: [
+      { label: 'Vehículos', href: '#vehiculos' },
+      { label: 'Segmentos', href: '#segmentos' },
+      { label: 'Fiat Plan', href: '#plan' },
+      { label: 'Cotizar usado', href: '#cotizador' },
+      { label: 'Marcas', href: '#marcas' },
+      { label: 'Test drive', href: '#cta' },
+    ],
+  },
+  {
+    titulo: 'UTILIDAD',
+    items: [
+      { label: 'Contacto', href: '#contacto' },
+      { label: 'Preguntas frecuentes', href: '#preguntas' },
+      { label: 'Política de privacidad', href: '#contacto' },
+      { label: 'Términos y condiciones', href: '#contacto' },
+    ],
+  },
+  {
+    titulo: 'REDES',
+    items: [
+      {
+        label: 'Instagram',
+        href: 'https://instagram.com/autoshopjujuy',
+        externo: true,
+      },
+      {
+        label: 'Facebook',
+        href: 'https://facebook.com/autoshopjujuy',
+        externo: true,
+      },
+      { label: 'WhatsApp', href: 'https://wa.me/5493884152233', externo: true },
+    ],
+  },
+]
