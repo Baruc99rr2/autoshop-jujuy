@@ -356,3 +356,73 @@ dibuja la palabra y no como dos animaciones seguidas.
 - El fondo bone de la FAQ arranca y termina con `border-y border-graphite`.
   Contra el negro puede resultar innecesario: hay que verlo. Si molesta, se
   sacan las dos líneas.
+
+---
+
+# RESUMEN DE LA SESIÓN
+
+## Qué quedó hecho
+
+Cuatro fases, cuatro commits, build y lint limpios en cada uno.
+
+| Commit | Fase | Estado |
+|---|---|---|
+| `8774f49` | 1 — Infraestructura | ✅ |
+| `f77b9f5` | 2 — Intro | ✅ 2.600 s medidos |
+| `c664f3e` | 3 — Footer escalonado | ✅ |
+| `9dcd2f4` | 4 — Preguntas frecuentes | ✅ |
+
+El sitio hoy tiene: tokens y utilidades completas, Lenis en el ticker de GSAP,
+los cuatro primitivos (`Bevel`, `MeshOverlay`, `Rail`, `SectionHeader`), la
+intro entera, el footer y la FAQ. Las otras ocho secciones son placeholders de
+100svh con su eyebrow y su titular, y el riel ya numera correctamente las once.
+
+`npm run check` verifica dos cosas que se rompen en silencio: los 13 ids del
+logo y el techo de 2.6 s de la intro.
+
+## Las decisiones que más conviene revisar
+
+Están todas numeradas arriba; estas cuatro son las que cambian algo visible:
+
+- **(1)** SVGO no corre en la cadena de svgr en la versión instalada, así que
+  `svgo: true` habría roto el build en vez de proteger los ids. Quedó
+  `svgo: false` explícito y el `svgoConfig` correcto escrito al lado.
+- **(11)** El anillo de foco sobre las formas biseladas se hace con cuatro
+  `drop-shadow`, no con `outline`. Con `clip-path`, un `outline` con
+  `outline-offset` queda entero fuera del polígono y no se ve nada.
+- **(14)** El `\` de los pseudo-elementos va como `\005C`. Escrito `'\'`
+  rompe el parser CSS de Tailwind v4 y tira el build.
+- **(19)** El riel y la malla ahora se adaptan al tono de la sección activa,
+  porque sobre el fondo bone de la FAQ los dos quedaban mal.
+
+## Lo que necesito de vos
+
+1. **Mirar la intro correr.** Es lo único importante. Está verificada por
+   build, lint, medición de duración y guarda de ids, pero **nadie la vio**:
+   la consigna pedía no levantar el dev server. `npm run dev` y mirá los
+   2.6 segundos. Los dos puntos de ajuste más probables son el aterrizaje del
+   `Flip.fit` en el header y si la respiración se lee o pasa desapercibida.
+
+2. **Los assets.** `public/img/` y `public/video/` están **vacíos**. Las fases
+   3 (hero), 5 (carrusel), 6 (catálogo) y 10 (CTA) del plan **no se pueden
+   empezar** sin los 2 videos y las 3 fotos. Es lo que bloquea más trabajo.
+   El instructivo está en `docs/ASSETS.md`.
+
+3. **Una decisión sobre el orden.** Con los assets pendientes, lo que sí se
+   puede hacer sin material nuevo es: fase 4 (contadores), fase 8 (marcas
+   tipográficas), fase 7 (simulador y cotizador) y fase 11 (contacto). Decime
+   si preferís que siga por ahí o que espere los videos para atacar hero y
+   catálogo, que son las dos que más pesan en la reunión.
+
+4. **Confirmar dos cosas menores:** si el fondo bone de la FAQ va con las
+   líneas `border-y` o sin ellas, y si te sirve que "Política de privacidad" y
+   "Términos y condiciones" del footer apunten a `#contacto` mientras no
+   existan esas páginas.
+
+## Cómo verificar sin levantar nada
+
+```bash
+npm run build   # tsc + vite
+npm run lint    # oxlint
+npm run check   # ids del logo + techo de 2.6 s de la intro
+```
