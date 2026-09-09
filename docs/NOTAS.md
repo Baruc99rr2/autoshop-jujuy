@@ -130,3 +130,107 @@ Doble chequeo, porque de esto depende toda la fase 2:
   fase 3. Si el hero termina necesitando otro clamp, se toca ahí.
 - `public/img/` y `public/video/` están **vacíos**. Las fases 3, 5, 6 y 10
   dependen de los 2 videos y las 3 fotos que todavía no están.
+
+---
+
+## Fase 2 — Intro ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Duración medida con `tl.duration()`: 2.600 s.** Exactamente el techo.
+
+### Cómo se midió sin navegador
+
+No se puede levantar el dev server en esta sesión, así que la timeline se
+extrajo a `src/components/intro-timeline.ts`, que recibe los targets y la
+fábrica del Flip **por parámetro** en vez de buscarlos en el DOM.
+
+Eso permite que `scripts/check-intro.mjs` construya exactamente la misma
+secuencia con objetos planos en lugar de nodos y lea `tl.duration()`. GSAP anima
+objetos planos igual que elementos, y la duración total no depende de los
+targets. El resultado: **2.600 s**, contra un techo declarado de 2.6 s.
+
+Está en `npm run check` junto con `scripts/check-logo.mjs`, así que el techo se
+puede volver a verificar en cualquier momento y en CI.
+
+### El guion, tal cual quedó
+
+| t | paso | dur | ease |
+|---|---|---|---|
+| 0.15 | láser, barra de 2px, 0 → ancho+140px | 0.55 | `power3.inOut` |
+| 0.20 | estela de 140px, misma curva, 0.05 s atrás | 0.55 | `power3.inOut` |
+| 0.70 | ambos se apagan al salir por el borde derecho | 0.18 | `power1.out` |
+| 0.70 | `#lg-word`: `inset(0 100% 0 0)` → `inset(0)` | 0.45 | `power3.inOut` |
+| 0.95 | `#lg-flag > path` ×7, opacidad + scale .9 → 1 | 0.30 | `power2.out`, stagger 0.045 |
+| 1.30 | línea ámbar, `scaleX` 0 → 1 desde el centro | 0.35 | `power3.out` |
+| 1.55 | respiración: scale 1 → 1.035 → 1 + drop-shadow | 0.45 | `sine.out` / `sine.in` |
+| 2.00 | `Flip.fit` al logo del header + la línea se apaga | 0.30 | `power3.inOut` |
+| 2.30 | wipe: panel negro `scaleX` 1 → 0, origin right | 0.30 | `power3.inOut` |
+| 2.60 | `ScrollTrigger.refresh()` + `lenis.start()` | | |
+
+El láser y el revelado de la palabra comparten `power3.inOut` y dirección
+izquierda→derecha: esa coincidencia es la que hace que se lea como que el láser
+dibuja la palabra y no como dos animaciones seguidas.
+
+### Decisiones tomadas sin consultar — Fase 2
+
+8. **El logo volador y el que respira son dos nodos distintos.**
+   `Flip.fit` y la respiración escriben los dos sobre `transform`. Si compartían
+   nodo, el flip pisaba el scale y el logo llegaba al header deformado.
+   Quedó `flyer` (el que viaja) envolviendo a `breath` (el que respira).
+
+9. **Todas las búsquedas del logo van scopeadas al contenedor de la intro.**
+   Mientras la intro está en pantalla hay **dos** instancias del SVG en el DOM
+   —la del intro y la del header— y las dos traen los mismos ids internos.
+   `document.querySelector('#lg-word')` agarraría el del header.
+   Por eso `Intro.tsx` busca siempre dentro de su propio `<svg>`, y el Flip
+   recibe el nodo del header por `ref`, nunca por id.
+   Los ids duplicados desaparecen solos cuando la intro se desmonta.
+   Si en algún momento hay que tener las dos instancias a la vez de forma
+   permanente, hay que namespacear los ids del SVG.
+
+10. **`initSmooth()` se movió a `main.tsx`, antes del primer render.**
+    Los layout effects de los hijos corren antes que los efectos del padre, así
+    que la intro pedía `stopScroll()` y recién después App creaba Lenis — ya
+    arrancado. Ahora Lenis existe antes de que se monte nada.
+
+11. **El anillo de foco sobre el bisel se rehizo con `drop-shadow`.**
+    Al implementar el botón SKIP quedó claro que la solución de la fase 1 no
+    servía: `clip-path` recorta también el `outline`, y con `outline-offset` el
+    anillo queda **entero afuera** del polígono, o sea invisible.
+    `drop-shadow` en cambio trabaja sobre la silueta alfa **ya recortada**, así
+    que cuatro drop-shadow sin blur (±2px en los dos ejes) dibujan un anillo
+    ámbar de 2px que sigue las dos diagonales del bisel. Sigue siendo ámbar de
+    2px, como pide el piso de calidad.
+
+12. **`scripts/check-logo.mjs` como guarda permanente.**
+    Si alguien prende SVGO o reemplaza el SVG por el vectorial del cliente, los
+    ids se pueden ir sin que el build falle y la intro se rompe en silencio.
+    El script verifica los 13 ids, que `#lg-flag` tenga 7 paths directos, que
+    estén en orden 1→7 y que `#lg-word` venga antes que `#lg-flag`.
+
+13. **El SKIP hace `tl.seek(tl.duration(), false)` y llama al cierre a mano.**
+    Literal a la consigna. `seek()` no siempre dispara `onComplete`, así que el
+    cierre (`sessionStorage`, `startScroll`, `ScrollTrigger.refresh`, `onDone`)
+    se invoca explícitamente y es idempotente por un `useRef` de guarda.
+
+### Pendiente
+
+- **Sin verificación visual.** La intro está verificada por build, por lint, por
+  la medición de duración y por la guarda de ids, pero **nadie la vio correr**:
+  la consigna pedía no levantar el dev server. Lo primero al retomar es
+  `npm run dev` y mirar los 2.6 s. Los puntos más probables de ajuste son el
+  aterrizaje del `Flip.fit` y la lectura de la respiración.
+- El `console.info` con la duración solo sale en dev (`import.meta.env.DEV`).
+
+### Dudas
+
+- **La respiración anima `filter: drop-shadow`,** que no está en la lista de
+  propiedades permitidas (`transform`, `opacity`, `clip-path`). Es un pedido
+  explícito de CLAUDE.md para ese paso, es un único ciclo de 0.45 s y no es un
+  scrub, así que se dejó. Si en un celular de gama media se nota el costo, se
+  cambia por un halo en un pseudo-elemento animado con `opacity`.
+- **`Flip.fit` mide el logo del header cuando se construye la timeline**, no
+  cuando arranca el viaje. Es estable porque el header es `fixed` y el logo
+  tiene alto fijo (`h-8`/`h-10`), independiente de la carga de las fuentes. Si
+  al ver la intro el logo aterriza corrido, la causa más probable es esa y la
+  solución es construir el tween dentro de un `onStart`.

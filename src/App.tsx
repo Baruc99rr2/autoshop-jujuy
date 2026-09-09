@@ -1,22 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Header from './components/Header'
+import Intro, { INTRO_SEEN_KEY } from './components/Intro'
 import MeshOverlay from './components/MeshOverlay'
 import Rail from './components/Rail'
 import SectionHeader from './components/SectionHeader'
 import { SECCIONES } from './data/nav'
-import { destroySmooth, initSmooth } from './lib/smooth'
+import { prefersReducedMotion } from './lib/motion-prefs'
+
+/**
+ * La intro corre una sola vez por pestaña. Durante la demo el sitio se recarga
+ * mucho y ver los 2.6 s en cada recarga cansa, así que sessionStorage la corta.
+ *
+ * Con prefers-reduced-motion no corre nunca: el logo aparece directo en el
+ * header y el hero está visible desde el primer frame.
+ */
+function decidirIntro(): boolean {
+  if (typeof window === 'undefined') return false
+  if (prefersReducedMotion()) return false
+  try {
+    return sessionStorage.getItem(INTRO_SEEN_KEY) !== '1'
+  } catch {
+    return true
+  }
+}
 
 function App() {
+  // useState con inicializador perezoso: la decisión se toma antes de la
+  // primera pintura, así no hay un frame de hero visible antes de la intro.
+  const [introActiva, setIntroActiva] = useState(decidirIntro)
   const [activa, setActiva] = useState(SECCIONES[0])
-
-  useEffect(() => {
-    initSmooth()
-    return () => destroySmooth()
-  }, [])
+  const headerLogoRef = useRef<HTMLAnchorElement>(null)
 
   // El riel muestra el índice de la sección en pantalla. IntersectionObserver
   // en vez de ScrollTrigger: es un cambio de texto, no una animación, y no
-  // necesita entrar en el ciclo de scrub.
+  // tiene por qué entrar en el ciclo de scrub.
   useEffect(() => {
     const nodes = SECCIONES.map((s) => document.getElementById(s.id)).filter(
       (n): n is HTMLElement => Boolean(n),
@@ -40,7 +57,14 @@ function App() {
     <>
       <MeshOverlay />
       <Rail index={activa.indice} label={activa.eyebrow} />
-      <Header />
+      <Header logoRef={headerLogoRef} />
+
+      {introActiva && (
+        <Intro
+          headerLogoRef={headerLogoRef}
+          onDone={() => setIntroActiva(false)}
+        />
+      )}
 
       <main>
         {SECCIONES.map((s) => (

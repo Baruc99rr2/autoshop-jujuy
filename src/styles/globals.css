@@ -147,22 +147,33 @@
     color: var(--color-void);
   }
 
-  /* Foco global: outline ámbar de 2px con offset. El offset es lo que lo hace
-     legible sobre el clip-path biselado — un outline pegado al borde queda
-     recortado por el clip en las dos esquinas cortadas. */
+  /* Foco global: outline ámbar de 2px con offset. Vale para todo lo que NO
+     esté biselado; el caso biselado se resuelve abajo. */
   :focus-visible {
     outline: 2px solid var(--color-amber);
     outline-offset: 3px;
   }
 
-  /* Los hijos de un .bevel sí quedan recortados, así que el anillo se dibuja
-     con box-shadow hacia adentro, que el clip no come. */
-  .bevel:focus-visible,
+  /* Sobre una forma biselada el outline no sirve: clip-path recorta también el
+     outline, y con outline-offset queda entero afuera del polígono, así que
+     desaparece. Lo que SÍ respeta el recorte es apilar cuatro drop-shadow sin
+     blur: drop-shadow trabaja sobre la silueta alfa ya recortada, así que el
+     anillo sigue las dos diagonales del bisel. Son 4 pasadas de filtro, pero
+     solo mientras el elemento tiene el foco. */
+  .bevel:focus-visible {
+    outline: none;
+    filter: drop-shadow(2px 0 0 var(--color-amber))
+      drop-shadow(-2px 0 0 var(--color-amber))
+      drop-shadow(0 2px 0 var(--color-amber))
+      drop-shadow(0 -2px 0 var(--color-amber));
+  }
+
+  /* Un control enfocado adentro de un contenedor biselado (un input dentro de
+     una card) sí queda recortado por el clip del padre, así que ahí el anillo
+     va hacia adentro. */
   .bevel :focus-visible {
     outline: none;
-    box-shadow:
-      inset 0 0 0 2px var(--color-amber),
-      inset 0 0 0 4px var(--color-void);
+    box-shadow: inset 0 0 0 2px var(--color-amber);
   }
 }
 
@@ -283,4 +294,36 @@
       transparent 72%
     )
   );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INTRO — láser y estela
+   El glow de dos capas: una cerrada y saturada, otra abierta y tenue.
+   El núcleo va en --color-filament para que la luz tenga un centro más
+   caliente que su halo; sin eso el ámbar se lee como amarillo plano.
+   ───────────────────────────────────────────────────────────── */
+
+.intro-laser {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--color-amber) 10%,
+    var(--color-filament) 50%,
+    var(--color-amber) 90%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 4px var(--color-amber),
+    0 0 22px rgb(253 185 22 / 0.45);
+  will-change: transform;
+}
+
+.intro-trail {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgb(253 185 22 / 0.06) 45%,
+    rgb(253 185 22 / 0.3) 100%
+  );
+  will-change: transform;
 }
