@@ -1,0 +1,69 @@
+import type { CSSProperties, ElementType, ReactNode } from 'react'
+
+export type BevelVariant = 'solid' | 'outline' | 'ghost'
+
+type BevelProps = {
+  children?: ReactNode
+  /** solid: relleno ámbar · outline: borde ámbar de 1px · ghost: solo la forma */
+  variant?: BevelVariant
+  /** Tamaño del corte diagonal, en px. */
+  bevel?: number
+  as?: ElementType
+  className?: string
+  /** Clases del contenedor exterior en la variante outline. */
+  outerClassName?: string
+  style?: CSSProperties
+} & Record<string, unknown>
+
+const SURFACE: Record<BevelVariant, string> = {
+  solid: 'bg-amber text-void',
+  outline: 'bg-asphalt text-bone',
+  ghost: 'bg-transparent text-bone',
+}
+
+/**
+ * La forma compartida de todo el sitio: esquina superior izquierda e inferior
+ * derecha cortadas en diagonal. Si aparece un border-radius en el proyecto,
+ * está mal.
+ *
+ * El clip-path recorta el borde CSS, así que la variante `outline` no puede
+ * usar `border`: se resuelve con dos contenedores biselados, el de afuera con
+ * fondo ámbar y 1px de padding, el de adentro con fondo asphalt. El píxel de
+ * ámbar que asoma ES el borde, y sigue la diagonal.
+ */
+export function Bevel({
+  children,
+  variant = 'ghost',
+  bevel = 14,
+  as: Tag = 'div',
+  className = '',
+  outerClassName = '',
+  style,
+  ...rest
+}: BevelProps) {
+  const shape = { '--bevel': `${bevel}px`, ...style } as CSSProperties
+
+  if (variant === 'outline') {
+    // El bisel interior va 1px más chico para que la diagonal quede paralela.
+    const inner = { '--bevel': `${Math.max(bevel - 1, 0)}px` } as CSSProperties
+    return (
+      <Tag
+        className={`bevel bg-amber p-px ${outerClassName}`}
+        style={shape}
+        {...rest}
+      >
+        <div className={`bevel h-full w-full ${SURFACE.outline} ${className}`} style={inner}>
+          {children}
+        </div>
+      </Tag>
+    )
+  }
+
+  return (
+    <Tag className={`bevel ${SURFACE[variant]} ${className}`} style={shape} {...rest}>
+      {children}
+    </Tag>
+  )
+}
+
+export default Bevel

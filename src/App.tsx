@@ -1,120 +1,70 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react'
+import Header from './components/Header'
+import MeshOverlay from './components/MeshOverlay'
+import Rail from './components/Rail'
+import SectionHeader from './components/SectionHeader'
+import { SECCIONES } from './data/nav'
+import { destroySmooth, initSmooth } from './lib/smooth'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activa, setActiva] = useState(SECCIONES[0])
+
+  useEffect(() => {
+    initSmooth()
+    return () => destroySmooth()
+  }, [])
+
+  // El riel muestra el índice de la sección en pantalla. IntersectionObserver
+  // en vez de ScrollTrigger: es un cambio de texto, no una animación, y no
+  // necesita entrar en el ciclo de scrub.
+  useEffect(() => {
+    const nodes = SECCIONES.map((s) => document.getElementById(s.id)).filter(
+      (n): n is HTMLElement => Boolean(n),
+    )
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+        if (!visible) return
+        const match = SECCIONES.find((s) => s.id === visible.target.id)
+        if (match) setActiva(match)
+      },
+      { threshold: [0.25, 0.6], rootMargin: '-20% 0px -20% 0px' },
+    )
+    nodes.forEach((n) => io.observe(n))
+    return () => io.disconnect()
+  }, [])
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <MeshOverlay />
+      <Rail index={activa.indice} label={activa.eyebrow} />
+      <Header />
 
-      <div className="ticks"></div>
+      <main>
+        {SECCIONES.map((s) => (
+          <section
+            key={s.id}
+            id={s.id}
+            className="flex min-h-svh flex-col justify-center border-b border-graphite/60 py-24 shell"
+          >
+            <SectionHeader
+              index={s.indice}
+              eyebrow={s.eyebrow}
+              title={s.titulo}
+            />
+            <p className="font-hud mt-8 text-bone/30">
+              Placeholder — sección {s.indice}
+            </p>
+          </section>
+        ))}
+      </main>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      <footer className="min-h-svh py-24 shell">
+        <SectionHeader index="11" eyebrow="FOOTER" title="AutoShop Jujuy" />
+        <p className="font-hud mt-8 text-bone/30">Placeholder — footer</p>
+      </footer>
     </>
   )
 }
