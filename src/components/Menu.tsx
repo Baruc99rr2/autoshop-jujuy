@@ -14,7 +14,7 @@ type MenuProps = {
 /** Las tres barras del marcador ///, como elemento propio para poder animarlas. */
 function Barras({ className = '' }: { className?: string }) {
   return (
-    <span aria-hidden="true" className={`barras ${className}`}>
+    <span aria-hidden="true" className={`barras inline-flex ${className}`}>
       <i />
       <i />
       <i />

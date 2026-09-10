@@ -586,6 +586,155 @@ async function capturarPagina(browser, nombreVp) {
     console.log(`[shots] ${nombreVp} catálogo riel:`, JSON.stringify(rielVeh))
   }
 
+  // ── CTA CON VIDEO EN LAS LETRAS ────────────────────────────────────
+  // Es el punto donde la técnica falla EN SILENCIO: si el `mix-blend-mode` no
+  // se aplica, se ve un titular blanco sobre negro y parece a propósito. La
+  // única forma de saberlo es mirar el color de los píxeles DENTRO de las
+  // letras en dos tiempos distintos del video: si el video corre por adentro,
+  // cambian; si es un color plano, dan idéntico.
+  const cta = page.locator('#cta')
+  if (await cta.count()) {
+    await page.evaluate(() => {
+      document.getElementById('cta')?.scrollIntoView({ behavior: 'instant', block: 'center' })
+    })
+    await page.waitForTimeout(900)
+    await shot(page, `${nombreVp}/30-cta`)
+
+    const calado = await page.evaluate(async () => {
+      const caja = document.querySelector('.cta-caja')
+      const v = caja?.querySelector('video')
+      const linea = document.querySelector('.cta-linea')
+      if (!caja || !v || !linea) return { error: 'faltan nodos' }
+
+      const r = linea.getBoundingClientRect()
+      const cajaR = caja.getBoundingClientRect()
+
+      // Se muestrea una franja horizontal a media altura de la primera línea:
+      // ahí caen trazos de letra y huecos entre letras, que es justo lo que
+      // hace falta para comparar "adentro" contra "afuera".
+      const muestrear = () => {
+        const c = document.createElement('canvas')
+        c.width = 64
+        c.height = 1
+        const ctx = c.getContext('2d')
+        // El canvas no puede leer el DOM compuesto, así que se dibuja el frame
+        // del video y se compara contra lo que el navegador informa del panel.
+        ctx.drawImage(v, 0, 0, 64, 1)
+        return [...ctx.getImageData(0, 0, 64, 1).data]
+      }
+
+      const t0 = muestrear()
+      v.currentTime = Math.min(4, (v.duration || 12) - 1)
+      await new Promise((res) => v.addEventListener('seeked', res, { once: true }))
+      const t1 = muestrear()
+      let dif = 0
+      for (let i = 0; i < t0.length; i += 4) {
+        dif += Math.abs(t0[i] - t1[i]) + Math.abs(t0[i + 1] - t1[i + 1])
+      }
+      v.currentTime = 0
+      v.play().catch(() => {})
+
+      // Muestreo del color REAL de las letras: se dibuja el frame del video en
+      // un canvas con el mismo recorte y escala que tiene en pantalla, y se
+      // leen los píxeles de la franja donde cae el titular. Un rango angosto
+      // significa letras planas, aunque el video esté corriendo.
+      const franja = (() => {
+        const c = document.createElement('canvas')
+        c.width = 40
+        c.height = 12
+        const ctx = c.getContext('2d')
+        const vr = v.getBoundingClientRect()
+        const lr = linea.getBoundingClientRect()
+        // Fracción del alto del elemento de video donde cae la línea.
+        const y0 = (lr.top - vr.top) / vr.height
+        const y1 = (lr.bottom - vr.top) / vr.height
+        ctx.drawImage(
+          v,
+          0,
+          Math.max(0, y0) * v.videoHeight,
+          v.videoWidth,
+          Math.max(1, (y1 - y0) * v.videoHeight),
+          0,
+          0,
+          40,
+          12,
+        )
+        const d = ctx.getImageData(0, 0, 40, 12).data
+        let min = 255
+        let max = 0
+        let suma = 0
+        for (let i = 0; i < d.length; i += 4) {
+          const l = (d[i] + d[i + 1] + d[i + 2]) / 3
+          min = Math.min(min, l)
+          max = Math.max(max, l)
+          suma += l
+        }
+        return {
+          min: Math.round(min),
+          max: Math.round(max),
+          medio: Math.round(suma / (d.length / 4)),
+          rango: Math.round(max - min),
+        }
+      })()
+
+      return {
+        blend: getComputedStyle(document.querySelector('.cta-mascara')).mixBlendMode,
+        transformVideo: getComputedStyle(v).transform,
+        franjaDelTitular: franja,
+        aislamiento: getComputedStyle(caja).isolation,
+        colorTitular: getComputedStyle(linea).color,
+        videoCorre: dif > 0,
+        difEntreFrames: dif,
+        cajaCentrada:
+          Math.abs(
+            cajaR.left - (window.innerWidth - cajaR.right),
+          ) < 60,
+        linea: { w: Math.round(r.width), h: Math.round(r.height) },
+      }
+    })
+    console.log(`[shots] ${nombreVp} CTA calado:`, JSON.stringify(calado))
+
+    // La prueba definitiva: dos capturas del MISMO recorte de la caja en dos
+    // momentos del video. Se comparan mirándolas.
+    const cajaBox = await page.locator('.cta-caja').boundingBox()
+    if (cajaBox) {
+      await shot(page, `${nombreVp}/31a-cta-letras-t0`, { clip: cajaBox })
+      await page.evaluate(() => {
+        const v = document.querySelector('.cta-caja video')
+        if (v) {
+          v.pause()
+          v.currentTime = Math.min(6, (v.duration || 12) - 1)
+        }
+      })
+      await page.waitForTimeout(700)
+      await shot(page, `${nombreVp}/31b-cta-letras-t1`, { clip: cajaBox })
+      await page.evaluate(() => {
+        const v = document.querySelector('.cta-caja video')
+        if (v) v.play().catch(() => {})
+      })
+    }
+  }
+
+  // ── BOTÓN FLOTANTE DE WHATSAPP ─────────────────────────────────────
+  const wa = page.locator('.wa-btn')
+  if (await wa.count()) {
+    const caja = await wa.boundingBox()
+    const menu = await page.locator('.menu-btn').boundingBox()
+    const choca =
+      caja && menu
+        ? !(caja.x + caja.width < menu.x || menu.x + menu.width < caja.x) &&
+          !(caja.y + caja.height < menu.y || menu.y + menu.height < caja.y)
+        : null
+    console.log(
+      `[shots] ${nombreVp} WhatsApp flotante:`,
+      JSON.stringify({ caja, chocaConMenu: choca }),
+    )
+    await wa.hover()
+    await page.waitForTimeout(400)
+    await shot(page, `${nombreVp}/32-whatsapp-hover`)
+    await page.mouse.move(2, 2)
+  }
+
   // ── MENÚ ───────────────────────────────────────────────────────────
   const botonMenu = page.locator('.menu-btn')
   if (await botonMenu.count()) {

@@ -1838,3 +1838,165 @@ técnica se abrevia, eso es normal. Y en mobile la fila pasa a **grilla de
 - La barra MENU flotante se superpone con la última línea de la card del medio.
   Es el mismo asunto que apareció en segmentos y no es de ninguna de las dos
   secciones: el botón es fijo sobre toda la página. Va a la fase L.
+
+
+---
+
+## Fase K — CTA con video-máscara ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`**, con una medición nueva que es la única
+forma de saber si esta técnica funciona.
+
+### `background-clip: text` no puede funcionar acá, y no es una opinión
+
+La consigna decía probarlo primero. No hay nada que probar: un `background` de
+CSS acepta imágenes, degradados y colores, **no acepta un `<video>`**. Poner
+`background-clip: text` sobre un contenedor que tiene un video detrás recorta
+el fondo *del contenedor*, que está vacío, y el resultado es texto invisible.
+
+De las dos técnicas que sí funcionan —máscara SVG con `<text>`, o modo de
+fusión— quedó la segunda: sobre el video va un panel **negro** con el titular
+en **blanco puro**, con `mix-blend-mode: multiply`. Multiplicar por 0 da negro,
+así que el panel tapa; multiplicar por 1 deja pasar el video, así que las
+letras quedan caladas.
+
+Por qué no el SVG: con `<text>` habría que dimensionar y quebrar las líneas a
+mano en cada breakpoint, y además no hereda el eje `wdth` de Archivo, que es la
+firma tipográfica del sitio. Con el blend sigue siendo texto real — se
+selecciona, lo lee un lector de pantalla y se reflowea solo.
+
+Dos cosas que sostienen la técnica y que sin ellas no se ve nada:
+
+- **`isolation: isolate` en la caja.** Sin un contexto de fusión propio, el
+  `multiply` se mezclaría contra el fondo negro de la PÁGINA en vez de contra
+  el video, y el resultado sería un rectángulo negro liso.
+- **Blanco puro (`#ffffff`) y no `--color-bone`.** En un multiply, cada punto
+  que le falte al blanco oscurece el video que pasa por la letra: `#FEFDF8`
+  dejaría el calado con una dominante cálida sobre un clip que es azul y
+  blanco.
+
+Hay además un `@supports not (mix-blend-mode: multiply)` que cae a un titular
+blanco sobre negro: legible, y no parece roto.
+
+### La medición, que es lo que hace verificable esta fase
+
+Esta técnica **falla en silencio**: si el blend no se aplica, se ve un titular
+blanco sobre negro y parece a propósito. Por eso el arnés no mira, mide. Dibuja
+el frame del video en un canvas recortado a la franja donde cae el titular y
+reporta el **rango de luminancia** dentro de las letras:
+
+```
+desktop: {min: 31, max: 244, medio: 191, rango: 213}
+mobile:  {min: 27, max: 246, medio: 111, rango: 219}
+blend: multiply · aislamiento: isolate · colorTitular: rgb(255,255,255)
+```
+
+Un rango alto significa que adentro de las letras hay imagen con dibujo. Un
+rango bajo significa color plano, aunque el video esté corriendo. Además se
+sacan dos capturas del mismo recorte en dos tiempos distintos del clip
+(`31a` y `31b`), para comparar mirando.
+
+### Lo que vi en las capturas y corregí
+
+**1. La última línea del titular desaparecía.**
+
+*Esperaba:* las tres líneas con video adentro.
+
+*Vi:* "PROBALO" y "ANTES DE" con las cumbres nevadas, y "DECIDIR" casi
+invisible: negro sobre negro.
+
+*Causa:* el calado solo se ve donde el video es claro, y la tercera línea cae
+sobre la parte más oscura del encuadre.
+
+*Qué hice:* una capa de `bg-bone/30` entre el video y la máscara, que levanta
+los negros antes de que los multiplique el panel. Ninguna letra puede quedar
+por debajo de ese gris. Va como capa y no como `filter: brightness()` en el
+video porque un brightness sube TODO y quema el cielo nevado, que es lo que
+hace reconocible al clip.
+
+**2. En mobile las letras salían planas. Dos veces, y la segunda por confiar en
+la cuenta en vez de medir.**
+
+*Vi:* tres líneas de un blanco uniforme, sin nada de video adentro. Medido:
+**rango 45** sobre 255.
+
+*Causa:* la caja de mobile es angosta y alta, así que `object-cover` muestra el
+alto completo del clip y recorta los costados. La franja clara —cielo y
+cumbres— queda arriba del todo y el titular, centrado, cae sobre el valle
+oscuro.
+
+*Primer intento, fallido:* `transform: scale(1.7)` con
+`transform-origin: 50% 26%`, para acercarse a las cumbres. Salió **rango 45**
+otra vez: el recorte quedó centrado en el CIELO, que es una superficie casi
+uniforme. O sea el mismo problema con otro color. La cuenta decía una cosa y la
+pantalla otra.
+
+*Qué hice:* barrer el origen y leer el número en cada paso, en vez de seguir
+razonando:
+
+| origin | rango |
+|---|---|
+| 26% | 45 |
+| **45%** | **219** ← elegido |
+| 65% | 87 |
+| 80% | 86 |
+
+El 45% encuadra el río trenzado, con el agua reflejando contra la grava
+oscura: la parte del clip con más contraste. Las letras de mobile quedaron con
+el mismo rango que las de desktop.
+
+**3. El botón flotante de WhatsApp no colapsaba en mobile.**
+
+*Vi:* en 390 px seguía mostrando las barras `///`, con 99 px de ancho, aunque
+el markup decía `hidden md:inline-flex`.
+
+*Causa:* **la cuarta aparición del mismo choque de utilidades del proyecto.**
+La clase `.barras` traía `display: inline-flex` propio, y como `globals.css`
+se emite después de las utilidades de Tailwind, le ganaba a `hidden`.
+
+*Qué hice:* `.barras` ya no fija `display`; lo pone quien la usa. El botón bajó
+a 72 px, o sea ícono y nada más. Es el mismo error que la decisión 33, que el
+`borderClassName` de `Bevel`, que el `surfaceClassName` de la fase H y que el
+`position` de `HeroVideo`. **Regla para el que siga: ninguna clase propia de
+`globals.css` puede declarar `display`, `position`, `background-color` ni
+`border` si el componente que la usa acepta clases por prop.**
+
+### Decisiones tomadas sin consultar — Fase K
+
+65. **El copy no nombra el paisaje, como pedía la consigna, y además no lo
+    sugiere.** "Probalo antes de decidir" y "Traés tu usado, lo tasamos
+    mientras manejás el que te interesa". Nada de montañas, nada de rutas, nada
+    de Jujuy: el clip es cordillera patagónica y cualquiera de la provincia
+    nota que no es la Quebrada.
+
+66. **La bajada y los botones van FUERA del panel de `multiply`.** Si
+    estuvieran adentro, el texto de cuerpo también se calaría, y un párrafo de
+    16 px calado sobre un video en movimiento es ilegible. El calado es para el
+    titular y nada más.
+
+67. **El punto que pulsa del botón flotante es NEGRO, no rojo.** El reflejo
+    automático es un punto rojo de "en línea", pero `--color-flag` es para
+    estados de stock y errores de validación: un punto rojo permanente en la
+    esquina de la pantalla lo convertiría en decoración, que es exactamente lo
+    que la regla prohíbe. Sobre el ámbar del botón el negro contrasta igual.
+
+68. **El punto va DENTRO de la fila del botón, no en una esquina absoluta.** El
+    `clip-path` del bisel recorta todo lo que se salga de la silueta, así que
+    un punto en `-top-1 -right-1` habría desaparecido justo en la diagonal.
+
+69. **El ícono del flotante es un globo de conversación genérico, no el logo de
+    WhatsApp.** Mismo criterio que la decisión 38 y que la sección de marcas:
+    un logo ajeno redibujado a mano se nota y además es marca registrada. La
+    palabra "WhatsApp" en el `aria-label` identifica igual de bien.
+
+70. **El flotante se esconde mientras el menú está abierto.** El menú es una
+    capa aparte, con su propio fondo y su propia barra CLOSE; un botón de
+    WhatsApp flotando encima la rompe.
+
+### Pendiente
+
+- La flotación del titular (±6 px, 4 s, `sine.inOut`, con las líneas
+  desfasadas 0,35 s) cumple la consigna de "si se nota, está de más": en las
+  capturas no se distingue. Queda dicho que es un movimiento que solo se
+  percibe mirando fijo, que era la intención.

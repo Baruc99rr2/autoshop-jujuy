@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Contacto from './components/Contacto'
 import Cotizador from './components/Cotizador'
 import Contadores from './components/Contadores'
+import Cta from './components/Cta'
 import Faq from './components/Faq'
 import Footer from './components/Footer'
 import Header from './components/Header'
@@ -10,6 +11,7 @@ import Marcas from './components/Marcas'
 import Menu from './components/Menu'
 import Simulador from './components/Simulador'
 import Vehiculos from './components/Vehiculos'
+import WhatsApp from './components/WhatsApp'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
 import MeshOverlay from './components/MeshOverlay'
 import Postventa from './components/Postventa'
@@ -27,6 +29,7 @@ const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
   contacto: Contacto,
   contadores: Contadores,
   cotizador: Cotizador,
+  cta: Cta,
   hero: Hero,
   marcas: Marcas,
   plan: Simulador,
@@ -174,6 +177,10 @@ function App() {
         onAbrir={() => setMenuAbierto(true)}
         onCerrar={() => setMenuAbierto(false)}
       />
+
+      {/* El flotante se esconde mientras el menú está abierto: el overlay es
+          una capa aparte y un botón de WhatsApp flotando encima la rompe. */}
+      {!menuAbierto && <WhatsApp />}
     </>
   )
 }

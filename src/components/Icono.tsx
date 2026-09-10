@@ -16,8 +16,23 @@ export type NombreIcono =
   | 'pieza'
   | 'service'
   | 'accesorio'
+  | 'chat'
 
 const TRAZOS: Record<NombreIcono, React.ReactNode> = {
+  /**
+   * Globo de conversación genérico, para el botón flotante de WhatsApp.
+   *
+   * NO es el logo de WhatsApp. Es el mismo criterio de la decisión 38 y de la
+   * sección de marcas: un logo ajeno redibujado a mano se nota, y además es
+   * marca registrada. El botón dice "WhatsApp" con todas las letras, que
+   * identifica igual de bien y no copia nada.
+   */
+  chat: (
+    <>
+      <path d="M20.5 12.4c0 4-3.8 7.2-8.5 7.2a9.9 9.9 0 0 1-3-.45L4.2 20.5l1.4-3.35A6.8 6.8 0 0 1 3.5 12.4c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2Z" />
+      <path d="M8.8 12.4h.01M12 12.4h.01M15.2 12.4h.01" />
+    </>
+  ),
   mail: (
     <>
       <rect x="2.75" y="5.25" width="18.5" height="13.5" />
