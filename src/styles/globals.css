@@ -467,6 +467,26 @@
   transition: color 0.25s ease;
 }
 
+/* LA PREGUNTA TIENE QUE PODER PARTIRSE.
+   A 360 px, "¿Quién se encarga de la transferencia y el patentamiento?" pedía
+   330 px de ancho mínimo contra los 304 disponibles, y esos 26 px de más eran
+   el ÚNICO desborde horizontal del sitio entero: el `<ul>` empujaba la columna
+   de la grilla y con ella la sección, y aparecía una barra de scroll
+   horizontal en toda la página.
+
+   La causa es una palabra: "patentamiento" no entra en el ancho de la card a
+   ese cuerpo de letra. `min-width: 0` deja que el ítem flex se encoja por
+   debajo de su contenido mínimo, y la pareja `hyphens` + `overflow-wrap` le da
+   dos formas de partir la palabra: con guión donde el diccionario lo permite
+   —el documento declara `lang="es-AR"`, así que Chromium tiene reglas— y a la
+   fuerza si no hay más remedio. Sin el segundo, un navegador sin diccionario
+   de español volvería a desbordar. */
+.faq-q {
+  min-width: 0;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
 .faq-item:hover .faq-q,
 .faq-item:focus-within .faq-q,
 .faq-item[data-open='true'] .faq-q,
@@ -883,6 +903,28 @@
    obligaría a un nodo animado por parte y a coordinar dos delays en JS.
    ───────────────────────────────────────────────────────────── */
 
+/* El panel vive siempre en el DOM. Cerrado queda recortado desde abajo,
+   invisible y sin capturar el puntero; la `visibility` se demora lo que dura
+   el recorte para que la animación de salida se vea entera antes de ocultarlo.
+   Al abrir no hay demora: tiene que responder en el frame cero. */
+.menu-panel {
+  clip-path: inset(0 0 100% 0);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    clip-path 0.45s cubic-bezier(0.65, 0, 0.35, 1),
+    visibility 0s linear 0.45s;
+}
+
+.menu-panel[data-abierto='true'] {
+  clip-path: inset(0 0 0 0);
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    clip-path 0.45s cubic-bezier(0.65, 0, 0.35, 1),
+    visibility 0s linear 0s;
+}
+
 @keyframes menu-barras-entran {
   from {
     opacity: 0;
@@ -909,11 +951,18 @@
    donde todos los demás están en su renglón. La caja tiene el alto de una
    línea del titular y las barras van centradas adentro, así que la regla
    sirve para cualquier ítem que se parta en el futuro. */
+/* Las animaciones de los ítems van colgadas de `[data-abierto='true']`: al
+   pasar el atributo a true la declaración aparece y la animación arranca, y al
+   pasarlo a false desaparece. Así se reinicia en CADA apertura, que es lo que
+   antes conseguía el montaje y desmontaje del panel. */
 .menu-item-barras {
   color: var(--color-amber);
   align-self: flex-start;
   height: calc(var(--text-h1) * 0.95);
   align-items: center;
+}
+
+.menu-panel[data-abierto='true'] .menu-item-barras {
   animation: menu-barras-entran 0.3s cubic-bezier(0.33, 1, 0.68, 1) backwards;
   animation-delay: calc(0.28s + var(--i) * 0.05s);
 }
@@ -921,10 +970,13 @@
 .menu-item-texto {
   /* El inset derecho negativo deja respirar el overshoot de la itálica y de
      los acentos; con inset(0) exacto se comen un pelo de la última letra. */
+  transition: transform 0.25s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.menu-panel[data-abierto='true'] .menu-item-texto {
   animation: menu-texto-revela 0.42s cubic-bezier(0.65, 0, 0.35, 1) backwards;
   /* Las barras entran PRIMERO: 0.1s de ventaja sobre el texto. */
   animation-delay: calc(0.38s + var(--i) * 0.05s);
-  transition: transform 0.25s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 /* El hover corre el ítem entero a la derecha, como el footer escalonado. El
@@ -965,10 +1017,15 @@
 /* Con reduced-motion los ítems aparecen enteros y quietos. El contenido es el
    mismo: lo único que se pierde es el dibujado. */
 @media (prefers-reduced-motion: reduce) {
-  .menu-item-barras,
-  .menu-item-texto {
+  .menu-panel[data-abierto='true'] .menu-item-barras,
+  .menu-panel[data-abierto='true'] .menu-item-texto {
     animation: none;
     clip-path: none;
+  }
+  /* El panel abre y cierra de una, pero sigue apareciendo y desapareciendo:
+     lo que se saca es el recorrido, no el cambio de estado. */
+  .menu-panel {
+    transition: visibility 0s linear 0s;
   }
 }
 

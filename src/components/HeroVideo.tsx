@@ -115,6 +115,10 @@ export function HeroVideo({ className = '', overlay = 'suave' }: HeroVideoProps)
         alt=""
         width={1080}
         height={1920}
+        // NO lleva `loading="lazy"`: es lo primero que se ve y el candidato a
+        // LCP de la página. Lazy acá retrasaría justamente la métrica que hay
+        // que cuidar. `fetchPriority` alto lo pone delante del resto.
+        fetchPriority="high"
         className="absolute inset-0 h-full w-full object-cover"
       />
 

@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import Bevel from './Bevel'
 import { MENU } from '../data/nav'
 import { prefersReducedMotion } from '../lib/motion-prefs'
@@ -126,81 +125,83 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
         </Bevel>
       </div>
 
-      <AnimatePresence>
-        {abierto && (
-          <motion.div
-            ref={panel}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menú principal"
-            className="fixed inset-0 z-45 flex flex-col bg-bone"
-            initial={{ clipPath: 'inset(0 0 100% 0)' }}
-            animate={{ clipPath: 'inset(0 0 0% 0)' }}
-            exit={{ clipPath: 'inset(0 0 100% 0)' }}
-            transition={{ duration: rm ? 0 : 0.45, ease: [0.65, 0, 0.35, 1] }}
-            // Click en el fondo del panel = click fuera de los links: cierra.
-            // El <nav> para la propagación, así un click en un item no llega.
-            onClick={onCerrar}
+      {/* El panel está SIEMPRE en el DOM y se abre y cierra con CSS.
+          Antes lo montaba y desmontaba `AnimatePresence` de `motion`, que
+          entraba al bundle con 133 KB para animar un solo `clip-path`. Con el
+          panel montado, la animación de salida no necesita que nadie retenga
+          el nodo: la hace la misma transición que la de entrada.
+          Mientras está cerrado va `inert`, que lo saca del orden de tabulación
+          y del árbol de accesibilidad — sin eso, un panel siempre montado se
+          recorrería con Tab estando invisible. */}
+      <div
+        ref={panel}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú principal"
+        data-abierto={abierto}
+        inert={!abierto}
+        className="menu-panel fixed inset-0 z-45 flex flex-col bg-bone"
+        // Click en el fondo del panel = click fuera de los links: cierra.
+        // El <nav> para la propagación, así un click en un item no llega.
+        onClick={onCerrar}
+      >
+          <nav
+            className="flex flex-1 flex-col justify-center pt-24 pb-28 shell"
+            onClick={(e) => e.stopPropagation()}
           >
-            <nav
-              className="flex flex-1 flex-col justify-center pt-24 pb-28 shell"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ul>
-                {MENU.map((item, i) => (
-                  <li
-                    key={item.label}
-                    className="menu-item-host"
-                    style={{ '--i': i } as React.CSSProperties}
+            <ul>
+              {MENU.map((item, i) => (
+                <li
+                  key={item.label}
+                  className="menu-item-host"
+                  style={{ '--i': i } as React.CSSProperties}
+                >
+                  <a
+                    href={item.href}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      irA(item.href)
+                    }}
+                    className="menu-item flex items-center gap-3 py-0.5 text-void md:gap-5"
                   >
-                    <a
-                      href={item.href}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        irA(item.href)
-                      }}
-                      className="menu-item flex items-center gap-3 py-0.5 text-void md:gap-5"
-                    >
-                      <Barras className="menu-item-barras" />
-                      <span className="menu-item-texto font-display-xl text-h1 leading-[0.95]">
-                        {item.label}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+                    <Barras className="menu-item-barras" />
+                    <span className="menu-item-texto font-display-xl text-h1 leading-[0.95]">
+                      {item.label}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-            {/* ── BARRA CLOSE ↓ ────────────────────────────────────
-                Arranca donde arranca el riel, no en el borde: si sangrara
-                hasta 0 cruzaría la línea del riel, que queda por encima. */}
-            <div
-              className="absolute right-0 bottom-6 left-0 shell"
-              onClick={(e) => e.stopPropagation()}
+          {/* ── BARRA CLOSE ↓ ────────────────────────────────────
+              Arranca donde arranca el riel, no en el borde: si sangrara
+              hasta 0 cruzaría la línea del riel, que queda por encima. */}
+          <div
+            className="absolute right-0 bottom-6 left-0 shell"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Bevel
+              as="button"
+              variant="ghost"
+              bevel={12}
+              type="button"
+              onClick={onCerrar}
+              surfaceClassName="bg-void text-bone"
+              className="menu-close font-hud flex w-full items-center justify-between px-6 py-4"
             >
-              <Bevel
-                as="button"
-                variant="ghost"
-                bevel={12}
-                type="button"
-                onClick={onCerrar}
-                surfaceClassName="bg-void text-bone"
-                className="menu-close font-hud flex w-full items-center justify-between px-6 py-4"
-              >
-                <span className="flex items-center gap-3">
-                  CLOSE
-                  <span aria-hidden="true" className="close-flecha">
-                    ↓
-                  </span>
+              <span className="flex items-center gap-3">
+                CLOSE
+                <span aria-hidden="true" className="close-flecha">
+                  ↓
                 </span>
-                <span aria-hidden="true" className="text-amber">
-                  \
-                </span>
-              </Bevel>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </span>
+              <span aria-hidden="true" className="text-amber">
+                \
+              </span>
+            </Bevel>
+          </div>
+      </div>
     </>
   )
 }

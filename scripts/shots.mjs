@@ -16,6 +16,12 @@ import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { chromium } from 'playwright'
+import {
+  auditarAnchos,
+  auditarReducedMotion,
+  auditarTactil,
+  auditarTeclado,
+} from './auditoria.mjs'
 
 const OUT = path.resolve('docs/shots')
 const PORT = 4317
@@ -785,8 +791,19 @@ async function capturarPagina(browser, nombreVp) {
     await page.waitForTimeout(700)
     console.log(
       `[shots] ${nombreVp} menú tras Escape:`,
+      // El panel ya no se desmonta: vive siempre en el DOM y se abre y cierra
+      // con CSS. Lo que hay que comprobar es que quede cerrado, invisible,
+      // inerte y sin capturar clicks, no que desaparezca del árbol.
       JSON.stringify({
-        panel: await page.locator('[role="dialog"]').count(),
+        abierto: await page.evaluate(
+          () => document.querySelector('.menu-panel')?.dataset.abierto,
+        ),
+        inerte: await page.evaluate(
+          () => document.querySelector('.menu-panel')?.hasAttribute('inert'),
+        ),
+        visibilidad: await page.evaluate(
+          () => getComputedStyle(document.querySelector('.menu-panel')).visibility,
+        ),
         scroll: await page.evaluate(() => getComputedStyle(document.documentElement).overflow),
         focoVuelto: await page.evaluate(() => document.activeElement?.className?.includes?.('menu-btn') ?? false),
       }),
@@ -1166,6 +1183,7 @@ async function main() {
   for (const vp of Object.keys(VIEWPORTS)) {
     await mkdir(path.join(OUT, vp), { recursive: true })
   }
+  await mkdir(path.join(OUT, 'audit'), { recursive: true })
 
   if (!FAST) await run('npm', ['run', 'build'])
 
@@ -1186,6 +1204,12 @@ async function main() {
     await capturarPagina(browser, 'mobile')
     await capturarOffline(browser, 'desktop')
     await capturarOffline(browser, 'mobile')
+
+    // Auditoría de la fase L: cinco anchos, reduced-motion y teclado.
+    await auditarAnchos(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
+    await auditarReducedMotion(browser, BASE, shot)
+    await auditarTactil(browser, BASE, shot)
+    await auditarTeclado(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
 
     console.log(`[shots] listo → ${OUT}`)
   } finally {

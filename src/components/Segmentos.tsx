@@ -36,9 +36,23 @@ export function Segmentos() {
   const [activo, setActivo] = useState(0)
   const esMobile = useMedia('(max-width: 767px)')
 
+  // El pin se cae en dos casos, y los dos van al MISMO layout de riel.
+  //
+  // Con `prefers-reduced-motion` la primera versión se limitaba a no armar el
+  // ScrollTrigger y dejaba el layout de desktop puesto: las cuatro imágenes
+  // apiladas sin que nadie las recortara, o sea la última visible, con la
+  // lista diciendo "Ciudad" al lado de la foto de "Escapada". Y sin scrub no
+  // había forma de llegar a los otros tres segmentos: tres cuartos del
+  // contenido de la sección, inalcanzables.
+  //
+  // El piso de calidad dice que con reduced-motion los cambios de estado
+  // siguen siendo visibles, solo instantáneos. Un riel con las cuatro cards
+  // cumple eso: está todo, y se llega scrolleando sin que nada se anime.
+  const sinPin = esMobile || prefersReducedMotion()
+
   useGSAP(
     () => {
-      if (esMobile || prefersReducedMotion() || !root.current) return
+      if (sinPin || !root.current) return
 
       const imagenes = gsap.utils.toArray<HTMLElement>('.seg-img', root.current)
       if (imagenes.length < 2) return
@@ -113,11 +127,11 @@ export function Segmentos() {
 
       return () => st.kill()
     },
-    { scope: root, dependencies: [esMobile] },
+    { scope: root, dependencies: [sinPin] },
   )
 
-  // ── MOBILE ────────────────────────────────────────────────────────
-  if (esMobile) {
+  // ── SIN PIN: mobile, o desktop con reduced-motion ─────────────────
+  if (sinPin) {
     return (
       <section id={S.id} className="border-b border-graphite/60 py-20">
         <div className="shell">
@@ -126,7 +140,10 @@ export function Segmentos() {
 
         <div className="seg-riel mt-10 flex gap-4 overflow-x-auto pb-4">
           {SEGMENTOS.map((s, i) => (
-            <article key={s.nombre} className="seg-card w-[85vw] shrink-0">
+            <article
+              key={s.nombre}
+              className="seg-card w-[85vw] shrink-0 md:w-[46%] lg:w-[38%]"
+            >
               <img
                 src={s.imagen}
                 alt={s.alt}
@@ -134,7 +151,11 @@ export function Segmentos() {
                 height={s.alto}
                 loading="lazy"
                 decoding="async"
-                className="bevel aspect-4/5 w-full object-cover"
+                // 4:5 en mobile, donde la card es angosta y el vertical
+                // aprovecha la pantalla; 4:3 de md para arriba, donde la card
+                // mide 547 px y un 4:5 la haría de 684 px de alto: el nombre
+                // del segmento quedaría siempre debajo del pliegue.
+                className="bevel aspect-4/5 w-full object-cover md:aspect-4/3"
                 style={{ '--bevel': '16px' } as React.CSSProperties}
               />
               <div className="mt-4 flex items-baseline justify-between gap-4">
@@ -204,6 +225,10 @@ export function Segmentos() {
               alt={s.alt}
               width={s.ancho}
               height={s.alto}
+              // Las cuatro van lazy aunque estén apiladas: el navegador las
+              // pide cuando la caja se acerca al viewport, o sea antes de que
+              // arranque el pin, y no en la carga inicial de la página.
+              loading="lazy"
               decoding="async"
               className="seg-img absolute inset-0 h-full w-full object-cover"
             />

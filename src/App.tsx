@@ -139,6 +139,18 @@ function App() {
         tono={menuAbierto ? 'claro' : fondoHeader}
       />
 
+      {/* El menú va acá, justo después del header, y NO al final del árbol.
+          Los dos son `fixed`, así que el lugar en el DOM no cambia dónde se
+          dibujan — cambia el ORDEN DE TABULACIÓN. Con el menú al final, quien
+          navega con Tab recorría las once secciones enteras antes de llegar a
+          la navegación principal del sitio. El panel cerrado está `inert`, así
+          que sus siete links no aparecen en el recorrido hasta que se abre. */}
+      <Menu
+        abierto={menuAbierto}
+        onAbrir={() => setMenuAbierto(true)}
+        onCerrar={() => setMenuAbierto(false)}
+      />
+
       {introActiva && (
         <Intro
           headerLogoRef={headerLogoRef}
@@ -172,14 +184,10 @@ function App() {
 
       <Footer />
 
-      <Menu
-        abierto={menuAbierto}
-        onAbrir={() => setMenuAbierto(true)}
-        onCerrar={() => setMenuAbierto(false)}
-      />
-
-      {/* El flotante se esconde mientras el menú está abierto: el overlay es
-          una capa aparte y un botón de WhatsApp flotando encima la rompe. */}
+      {/* El flotante SÍ va al final: es una acción secundaria y persistente, y
+          adelantarlo pondría un enlace externo entre el logo y el contenido.
+          Se esconde mientras el menú está abierto: el overlay es una capa
+          aparte y un botón de WhatsApp flotando encima la rompe. */}
       {!menuAbierto && <WhatsApp />}
     </>
   )

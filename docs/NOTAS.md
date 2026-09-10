@@ -2000,3 +2000,360 @@ a 72 px, o sea ícono y nada más. Es el mismo error que la decisión 33, que el
   desfasadas 0,35 s) cumple la consigna de "si se nota, está de más": en las
   capturas no se distingue. Queda dicho que es un movimiento que solo se
   percibe mirando fijo, que era la intención.
+
+
+---
+
+## Fase L — Mobile y performance ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**`npm run shots` completo**, ahora con tres pases de auditoría nuevos que no
+sacan capturas bonitas sino números.
+
+### El arnés creció: `scripts/auditoria.mjs`
+
+Tres pases que antes no existían y que son los que dan por cerrada esta fase:
+
+- **`auditarAnchos`** — 360, 390, 768, 1024 y 1440. En cada uno recorre la
+  página entera (hay secciones que solo montan su contenido al entrar en
+  viewport) y reporta desborde horizontal, con culpables, **más los elementos
+  "al filo"**: los que entran pero sin un solo píxel de aire, que es el caso
+  que el chequeo de desborde no agarra y que en pantalla se lee como error.
+- **`auditarReducedMotion`** — contexto con el flag puesto, recorriendo las
+  once secciones y comprobando que el CONTENIDO siga estando.
+- **`auditarTactil`** — contexto con `hasTouch`, que en Chromium pone
+  `(hover: none)` y `(pointer: coarse)`. Verifica una por una que ninguna cosa
+  del sitio quede inaccesible sin puntero.
+- **`auditarTeclado`** — 40 pulsaciones de Tab, anotando la secuencia de foco y
+  si cada parada dibuja un anillo visible.
+
+### Los números finales
+
+```
+ancho  360 : sin desborde ✓     ancho 1024 : sin desborde ✓
+ancho  390 : sin desborde ✓     ancho 1440 : sin desborde ✓
+ancho  768 : sin desborde ✓
+
+reduced-motion arranque : {introEnPantalla: false, logoDelHeader: true, heroVisible: true}
+reduced-motion contenido: {contadores: ["500+","12","9","100%"],
+                           tickerTexto: "SAN SALVADOR DE JUJUY",
+                           segmentosVisibles: 4, ctaBlend: "multiply"}
+
+táctil medios   : {hoverNone: true, punteroGrueso: true}
+táctil accesible: {fotoBaseVisible: true, marcaEncendida: "Fiat",
+                   segmentosCards: 4, tilesConEnlace: 4,
+                   anchoWhatsApp: 72, anchoMenu: 224,
+                   faqAbreConTap: "responde al tap ✓ (true → false)"}
+
+teclado : 40 paradas, 0 sin anillo visible
+          logo → MENU → hero → catálogo → simulador → … → footer
+
+OFFLINE : archivo 1152 vs fallback 887, cero peticiones externas
+```
+
+### Bundle y peso
+
+| | Antes de la fase L | Ahora |
+|---|---|---|
+| JS | 543 KB (185 KB gzip) | **432,9 KB (148,8 KB gzip)** |
+| CSS | 47 KB (9,8 KB gzip) | 47,4 KB (9,8 KB gzip) |
+
+**Los 110 KB que bajaron son `motion`, que se sacó del proyecto entero.** Ver
+la decisión 71.
+
+`dist/` completo: **5,3 MB en 17 archivos**, de los cuales 3,1 MB son los tres
+videos. Nada suelto: no quedó ningún `*-original.mp4` ni ningún `.jpg` que ya
+tenga su `.webp`.
+
+Ninguna imagen pasa los 250 KB. La más pesada es `car-2.webp` con 229,7 KB.
+Los tres videos están por debajo de su objetivo: 1391 / 530 / 1246 KB contra
+3000 / 1500 / 3000.
+
+**Propiedades animadas:** un barrido sobre todos los `gsap.to` / `gsap.set` /
+`gsap.from` del proyecto no encuentra ni una sola propiedad de layout
+—`width`, `height`, `top`, `left`, `margin`, `padding`—. Todo es `transform`,
+`opacity` y `clip-path`. La única excepción sigue siendo el `drop-shadow` de la
+respiración de la intro, que es un ciclo de 0,45 s y no un scrub, y está
+documentada desde la fase 2.
+
+**Lazy-load:** todas las imágenes bajo el hero van con `loading="lazy"`,
+incluidas las cuatro apiladas del carrusel. El póster del hero es la única que
+NO lo lleva —es el candidato a LCP— y ganó `fetchpriority="high"`.
+
+### Lo que vi y corregí
+
+**1. A 360 px el sitio desbordaba 6 px, y la culpa era de una sola palabra.**
+
+*Esperaba:* sin desborde desde 360, que es el piso declarado.
+
+*Vi:* `scrollWidth 366` contra `clientWidth 360`, con la lista de culpables
+**vacía**: ningún elemento sobresalía por su cuenta.
+
+*Causa:* la encontré midiendo qué contenedores desbordan su propio ancho, no
+qué elementos se salen de la pantalla. La columna de la grilla de la FAQ medía
+330,266 px dentro de un contenedor de 304. El motivo: los ítems de grilla
+tienen `min-width: auto`, así que no pueden achicarse por debajo de su
+contenido mínimo, y el contenido mínimo del `<ul>` lo fijaba
+**"¿Quién se encarga de la transferencia y el patentamiento?"** — concretamente
+la palabra "patentamiento", que a ese cuerpo de letra no entra en el ancho de
+la card. Esos 26 px de más empujaban la columna, la columna empujaba la
+sección y la sección le daba una barra de scroll horizontal a la página entera.
+
+*Qué hice:* `min-width: 0` en la pregunta, más `hyphens: auto` y
+`overflow-wrap: break-word`. El primero deja que el ítem flex se encoja; los
+otros dos le dan dos formas de partir la palabra: con guión donde el
+diccionario lo permite —el documento declara `lang="es-AR"`, así que Chromium
+tiene reglas— y a la fuerza si no hay diccionario. Sin el segundo, un navegador
+sin hifenación en español volvería a desbordar.
+
+**2. Con `prefers-reduced-motion`, tres cuartos del carrusel eran
+inalcanzables. Es el peor defecto de la fase.**
+
+*Esperaba:* la sección de segmentos utilizable, solo que sin animación.
+
+*Vi:* la lista decía "Ciudad · 01 / 04" y al lado se veía la foto de
+"Escapada". Y no había forma de llegar a los otros tres segmentos.
+
+*Causa:* con reduced-motion el componente se limitaba a no armar el
+ScrollTrigger, pero dejaba puesto el layout de desktop. Sin nadie que recortara
+las imágenes apiladas, la última quedaba arriba; y sin scrub, el índice se
+quedaba clavado en 0. Las dos mitades de la sección mostrando cosas distintas,
+y tres de los cuatro segmentos sin manera de verse.
+
+*Qué hice:* con reduced-motion el desktop cae al **mismo layout de riel que
+mobile**, con las cuatro cards. El piso de calidad dice que los cambios de
+estado siguen siendo visibles, solo instantáneos: un riel cumple eso, está todo
+y se llega scrolleando sin que nada se anime. Las cards del riel pasan a 4:3 de
+`md` para arriba — a 4:5 medirían 684 px de alto y el nombre del segmento
+quedaría siempre debajo del pliegue.
+
+**3. El botón MENU era la última parada del teclado.**
+
+*Vi:* el recorrido de Tab iba logo → hero → catálogo → … → footer → **MENU**.
+Quien navega con teclado recorría las once secciones enteras antes de llegar a
+la navegación principal del sitio.
+
+*Causa:* `<Menu>` estaba al final del árbol de `App`, después del footer.
+
+*Qué hice:* pasó a ir justo después del `<Header>`. Los dos son `fixed`, así
+que el lugar en el DOM no cambia dónde se dibujan: cambia el orden de
+tabulación. Ahora es **logo → MENU → contenido**. El panel cerrado está
+`inert`, así que sus siete links no aparecen hasta que se abre. El flotante de
+WhatsApp sí se quedó al final: es una acción secundaria, y adelantarlo pondría
+un enlace externo entre el logo y el contenido.
+
+### Dos falsos positivos del arnés, que costaron tiempo y valen la pena anotar
+
+- **"El tap no abre la FAQ".** La sonda tapeaba la primera pregunta y leía
+  `data-open`; daba `false` y parecía que el sitio no respondía al dedo en un
+  celular. Instrumentando los eventos se vio que el `click` llegaba al botón y
+  que nada lo prevenía. La verdad es que **la FAQ arranca con la primera
+  pregunta abierta** (`useState(FAQ[0].id)`), así que el tap la estaba
+  cerrando, correctamente. La sonda ahora compara el estado antes y después en
+  vez de esperar un valor fijo.
+- **"Ninguna marca se enciende sin hover".** Las marcas se encienden por la
+  línea central del viewport (decisión 34), y la sonda leía el estado desde el
+  pie de la página, con la sección fuera de la franja de observación. Ahora se
+  para sobre la sección antes de medir, e informa "Fiat".
+
+En los dos casos el sitio estaba bien y la medición estaba mal. Es el mismo
+tipo de error que el `offsetTop` de la fase I: **antes de arreglar algo que
+mide mal, hay que descartar que el que mide mal sea el arnés.**
+
+### Decisiones tomadas sin consultar — Fase L
+
+71. **`motion` se sacó del proyecto.** Es un desvío explícito de la tabla de
+    stack de `CLAUDE.md`, que la lista para "menú, acordeones, hover". En los
+    hechos: los acordeones de la FAQ se resuelven con
+    `grid-template-rows: 0fr → 1fr`, los hovers con transiciones de CSS, y el
+    dibujado de los ítems del menú con `@keyframes` (decisión 53). Le quedaba
+    **una** cosa: el `clip-path` de entrada y salida del panel del menú, y por
+    eso entraban 133 KB al bundle — el 25% del JS del sitio para animar un
+    recorte.
+
+    Ahora el panel vive siempre en el DOM y se abre y cierra con una transición
+    de CSS. La animación de salida no necesita que nadie retenga el nodo, que
+    era lo único que aportaba `AnimatePresence`. Cerrado va `inert`, que lo
+    saca del orden de tabulación y del árbol de accesibilidad. El bundle bajó
+    de 543 KB a 432,9 KB.
+
+    Si en el futuro aparece una animación de layout de verdad —reordenar cards
+    con `layoutId`, por ejemplo— vuelve a instalarse y la decisión se revierte
+    con un `npm i motion`.
+
+72. **`min-width: 0` + `hyphens: auto` + `overflow-wrap: break-word` en la
+    pregunta de la FAQ.** Ver el punto 1. Los tres, no uno.
+
+73. **Con reduced-motion el desktop usa el layout de mobile en segmentos.** Ver
+    el punto 2.
+
+74. **El `<Menu>` va segundo en el DOM y el flotante de WhatsApp último.** Ver
+    el punto 3.
+
+### Regla que salió de repetir el mismo error cuatro veces
+
+A lo largo del proyecto, el mismo bug apareció cuatro veces con cuatro caras
+distintas: `border-l` contra `border-l-0` (decisión 33), `bg-amber` contra
+`bg-graphite` (el `borderClassName` de `Bevel`), `bg-transparent` contra
+`bg-void` (el `surfaceClassName` de la fase H), `relative` contra `absolute`
+(el `HeroVideo` de la fase H) y `display: inline-flex` contra `hidden` (las
+barras del flotante, fase K).
+
+**Ninguna clase propia de `globals.css` puede declarar `display`, `position`,
+`background-color` ni `border` si el componente que la usa acepta clases por
+prop.** Dos declaraciones de la misma propiedad en el mismo atributo las
+resuelve el orden en que Tailwind emite las reglas, no el orden en que uno las
+escribe, y el resultado cambia entre builds. Cuando hace falta reemplazar un
+valor que viene de una variante, se agrega una prop explícita —`borderClassName`,
+`surfaceClassName`— que **sustituye** en vez de sumarse.
+
+### Pendiente para el deploy
+
+- El único punto que queda sin resolver del todo es que los dos botones
+  flotantes —MENU abajo al centro, WhatsApp abajo a la derecha— pasan por
+  encima del contenido mientras se scrollea. Es inherente a un botón fijo y le
+  pasa a cualquier sitio que tenga uno; verificado que **no se pisan entre
+  ellos** en ningún ancho (`chocaConMenu: false` en 390 y en 1440) y que los
+  dos tienen área de toque cómoda (224 px y 72 px en mobile). Si en la reunión
+  molesta, la solución de una línea es esconder la barra MENU al scrollear
+  hacia abajo y traerla de vuelta al scrollear hacia arriba.
+
+
+---
+
+# RESUMEN DE LA SESIÓN 3
+
+## Qué quedó hecho
+
+Seis fases, seis commits, build y lint limpios en cada uno.
+
+| Commit | Fase | Estado |
+|---|---|---|
+| `5018bd6` | F0 — Assets comprimidos | ✅ |
+| `8063c53` | G — Fuentes propias, rojo en errores, limpieza del logo | ✅ |
+| `171b2f6` | H — Hero partido, ticker y menú | ✅ |
+| `254efa6` | I — Carrusel de segmentos | ✅ |
+| `0ba758a` | J — Catálogo | ✅ |
+| `88e9953` | K — CTA con video-máscara | ✅ |
+| — | L — Mobile y performance | ✅ |
+
+**El sitio está completo.** Las once secciones del riel tienen componente
+propio: no queda un solo placeholder.
+
+## Los números que importan
+
+```
+public/     : 74 MB  →  4,12 MB
+dist/       : 5,3 MB en 17 archivos
+JS          : 432,9 KB (148,8 KB gzip)
+CSS         : 47,4 KB (9,8 KB gzip)
+
+hero-desktop.mp4  1,36 MB  (objetivo < 3)
+hero-mobile.mp4   0,52 MB  (objetivo < 1,5)
+cta.mp4           1,22 MB  (objetivo < 3)
+imagen más pesada 229,7 KB (tope 250)
+
+desborde horizontal en 360 / 390 / 768 / 1024 / 1440 : ninguno
+peticiones a terceros                                : ninguna
+paradas de teclado sin anillo visible                : ninguna
+```
+
+## Lo que encontré mirando, y que ningún test hubiera agarrado
+
+Nueve cosas. Las cuatro primeras son las que importan.
+
+1. **El video del hero no aparecía: altura 0.** `HeroVideo` traía `relative` en
+   su raíz y el llamador le pasaba `absolute` — dos utilidades de `position` en
+   el mismo atributo. Y el panel de desktop sacaba el alto del aspecto y el
+   ancho del contenedor, que es circular.
+
+2. **Con `prefers-reduced-motion`, tres cuartos del carrusel de segmentos eran
+   inalcanzables**, y la lista decía "Ciudad" al lado de la foto de "Escapada".
+
+3. **A 360 px el sitio desbordaba 6 px** por una sola palabra:
+   "patentamiento", en una pregunta de la FAQ, forzaba una columna de grilla de
+   330 px dentro de un contenedor de 304 y le daba scroll horizontal a la
+   página entera.
+
+4. **El recorte de hover del Swift caía justo sobre la patente checa** — el
+   error que `docs/ASSETS.md` avisaba. `transform-origin` no es el punto que
+   queda en el centro del recorte.
+
+5. El titular del hero usaba el token `--text-hero`, calculado para un hero a
+   sangre, y en la columna del 56% se partía en cuatro líneas fuera de
+   pantalla.
+6. El botón MENU era la **última** parada del teclado, después de las once
+   secciones.
+7. Se montaban dos `<video>` en el hero y el oculto igual pedía metadata.
+8. La fila HUD del catálogo se truncaba en los dos viewports, por motivos
+   distintos.
+9. `.barras` fijaba `display` propio y le ganaba a `hidden`, así que el botón
+   flotante de WhatsApp no colapsaba en mobile.
+
+## Lo que miré y está bien
+
+- **El calado del CTA funciona y está medido**, que es la única forma de
+  saberlo: rango de luminancia dentro de las letras de 215 en desktop y 219 en
+  mobile, sobre 255.
+- **El carrusel de segmentos nunca se desincroniza**: en los cuatro puntos de
+  snap, el ítem encendido, la imagen visible y el contador dicen lo mismo.
+- **Los chips de estado son exactamente los tokens**: `rgb(253,185,22)` para
+  Disponible, `rgb(255,59,31)` para Reservado.
+- **El sitio funciona sin red**: con todas las peticiones externas bloqueadas,
+  Archivo carga igual y el documento mide 1440×10987, píxel por píxel lo mismo
+  que con red.
+- **En táctil no queda nada inaccesible**: la foto base del catálogo siempre
+  visible, las marcas encendiéndose por scroll, los cuatro tiles de post-venta
+  como enlaces reales, la FAQ respondiendo al tap.
+- **Los tres recortes de detalle del catálogo** muestran lo que tienen que
+  mostrar: parrilla y óptica del Tucson, llanta y pastizal del Swift, y
+  parrilla RAM con los faros encendidos, que es el mejor de los tres.
+
+## Lo que necesito de vos
+
+1. **Los tres números inventados que quedan en pantalla.** La TNA del 59%
+   (`src/data/financiacion.ts`), la retención del 93% anual
+   (`src/data/cotizador.ts`) y el "47 unidades en stock"
+   (`src/data/vehiculos.ts`). Dijiste que se ajustan en la reunión con los
+   números reales; los tres están en un archivo y se cambian en un minuto.
+
+2. **Dos cosas que quedaron en `--color-graphite` y son casi ilegibles a
+   propósito**: los nombres de marcas apagados (fase C, ya dijiste que lo
+   mirabas vos) y los tres segmentos inactivos del carrusel. El segundo caso es
+   distinto del primero: en marcas la lista apagada ES el efecto, mientras que
+   en segmentos los tres ítems apagados son las otras tres opciones que el
+   usuario va a ver. Si te parece, se suben a `--color-bone` al 25% y el
+   contraste con el ámbar del activo se mantiene.
+
+3. **Los dos botones flotantes pasan por encima del contenido al scrollear.**
+   Es inherente a un botón fijo; verifiqué que no se pisan entre ellos en
+   ningún ancho y que los dos tienen área de toque cómoda. Si molesta en el
+   celular, la solución de una línea es esconder la barra MENU al scrollear
+   hacia abajo.
+
+4. **Confirmá que sacar `motion` te parece bien.** Es un desvío de la tabla de
+   stack de `CLAUDE.md`. Quedaba usada para una sola animación —el `clip-path`
+   del panel del menú— y costaba 133 KB, el 25% del JS del sitio. Está
+   explicado en la decisión 71 y se revierte con un `npm i motion`.
+
+## Pendiente real para el deploy
+
+- **Nadie abrió el sitio en un celular físico todavía.** Todo lo de esta sesión
+  está verificado con Playwright en Chromium, incluida la emulación táctil,
+  pero el arnés no reproduce la barra de URL de Safari en iOS, que es
+  justamente lo que motiva que el carrusel no se pinnee en mobile.
+- "Política de privacidad" y "Términos y condiciones" siguen apuntando a
+  `#contacto` porque no existen esas páginas.
+- Las 47 unidades reales, las fotos del stock y los datos de contacto
+  definitivos: todo eso es editar `src/data/` y nada más, que era el objetivo
+  de estructurarlo así.
+
+## Cómo verificar
+
+```bash
+npm run build   # tsc + vite
+npm run lint    # oxlint
+npm run check   # ids del logo + techo de 2.6 s de la intro
+npm run fonts   # resincroniza los .woff2 desde @fontsource-variable
+npm run shots   # capturas + mediciones + auditoría → docs/shots/
+```
