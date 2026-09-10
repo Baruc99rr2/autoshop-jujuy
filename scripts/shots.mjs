@@ -516,6 +516,76 @@ async function capturarPagina(browser, nombreVp) {
     console.log(`[shots] ${nombreVp} segmentos solape:`, JSON.stringify(solape))
   }
 
+  // ── CATÁLOGO ───────────────────────────────────────────────────────
+  const catalogo = page.locator('#vehiculos')
+  if (await catalogo.count()) {
+    await page.evaluate(() => {
+      document
+        .getElementById('vehiculos')
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    })
+    await page.waitForTimeout(700)
+    // El puntero a una esquina: si quedó sobre una card del paso anterior, la
+    // captura "en reposo" sale con el recorte de detalle puesto.
+    await page.mouse.move(2, 2)
+    await page.waitForTimeout(500)
+    await shot(page, `${nombreVp}/20-catalogo`)
+
+    // Los números de las cards, leídos del DOM. Una cuota mal calculada o un
+    // precio sin separador local no se ven en una captura reducida.
+    const cards = await page.$$eval('#vehiculos .veh-card', (ns) =>
+      ns.map((n) => ({
+        titulo: n.querySelector('h3')?.textContent,
+        chip: n.querySelector('.veh-chip')?.textContent,
+        chipColor: (() => {
+          const c = n.querySelector('.veh-chip')
+          return c ? getComputedStyle(c).backgroundColor : null
+        })(),
+        hud: [...n.querySelectorAll('.font-hud.num')].map((x) => x.textContent),
+      })),
+    )
+    console.log(`[shots] ${nombreVp} catálogo cards:`, JSON.stringify(cards))
+
+    // El recorte de detalle, una card por vez. Cada uno se eligió a mano
+    // mirando la foto, así que hay que MIRAR el resultado: un recorte mal
+    // elegido queda en un pedazo de cielo o de asfalto.
+    if (nombreVp === 'desktop') {
+      const n = await page.locator('#vehiculos .veh-card').count()
+      for (let i = 0; i < n; i += 1) {
+        await page.locator('#vehiculos .veh-card').nth(i).scrollIntoViewIfNeeded()
+        await page.locator('#vehiculos .veh-card').nth(i).hover()
+        await page.waitForTimeout(800)
+        await shot(page, `${nombreVp}/21${'abc'[i]}-catalogo-detalle-${i + 1}`)
+      }
+      await page.mouse.move(2, 2)
+      await page.waitForTimeout(400)
+    }
+
+    // Los filtros. Con tres unidades dejan una o dos: lo que se verifica es
+    // que el mecanismo filtre de verdad, no que quede lleno.
+    const chips = page.locator('#vehiculos [aria-pressed]')
+    for (const [i, id] of ['todos', '0km', 'usado'].entries()) {
+      await chips.nth(i).click()
+      await page.waitForTimeout(500)
+      const visibles = await page.$$eval('#vehiculos .veh-card h3', (ns) =>
+        ns.map((n) => n.textContent),
+      )
+      console.log(`[shots] ${nombreVp} filtro ${id}:`, JSON.stringify(visibles))
+      if (i > 0) await shot(page, `${nombreVp}/22${'ab'[i - 1]}-catalogo-filtro-${id}`)
+    }
+    await chips.nth(0).click()
+    await page.waitForTimeout(400)
+
+    // El riel: cuánto sobra hacia la derecha. Si `anchoTotal` no supera al
+    // visible, la tercera card entra entera y el riel deja de leerse como riel.
+    const rielVeh = await page.$eval('#vehiculos .veh-riel', (el) => ({
+      anchoVisible: el.clientWidth,
+      anchoTotal: el.scrollWidth,
+      snap: getComputedStyle(el).scrollSnapType,
+    }))
+    console.log(`[shots] ${nombreVp} catálogo riel:`, JSON.stringify(rielVeh))
+  }
+
   // ── MENÚ ───────────────────────────────────────────────────────────
   const botonMenu = page.locator('.menu-btn')
   if (await botonMenu.count()) {

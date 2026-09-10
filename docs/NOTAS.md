@@ -1705,3 +1705,136 @@ estaba roto era la medición:
 - La barra MENU flotante se superpone con la última línea del copy en las cards
   de mobile. No es de esta sección —el botón es fijo sobre toda la página— así
   que va a la fase L, con el resto de la pasada de mobile.
+
+
+---
+
+## Fase J — Catálogo ✅
+
+**Build:** pasa. **Lint:** limpio. **`npm run check`:** pasa.
+**Verificado con `npm run shots`**: las tres cards, los tres recortes de hover
+uno por uno, los tres filtros y el riel en los dos viewports.
+
+### Las tres unidades, con su nombre real
+
+| Foto | Unidad | Condición | Precio | Estado |
+|---|---|---|---|---|
+| `car-1` | **Hyundai Tucson** 2.0 GL 6AT · 2021 · 48.500 km | usado | $38.900.000 | Disponible |
+| `car-2` | **Suzuki Swift Sport** 1.4 Boosterjet · 2019 · 62.300 km | usado | $26.500.000 | Reservado |
+| `car-3` | **RAM 1500** Laramie 4x4 · 2025 · 0 km | 0km | $96.400.000 | Disponible |
+
+Marca y modelo son los reales de cada foto. Año, versión, kilómetros, precio y
+estado están inventados. Cada una lleva su `slug` desde ahora, aunque todavía
+no se navegue a ninguna ficha: cambiar el esquema de URLs después de que
+Google indexó las fichas cuesta redirecciones (`docs/BACKLOG.md`).
+
+### La cuota sale de la misma fórmula que el simulador
+
+`cuotaDesde()` importa `cuotaMensual()` de `src/data/financiacion.ts` y la
+aplica con 50% de anticipo a 60 cuotas. Si el catálogo tuviera su propia
+cuenta, alcanzaría con que alguien cambie la TNA en un solo archivo para que el
+sitio se contradiga a sí mismo entre la sección 04 y la 05. Hoy: $1.013.179 /
+$690.212 / $2.510.809.
+
+### Verificado leyendo el DOM
+
+```
+filtro todos:  ["Hyundai Tucson", "Suzuki Swift Sport", "RAM 1500"]
+filtro 0km:    ["RAM 1500"]
+filtro usado:  ["Hyundai Tucson", "Suzuki Swift Sport"]
+
+chips: DISPONIBLE rgb(253,185,22)  ·  RESERVADO rgb(255,59,31)
+riel desktop: {anchoVisible: 1440, anchoTotal: 1744}
+riel mobile:  {anchoVisible: 390,  anchoTotal: 1091}
+```
+
+Los colores de los chips son exactamente `--color-amber` y `--color-flag`, sin
+variantes inventadas. Y `anchoTotal > anchoVisible` en los dos viewports, que
+es la condición para que el riel se lea como riel: si la última card entrara
+entera, el conjunto volvería a leerse como grilla.
+
+### Lo que vi en las capturas y corregí
+
+**1. El recorte de hover del Swift caía justo sobre la patente checa. Es el
+error que `docs/ASSETS.md` avisaba y me lo comí igual.**
+
+*Esperaba:* la llanta delantera con el pastizal.
+
+*Vi:* "9C4 8951" perfectamente legible en el centro del recorte, en el catálogo
+de una concesionaria de Jujuy.
+
+*Causa:* di por hecho que `transform-origin` es el punto que queda en el centro
+del recorte, y no lo es. Con `transform: scale(s)`, el contenido que queda
+centrado está en `o + (0.5 − o) / s` — con `o: 58%` y `s: 2.4`, eso da 54,7%,
+que es exactamente donde está la patente. Y encima la imagen entra con
+`object-cover`, que ya recortó un 8,5% de cada lado antes de escalar.
+
+*Qué hice:* despejé esa cuenta hacia atrás partiendo de dónde está la llanta en
+la imagen mostrada, en vez de tantear: `zoom: 2.6, origen: '78% 80%'`. La
+captura nueva muestra la llanta y el pastizal, con la patente fuera de cuadro.
+
+Los otros dos recortes salieron bien a la primera: la parrilla en panal con la
+óptica del Tucson y —el mejor de los tres— la parrilla con las letras RAM y los
+dos faros LED encendidos.
+
+**2. Las cards eran tan altas que no entraban foto y precio en la misma
+pantalla.**
+
+*Vi:* al 46% del contenedor, una card mide 660 px de ancho y 495 solo de foto.
+En un notebook de 900 px se veía la foto y el arranque del nombre, y el precio
+—que es el dato de la sección— quedaba abajo del pliegue.
+
+*Qué hice:* 40% en `lg` y 56% en `md`. La card entera entra en pantalla y
+siguen viéndose dos completas más el borde de la tercera.
+
+**3. La fila HUD se truncaba, en los dos viewports por motivos distintos.**
+
+*Vi:* en desktop, "AUTOMATIC…" en la celda de caja. En mobile, cuatro celdas de
+70 px con "48.5…", "2.0 …" y "AUT.…". Una ficha técnica cortada con puntos
+suspensivos no se lee como diseño, se lee como que el sitio está roto.
+
+*Qué hice:* dos cosas distintas para dos problemas distintos. Los valores de
+caja se abreviaron en los datos ("Aut. 6", "Man. 6", "Aut. 8") — una ficha
+técnica se abrevia, eso es normal. Y en mobile la fila pasa a **grilla de
+2×2**, que da 140 px por celda.
+
+### Decisiones tomadas sin consultar — Fase J
+
+59. **El recorte de hover es una segunda copia de la misma imagen, revelada con
+    `clip-path`, y no la misma imagen escalándose.** Escalar el `<img>`
+    original haría que al salir del hover la foto volviera "desde adentro", que
+    se lee como zoom y no como barrido. Con dos capas, lo único que se mueve es
+    el borde del recorte de izquierda a derecha, que es el gesto del sitio.
+
+60. **El recorte lleva una etiqueta con lo que se está mirando**
+    ("PARRILLA Y ÓPTICA DELANTERA"). Sin ella, una foto de auto que de golpe
+    se ve al 260% se lee como un error de escala. Con ella se lee como una
+    decisión, y de paso le dice al cliente en la reunión qué es lo que está
+    pasando.
+
+61. **El hover del recorte va solo en `(hover: hover) and (pointer: fine)`.**
+    En táctil no hay hover, y atarlo a `:active` haría que la foto saltara al
+    recorte cada vez que alguien toca la card para arrastrar el riel. Como el
+    recorte es decorativo y la foto completa está siempre visible, no queda
+    contenido inaccesible sin puntero.
+
+62. **El riel se arrastra con el puntero además de scrollearse.** En desktop no
+    hay gesto táctil y una barra de scroll horizontal oculta no invita a
+    moverla. Va con `setPointerCapture` para que soltar el botón fuera del riel
+    también termine el gesto; sin eso el riel queda pegado al mouse. Solo con
+    `pointerType === 'mouse'`, así el scroll táctil nativo no se toca.
+
+63. **El riel sangra hasta el borde derecho de la pantalla.** No respeta el
+    margen del `shell` de ese lado: una card cortada por el borde es lo que le
+    dice al ojo que hay más contenido al costado. Del lado izquierdo sí respeta
+    el riel, para que la primera card quede alineada con el titular.
+
+64. **La cuota va al lado del precio, no debajo.** En Argentina la cuota es el
+    dato que la gente mira antes que el precio; ponerla en una línea secundaria
+    sería contradecir cómo se compra un auto acá.
+
+### Pendiente
+
+- La barra MENU flotante se superpone con la última línea de la card del medio.
+  Es el mismo asunto que apareció en segmentos y no es de ninguna de las dos
+  secciones: el botón es fijo sobre toda la página. Va a la fase L.

@@ -1069,3 +1069,84 @@
 .seg-card {
   scroll-snap-align: start;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   CATÁLOGO
+
+   El riel sangra hasta el borde derecho: una card cortada por el borde es lo
+   que le dice al ojo que hay más contenido al costado. El padding de arranque
+   repite el del `shell` para que la primera card quede alineada con el titular.
+   ───────────────────────────────────────────────────────────── */
+
+.veh-riel {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline-start: calc(var(--rail-w) + var(--shell-pad));
+  padding-inline: calc(var(--rail-w) + var(--shell-pad)) var(--shell-pad);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Con arrastre por puntero, el navegador intentaría además seleccionar el
+     texto de las cards mientras se arrastra. */
+  user-select: none;
+}
+
+.veh-riel::-webkit-scrollbar {
+  display: none;
+}
+
+.veh-card {
+  scroll-snap-align: start;
+}
+
+/* Cursor de agarre, solo donde hay puntero fino. En táctil no significa nada
+   y además `grab` no existe como gesto. */
+@media (hover: hover) and (pointer: fine) {
+  .veh-riel {
+    cursor: grab;
+  }
+  .veh-riel:active {
+    cursor: grabbing;
+  }
+}
+
+/* ── El recorte de detalle del hover ─────────────────────────────────
+   Una segunda copia de la MISMA imagen, ampliada hacia un punto elegido a mano
+   por unidad, que se revela con un barrido de izquierda a derecha. No hay
+   archivos nuevos: un recorte al 230% de una foto de 1600px sigue teniendo
+   resolución de sobra para una caja de ~600.
+
+   Solo con puntero fino. En táctil no hay hover, y dejarlo atado a `:active`
+   haría que la foto saltara al tocar la card para arrastrar el riel. */
+.veh-detalle,
+.veh-detalle-label {
+  opacity: 0;
+  clip-path: inset(0 100% 0 0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .veh-detalle {
+    opacity: 1;
+    transform: scale(var(--zoom));
+    transition: clip-path 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .veh-detalle-label {
+    opacity: 1;
+    transition: clip-path 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.08s;
+  }
+
+  .veh-card:hover .veh-detalle,
+  .veh-card:focus-within .veh-detalle,
+  .veh-card:hover .veh-detalle-label,
+  .veh-card:focus-within .veh-detalle-label {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Con reduced-motion el recorte sigue existiendo, pero aparece de una: el
+   contenido es el mismo, lo que se saca es el barrido. */
+@media (prefers-reduced-motion: reduce) {
+  .veh-detalle,
+  .veh-detalle-label {
+    transition: none;
+  }
+}

@@ -9,6 +9,7 @@ import Hero from './components/Hero'
 import Marcas from './components/Marcas'
 import Menu from './components/Menu'
 import Simulador from './components/Simulador'
+import Vehiculos from './components/Vehiculos'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
 import MeshOverlay from './components/MeshOverlay'
 import Postventa from './components/Postventa'
@@ -32,6 +33,7 @@ const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
   postventa: Postventa,
   preguntas: Faq,
   segmentos: Segmentos,
+  vehiculos: Vehiculos,
 }
 
 /**
