@@ -533,13 +533,14 @@ async function capturarPagina(browser, nombreVp) {
     })
     await page.waitForTimeout(700)
     // El puntero a una esquina: si quedó sobre una card del paso anterior, la
-    // captura "en reposo" sale con el recorte de detalle puesto.
+    // captura "en reposo" sale con el barrido de la tira VER FICHA puesto.
     await page.mouse.move(2, 2)
     await page.waitForTimeout(500)
     await shot(page, `${nombreVp}/20-catalogo`)
 
-    // Los números de las cards, leídos del DOM. Una cuota mal calculada o un
-    // precio sin separador local no se ven en una captura reducida.
+    // Los números de las cards, leídos del DOM: un precio sin separador local
+    // o una unidad sin precio que salga "$ 0" no se ven en una captura
+    // reducida. `href` verifica de paso que la card entera linkee a su ficha.
     const cards = await page.$$eval('#vehiculos .veh-card', (ns) =>
       ns.map((n) => ({
         titulo: n.querySelector('h3')?.textContent,
@@ -549,20 +550,22 @@ async function capturarPagina(browser, nombreVp) {
           return c ? getComputedStyle(c).backgroundColor : null
         })(),
         hud: [...n.querySelectorAll('.font-hud.num')].map((x) => x.textContent),
+        href: n.querySelector('a')?.getAttribute('href'),
       })),
     )
     console.log(`[shots] ${nombreVp} catálogo cards:`, JSON.stringify(cards))
 
-    // El recorte de detalle, una card por vez. Cada uno se eligió a mano
-    // mirando la foto, así que hay que MIRAR el resultado: un recorte mal
-    // elegido queda en un pedazo de cielo o de asfalto.
+    // El hover de cada card: el barrido ámbar de la tira VER FICHA y el
+    // acercamiento corto de la foto. Hay que MIRARLO: el barrido tiene que
+    // llegar al borde derecho de la tira y el texto pasar a negro, como en la
+    // FAQ y en post-venta.
     if (nombreVp === 'desktop') {
       const n = await page.locator('#vehiculos .veh-card').count()
       for (let i = 0; i < n; i += 1) {
         await page.locator('#vehiculos .veh-card').nth(i).scrollIntoViewIfNeeded()
         await page.locator('#vehiculos .veh-card').nth(i).hover()
         await page.waitForTimeout(800)
-        await shot(page, `${nombreVp}/21${'abc'[i]}-catalogo-detalle-${i + 1}`)
+        await shot(page, `${nombreVp}/21${'abc'[i]}-catalogo-hover-${i + 1}`)
       }
       await page.mouse.move(2, 2)
       await page.waitForTimeout(400)

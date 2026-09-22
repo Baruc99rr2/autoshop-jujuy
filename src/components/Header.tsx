@@ -1,4 +1,5 @@
 import type { CSSProperties, RefObject } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import Logo from './Logo'
 import { scrollTo } from '../lib/smooth'
 
@@ -23,19 +24,31 @@ type HeaderProps = {
  * `claro` y se dibuja en negro — la decisión 19 aplicada al menú.
  */
 export function Header({ logoRef, tono = 'oscuro' }: HeaderProps) {
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const enHome = pathname === '/'
+
   return (
     <header
       data-tono={tono}
       className="header-adapt fixed top-0 right-0 left-0 z-55 flex items-center justify-between py-4 shell"
     >
+      {/* El href es SIEMPRE "/" y no "#hero": desde una ficha, "#hero" no
+          apunta a nada, y es el href el que decide qué copia el visitante
+          cuando usa "copiar dirección del enlace". Estando en el home el
+          click se intercepta y se resuelve con un scroll suave. */}
       <a
         ref={logoRef}
-        href="#hero"
+        href="/"
         onClick={(e) => {
           e.preventDefault()
-          scrollTo(0)
+          if (enHome) {
+            scrollTo(0)
+            return
+          }
+          navigate('/')
         }}
-        aria-label="Automotores AutoShop Jujuy — volver arriba"
+        aria-label="Automotores AutoShop Jujuy — volver al inicio"
         className="bevel block"
         style={{ '--bevel': '6px' } as CSSProperties}
       >

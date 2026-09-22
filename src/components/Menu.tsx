@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import Bevel from './Bevel'
 import { MENU } from '../data/nav'
+import { useIrA } from '../lib/ir-a'
 import { prefersReducedMotion } from '../lib/motion-prefs'
-import { scrollTo, startScroll, stopScroll } from '../lib/smooth'
+import { startScroll, stopScroll } from '../lib/smooth'
 
 type MenuProps = {
   abierto: boolean
@@ -38,6 +39,7 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
   const panel = useRef<HTMLDivElement>(null)
   const zonaBoton = useRef<HTMLDivElement>(null)
   const rm = prefersReducedMotion()
+  const irAlDestino = useIrA()
 
   // Escape para cerrar y trampa de foco: con el scroll bloqueado y un overlay
   // opaco encima, un Tab que se escapa al contenido de atrás deja el foco en
@@ -94,8 +96,10 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
   const irA = (href: string) => {
     onCerrar()
     // Después del cierre, para que el scroll no compita con el desmontaje del
-    // overlay ni con el startScroll() de la limpieza del efecto.
-    window.setTimeout(() => scrollTo(href), rm ? 0 : 340)
+    // overlay ni con el startScroll() de la limpieza del efecto. Para un href
+    // de ruta la espera sirve igual: el overlay bone termina de irse antes de
+    // que cambie la página, en vez de cortarse a la mitad.
+    window.setTimeout(() => irAlDestino(href), rm ? 0 : 340)
   }
 
   return (

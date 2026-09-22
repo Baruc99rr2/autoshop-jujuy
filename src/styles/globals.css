@@ -1015,46 +1015,72 @@
   }
 }
 
-/* ── El recorte de detalle del hover ─────────────────────────────────
-   Una segunda copia de la MISMA imagen, ampliada hacia un punto elegido a mano
-   por unidad, que se revela con un barrido de izquierda a derecha. No hay
-   archivos nuevos: un recorte al 230% de una foto de 1600px sigue teniendo
-   resolución de sobra para una caja de ~600.
+/* ── Tira "VER FICHA" ────────────────────────────────────────────────
+   El barrido ámbar de izquierda a derecha, el mismo de la FAQ y de los tiles
+   de post-venta. Acá no decora: ahora la card entera es un link a la ficha, y
+   esto es lo que lo avisa.
 
-   Solo con puntero fino. En táctil no hay hover, y dejarlo atado a `:active`
-   haría que la foto saltara al tocar la card para arrastrar el riel. */
-.veh-detalle,
-.veh-detalle-label {
-  opacity: 0;
-  clip-path: inset(0 100% 0 0);
+   Reemplazó al recorte de detalle en hover (una segunda copia de la foto,
+   ampliada hacia un punto elegido a mano por unidad). Ese recorte se fue con
+   el modelo viejo: el punto vivía en los datos escritos a mano y el modelo
+   nuevo lo carga la dueña desde el panel, donde no hay forma de pedirle que
+   elija coordenadas de zoom por foto. Un zoom genérico caía en el cielo o en
+   el asfalto la mitad de las veces.
+
+   Responde a `:focus-within` además de a `:hover`: el link es la card entera,
+   así que quien llega con Tab tiene que ver lo mismo. */
+.veh-ficha {
+  isolation: isolate;
+  position: relative;
+  margin-top: auto;
+  color: var(--color-bone);
+  transition: color 0.3s ease;
+}
+
+.veh-ficha::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.veh-card:hover .veh-ficha::before,
+.veh-card:focus-within .veh-ficha::before {
+  transform: scaleX(1);
+}
+
+.veh-card:hover .veh-ficha,
+.veh-card:focus-within .veh-ficha {
+  color: var(--color-void);
+  transition-delay: 0.12s;
+}
+
+/* La foto acompaña con un acercamiento corto. Es transform, nada más. */
+.veh-foto {
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .veh-detalle {
-    opacity: 1;
-    transform: scale(var(--zoom));
-    transition: clip-path 0.4s cubic-bezier(0.65, 0, 0.35, 1);
-  }
-
-  .veh-detalle-label {
-    opacity: 1;
-    transition: clip-path 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.08s;
-  }
-
-  .veh-card:hover .veh-detalle,
-  .veh-card:focus-within .veh-detalle,
-  .veh-card:hover .veh-detalle-label,
-  .veh-card:focus-within .veh-detalle-label {
-    clip-path: inset(0 0 0 0);
+  .veh-card:hover .veh-foto,
+  .veh-card:focus-within .veh-foto {
+    transform: scale(1.06);
   }
 }
 
-/* Con reduced-motion el recorte sigue existiendo, pero aparece de una: el
-   contenido es el mismo, lo que se saca es el barrido. */
+/* Con reduced-motion el estado sigue existiendo; lo que se saca es el
+   movimiento. */
 @media (prefers-reduced-motion: reduce) {
-  .veh-detalle,
-  .veh-detalle-label {
+  .veh-ficha::before,
+  .veh-foto {
     transition: none;
+  }
+  .veh-card:hover .veh-foto,
+  .veh-card:focus-within .veh-foto {
+    transform: none;
   }
 }
 

@@ -6,17 +6,18 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
-- Home con 8 secciones: Hero, Contadores, Segmentos, Vehículos, Marcas,
-  Post-venta, Preguntas, Contacto, Footer. Los índices del riel van 01–08.
-- Sacados por completo (código, datos, CSS y pasos de shots): Fiat Plan /
-  simulador, Cotizá tu usado y CTA con video, más `public/video/cta.mp4`.
-- `src/data/contacto.ts` tiene `WHATSAPP_NUMERO`, `WHATSAPP_URL` y
-  `whatsappCon(mensaje)`: única copia del número en todo el sitio.
-- El formulario de contacto valida igual y al enviar abre `wa.me` con el
-  mensaje armado (nombre, qué necesita, presupuesto, mensaje). Sin estado de
-  éxito. El menú es Vehículos · Catálogo · Nosotros · Contacto.
-- Por hacer: rutas, catálogo en `/catalogo`, ficha de vehículo y panel de
-  carga, contra datos de prueba locales. Después se conecta Supabase.
+- Rutas con react-router 7: `/` (home), `/catalogo`, `/vehiculo/:slug`,
+  `/admin` (lazy, chunk propio) y un 404 comodín. `vercel.json` reescribe todo.
+- `App.tsx` es solo el router; el home entero se mudó a `src/routes/Home.tsx`.
+  `TransicionDeRuta` (keyed por pathname) scrollea arriba al entrar y mata los
+  ScrollTrigger y suelta el scroll al salir.
+- La intro corre solo si la pestaña ENTRÓ por `/`. Catálogo, ficha y 404 usan
+  `PaginaInterna` (marco común); el panel tiene su propio marco mínimo.
+- `src/types/vehiculo.ts` + `src/data/repo/` (interfaz async, mock sobre
+  localStorage, semilla con ids `demo-`: hay borrador, vendido y sin precio).
+- La card del home sale del repo, linkea a la ficha y perdió motor, caja,
+  cuota y el recorte de detalle; en su lugar tiene la tira "VER FICHA".
+- Por hacer: grilla y filtros de `/catalogo`, ficha real y panel de carga.
 
 ---
 

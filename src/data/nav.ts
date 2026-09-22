@@ -79,8 +79,9 @@ export function seccion(id: string): Seccion {
 /**
  * Ítems del menú desplegado.
  *
- * "Catálogo" apunta por ahora a la sección Vehículos del home; cuando exista
- * la ruta `/catalogo` se cambia solo este href.
+ * Un href que empieza con `#` es una SECCIÓN del home y uno que empieza con
+ * `/` es una RUTA. Los dos pasan por `useIrA()` (`src/lib/ir-a.ts`), que sabe
+ * que un `#` estando en otra página significa "ir al home y después bajar".
  */
 export interface ItemMenu {
   label: string
@@ -89,7 +90,7 @@ export interface ItemMenu {
 
 export const MENU: ItemMenu[] = [
   { label: 'Vehículos', href: '#vehiculos' },
-  { label: 'Catálogo', href: '#vehiculos' },
+  { label: 'Catálogo', href: '/catalogo' },
   { label: 'Nosotros', href: '#contadores' },
   { label: 'Contacto', href: '#contacto' },
 ]
@@ -105,7 +106,7 @@ export const FOOTER: ColumnaFooter[] = [
     titulo: 'CONTENIDO',
     items: [
       { label: 'Vehículos', href: '#vehiculos' },
-      { label: 'Catálogo', href: '#vehiculos' },
+      { label: 'Catálogo', href: '/catalogo' },
       { label: 'Segmentos', href: '#segmentos' },
       { label: 'Marcas', href: '#marcas' },
       { label: 'Post-venta', href: '#postventa' },

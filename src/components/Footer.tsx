@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from 'react'
 import { CONTACTO } from '../data/contacto'
 import { FOOTER } from '../data/nav'
 import { useFitText } from '../lib/fit-text'
+import { useIrA } from '../lib/ir-a'
 import { scrollTo } from '../lib/smooth'
 
 /**
@@ -16,6 +17,7 @@ export function Footer() {
   const año = new Date().getFullYear()
   const logotipo = useRef<HTMLHeadingElement>(null)
   useFitText(logotipo)
+  const irA = useIrA()
 
   return (
     <footer
@@ -70,7 +72,7 @@ export function Footer() {
                         ? undefined
                         : (e) => {
                             e.preventDefault()
-                            scrollTo(item.href)
+                            irA(item.href)
                           }
                     }
                   >
