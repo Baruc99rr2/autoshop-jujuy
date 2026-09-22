@@ -136,10 +136,8 @@ export const VEHICULOS: Vehiculo[] = [
  * Anticipo y plazo con los que se calcula el "Cuota desde" de cada card.
  *
  * En Argentina la cuota es el dato que la gente mira antes que el precio, así
- * que tiene que estar en la card. Sale de la MISMA fórmula que el simulador de
- * la sección 05: si el catálogo tuviera su propia cuenta, alcanzaría con que
- * alguien cambie la TNA en un solo lado para que el sitio se contradiga a sí
- * mismo en dos secciones distintas.
+ * que tiene que estar en la card. La cuenta vive en `financiacion.ts` y no acá:
+ * la TNA se cambia en un solo lugar.
  */
 export const CUOTA_DESDE = { anticipo: 0.5, plazos: 60 }
 

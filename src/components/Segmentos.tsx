@@ -63,10 +63,30 @@ export function Segmentos() {
 
       const pasos = imagenes.length - 1
 
+      // El largo del pin se calcula con un alto CONGELADO, no con
+      // `window.innerHeight` leído en cada refresh.
+      //
+      // `ScrollTrigger.config({ ignoreMobileResize: true })` ya evita el
+      // refresh automático cuando la barra del navegador se mueve, pero esta
+      // función también corre en los `refresh()` que dispara el sitio a mano
+      // —cuando terminan de cargar las imágenes, al cerrar la intro— y si en
+      // ese momento la barra está contraída, el pin queda medio viewport más
+      // largo que si estuviera desplegada. El alto solo se vuelve a tomar
+      // cuando cambia el ANCHO, que es cuando el cambio es real.
+      let altoDePin = window.innerHeight
+      let anchoDePin = window.innerWidth
+      const altoEstable = () => {
+        if (window.innerWidth !== anchoDePin) {
+          anchoDePin = window.innerWidth
+          altoDePin = window.innerHeight
+        }
+        return altoDePin
+      }
+
       const st = ScrollTrigger.create({
         trigger: root.current,
         start: 'top top',
-        end: () => `+=${pasos * window.innerHeight * 0.8}`,
+        end: () => `+=${pasos * altoEstable() * 0.8}`,
         pin: true,
         scrub: 0.6,
         snap: { snapTo: 1 / pasos, duration: 0.3 },

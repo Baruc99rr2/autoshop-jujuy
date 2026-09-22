@@ -1,36 +1,20 @@
 /**
- * Parámetros del simulador de cuota.
+ * Parámetros de la cuota.
  *
  * La tasa es una constante de archivo, inventada y del orden de lo que ofrece
- * una financiación propia en Argentina. **No es una oferta**: el simulador lo
- * dice en pantalla, y eso no es opcional en una simulación financiera.
+ * una financiación propia en Argentina. **No es una oferta**: es solo la base
+ * del "Cuota desde" de las cards del catálogo, que lo aclara en pantalla.
+ *
+ * Quedó reducido a esto cuando se sacó el simulador de la sección 05: los
+ * rangos de valor, anticipo y plazo se fueron con él.
  */
 
 /** Tasa nominal anual. Se reemplaza acá cuando la concesionaria pase la real. */
 export const TNA = 0.59
 
-export const VALOR = {
-  min: 8_000_000,
-  max: 60_000_000,
-  paso: 500_000,
-  inicial: 24_000_000,
-}
-
-export const ANTICIPO = {
-  /** En porcentaje del valor del vehículo. */
-  min: 0,
-  max: 50,
-  paso: 5,
-  inicial: 30,
-}
-
-export const PLAZOS = [12, 24, 36, 48, 60] as const
-export const PLAZO_INICIAL = 48
-
 /**
- * Cuota fija, sistema francés. Con anticipo del 100% —imposible acá, el tope
- * es 50%— o con tasa 0 la fórmula se indefine, así que los dos casos tienen
- * salida propia.
+ * Cuota fija, sistema francés. Con capital 0 o tasa 0 la fórmula se indefine,
+ * así que los dos casos tienen salida propia.
  */
 export function cuotaMensual(capital: number, meses: number, tna = TNA) {
   if (capital <= 0 || meses <= 0) return 0

@@ -28,7 +28,7 @@ export const HERO: Hero = {
   bajada:
     'Cero kilómetro y usados con garantía, financiación propia y toma de tu usado como parte de pago. Vení al salón o escribinos y coordinamos.',
   accionPrimaria: { label: 'Ver vehículos', href: '#vehiculos' },
-  accionSecundaria: { label: 'Cotizar mi usado', href: '#cotizador' },
+  accionSecundaria: { label: 'Escribinos', href: '#contacto' },
 }
 
 /**
@@ -40,7 +40,6 @@ export const TICKER: string[] = [
   CONTACTO.ciudad.toUpperCase(),
   CONTACTO.coordenadas.toUpperCase(),
   '0KM Y USADOS',
-  'FIAT PLAN',
   'FINANCIACIÓN PROPIA',
   `EST. ${CONTACTO.desde}`,
 ]

@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import Contacto from './components/Contacto'
-import Cotizador from './components/Cotizador'
 import Contadores from './components/Contadores'
-import Cta from './components/Cta'
 import Faq from './components/Faq'
 import Footer from './components/Footer'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import Marcas from './components/Marcas'
 import Menu from './components/Menu'
-import Simulador from './components/Simulador'
 import Vehiculos from './components/Vehiculos'
 import WhatsApp from './components/WhatsApp'
 import Intro, { INTRO_SEEN_KEY } from './components/Intro'
@@ -17,26 +14,29 @@ import MeshOverlay from './components/MeshOverlay'
 import Postventa from './components/Postventa'
 import Segmentos from './components/Segmentos'
 import Rail from './components/Rail'
-import SectionHeader from './components/SectionHeader'
 import { SECCIONES } from './data/nav'
 import { prefersReducedMotion } from './lib/motion-prefs'
 
 /**
- * Secciones que ya tienen componente propio. El resto todavía se dibuja como
- * placeholder, y el mapa de abajo las va reemplazando fase por fase.
+ * Componente de cada sección del home, por id. Ya están todas: si un id de
+ * `SECCIONES` no aparece acá es un error de programación, y `secciónDe` tira
+ * en vez de dibujar un hueco silencioso.
  */
-const IMPLEMENTADAS: Record<string, () => React.ReactElement> = {
+const SECCION_COMPONENTE: Record<string, () => React.ReactElement> = {
   contacto: Contacto,
   contadores: Contadores,
-  cotizador: Cotizador,
-  cta: Cta,
   hero: Hero,
   marcas: Marcas,
-  plan: Simulador,
   postventa: Postventa,
   preguntas: Faq,
   segmentos: Segmentos,
   vehiculos: Vehiculos,
+}
+
+function componenteDe(id: string): () => React.ReactElement {
+  const C = SECCION_COMPONENTE[id]
+  if (!C) throw new Error(`Sección sin componente en App.tsx: ${id}`)
+  return C
 }
 
 /**
@@ -160,25 +160,8 @@ function App() {
 
       <main>
         {SECCIONES.map((s) => {
-          const Componente = IMPLEMENTADAS[s.id]
-          if (Componente) return <Componente key={s.id} />
-
-          return (
-            <section
-              key={s.id}
-              id={s.id}
-              className="flex min-h-svh flex-col justify-center border-b border-graphite/60 py-24 shell"
-            >
-              <SectionHeader
-                index={s.indice}
-                eyebrow={s.eyebrow}
-                title={s.titulo}
-              />
-              <p className="font-hud mt-8 text-bone/30">
-                Placeholder — sección {s.indice}
-              </p>
-            </section>
-          )
+          const Componente = componenteDe(s.id)
+          return <Componente key={s.id} />
         })}
       </main>
 

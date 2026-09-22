@@ -1,3 +1,5 @@
+import { WHATSAPP_URL } from './contacto'
+
 /**
  * Índice de secciones del home. Es la fuente única del orden, los ids de ancla
  * y la numeración del riel: si se agrega o se reordena una sección, se toca
@@ -39,25 +41,22 @@ export const SECCIONES: Seccion[] = [
   },
   { indice: '03', id: 'segmentos', eyebrow: 'SEGMENTOS', titulo: 'Qué estás buscando' },
   { indice: '04', id: 'vehiculos', eyebrow: 'VEHÍCULOS', titulo: 'Unidades disponibles hoy' },
-  { indice: '05', id: 'plan', eyebrow: 'FIAT PLAN', titulo: 'Entrá con cuota fija' },
-  { indice: '06', id: 'cotizador', eyebrow: 'COTIZADOR', titulo: 'Cotizá tu usado' },
-  { indice: '07', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
+  { indice: '05', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
   {
-    indice: '08',
+    indice: '06',
     id: 'postventa',
     eyebrow: 'POST-VENTA',
     titulo: 'No termina cuando te llevás el auto',
   },
   {
-    indice: '09',
+    indice: '07',
     id: 'preguntas',
     eyebrow: 'PREGUNTAS',
     titulo: 'Lo que todos preguntan',
     tono: 'claro',
     fondo: 'claro',
   },
-  { indice: '10', id: 'cta', eyebrow: 'TEST DRIVE', titulo: 'Vení a probarlo' },
-  { indice: '11', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
+  { indice: '08', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
 ]
 
 /**
@@ -77,7 +76,12 @@ export function seccion(id: string): Seccion {
   return s
 }
 
-/** Ítems del menú desplegado (fase 3). */
+/**
+ * Ítems del menú desplegado.
+ *
+ * "Catálogo" apunta por ahora a la sección Vehículos del home; cuando exista
+ * la ruta `/catalogo` se cambia solo este href.
+ */
 export interface ItemMenu {
   label: string
   href: string
@@ -85,10 +89,7 @@ export interface ItemMenu {
 
 export const MENU: ItemMenu[] = [
   { label: 'Vehículos', href: '#vehiculos' },
-  { label: 'Usados', href: '#vehiculos' },
-  { label: 'Fiat Plan', href: '#plan' },
-  { label: 'Cotizar usado', href: '#cotizador' },
-  { label: 'Test drive', href: '#cta' },
+  { label: 'Catálogo', href: '#vehiculos' },
   { label: 'Nosotros', href: '#contadores' },
   { label: 'Contacto', href: '#contacto' },
 ]
@@ -104,21 +105,18 @@ export const FOOTER: ColumnaFooter[] = [
     titulo: 'CONTENIDO',
     items: [
       { label: 'Vehículos', href: '#vehiculos' },
+      { label: 'Catálogo', href: '#vehiculos' },
       { label: 'Segmentos', href: '#segmentos' },
-      { label: 'Fiat Plan', href: '#plan' },
-      { label: 'Cotizar usado', href: '#cotizador' },
       { label: 'Marcas', href: '#marcas' },
       { label: 'Post-venta', href: '#postventa' },
-      { label: 'Test drive', href: '#cta' },
     ],
   },
   {
     titulo: 'UTILIDAD',
     items: [
+      { label: 'Nosotros', href: '#contadores' },
       { label: 'Contacto', href: '#contacto' },
       { label: 'Preguntas frecuentes', href: '#preguntas' },
-      { label: 'Política de privacidad', href: '#contacto' },
-      { label: 'Términos y condiciones', href: '#contacto' },
     ],
   },
   {
@@ -134,7 +132,7 @@ export const FOOTER: ColumnaFooter[] = [
         href: 'https://facebook.com/autoshopjujuy',
         externo: true,
       },
-      { label: 'WhatsApp', href: 'https://wa.me/5493884152233', externo: true },
+      { label: 'WhatsApp', href: WHATSAPP_URL, externo: true },
     ],
   },
 ]

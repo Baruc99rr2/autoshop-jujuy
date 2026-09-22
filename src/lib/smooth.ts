@@ -5,6 +5,19 @@ import { prefersReducedMotion } from './motion-prefs'
 
 gsap.registerPlugin(ScrollTrigger)
 
+/**
+ * `ignoreMobileResize` hace que ScrollTrigger NO refresque cuando en un
+ * dispositivo táctil cambia solo el alto del viewport. Sin esto, la barra del
+ * navegador interno de WhatsApp —que se contrae y se expande al scrollear—
+ * dispara un `refresh()` por cada movimiento: los pin-spacers se recalculan,
+ * el alto del documento cambia y la página entera se empuja hacia abajo y
+ * vuelve. El giro de pantalla, que cambia el ANCHO, sigue refrescando normal.
+ *
+ * Va acá, en el módulo que registra el plugin, y no en un componente: tiene
+ * que estar aplicado antes de que exista el primer ScrollTrigger.
+ */
+ScrollTrigger.config({ ignoreMobileResize: true })
+
 let lenis: Lenis | null = null
 let rafHandler: ((time: number) => void) | null = null
 

@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { anchoCambio } from './viewport'
 
 /** Tamaño de sonda con el que se mide. Cualquiera sirve: la relación es lineal. */
 const SONDA = 100
@@ -65,7 +66,21 @@ export function useFitText(
 
     // Se observa el ancho del contenedor, no el del propio elemento: cambiarle
     // el font-size le cambia el alto, y observarse a sí mismo sería un bucle.
-    const ro = new ResizeObserver(programar)
+    //
+    // Y se recalcula SOLO si cambió el ancho. El ajuste pasa por poner el
+    // texto en el tamaño de sonda (100 px) antes de medir, así que cada
+    // recálculo es un salto de layout de un frame. Con la barra del navegador
+    // de WhatsApp contrayéndose y expandiéndose al scrollear, el alto del
+    // contenedor cambia todo el tiempo y el logotipo del footer parpadeaba de
+    // tamaño en cada movimiento. El alto no aporta nada acá: lo único que
+    // decide el font-size es cuánto ancho hay.
+    let anchoPrevio = el.parentElement?.clientWidth ?? 0
+    const ro = new ResizeObserver((entradas) => {
+      const w = entradas[0]?.contentRect.width ?? 0
+      if (!anchoCambio(anchoPrevio, w)) return
+      anchoPrevio = w
+      programar()
+    })
     if (el.parentElement) ro.observe(el.parentElement)
 
     return () => {

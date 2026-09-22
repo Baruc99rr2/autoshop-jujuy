@@ -39,8 +39,8 @@ export function Footer() {
       </h2>
 
       <p className="mt-8 max-w-[46ch] text-bone/55">
-        0km y usados en {CONTACTO.ciudad}. Financiación propia, Fiat Plan y
-        toma de tu usado como parte de pago.
+        0km y usados en {CONTACTO.ciudad}. Financiación propia y toma de tu
+        usado como parte de pago.
       </p>
 
       <div className="mt-20 grid gap-14 md:grid-cols-3 md:gap-8">
@@ -96,13 +96,6 @@ export function Footer() {
           Volver arriba ↑
         </button>
       </div>
-
-      {/* La nota va visible, no escondida en letra chica ilegible: en la
-          reunión se aclara de palabra y acá queda por escrito. */}
-      <p className="font-hud mt-6 max-w-[60ch] text-bone/35">
-        Sitio de demostración — unidades, precios y datos de contacto son de
-        muestra.
-      </p>
     </footer>
   )
 }

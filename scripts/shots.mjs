@@ -18,6 +18,7 @@ import process from 'node:process'
 import { chromium } from 'playwright'
 import {
   auditarAnchos,
+  auditarBarraDelNavegador,
   auditarReducedMotion,
   auditarTactil,
   auditarTeclado,
@@ -592,135 +593,6 @@ async function capturarPagina(browser, nombreVp) {
     console.log(`[shots] ${nombreVp} catálogo riel:`, JSON.stringify(rielVeh))
   }
 
-  // ── CTA CON VIDEO EN LAS LETRAS ────────────────────────────────────
-  // Es el punto donde la técnica falla EN SILENCIO: si el `mix-blend-mode` no
-  // se aplica, se ve un titular blanco sobre negro y parece a propósito. La
-  // única forma de saberlo es mirar el color de los píxeles DENTRO de las
-  // letras en dos tiempos distintos del video: si el video corre por adentro,
-  // cambian; si es un color plano, dan idéntico.
-  const cta = page.locator('#cta')
-  if (await cta.count()) {
-    await page.evaluate(() => {
-      document.getElementById('cta')?.scrollIntoView({ behavior: 'instant', block: 'center' })
-    })
-    await page.waitForTimeout(900)
-    await shot(page, `${nombreVp}/30-cta`)
-
-    const calado = await page.evaluate(async () => {
-      const caja = document.querySelector('.cta-caja')
-      const v = caja?.querySelector('video')
-      const linea = document.querySelector('.cta-linea')
-      if (!caja || !v || !linea) return { error: 'faltan nodos' }
-
-      const r = linea.getBoundingClientRect()
-      const cajaR = caja.getBoundingClientRect()
-
-      // Se muestrea una franja horizontal a media altura de la primera línea:
-      // ahí caen trazos de letra y huecos entre letras, que es justo lo que
-      // hace falta para comparar "adentro" contra "afuera".
-      const muestrear = () => {
-        const c = document.createElement('canvas')
-        c.width = 64
-        c.height = 1
-        const ctx = c.getContext('2d')
-        // El canvas no puede leer el DOM compuesto, así que se dibuja el frame
-        // del video y se compara contra lo que el navegador informa del panel.
-        ctx.drawImage(v, 0, 0, 64, 1)
-        return [...ctx.getImageData(0, 0, 64, 1).data]
-      }
-
-      const t0 = muestrear()
-      v.currentTime = Math.min(4, (v.duration || 12) - 1)
-      await new Promise((res) => v.addEventListener('seeked', res, { once: true }))
-      const t1 = muestrear()
-      let dif = 0
-      for (let i = 0; i < t0.length; i += 4) {
-        dif += Math.abs(t0[i] - t1[i]) + Math.abs(t0[i + 1] - t1[i + 1])
-      }
-      v.currentTime = 0
-      v.play().catch(() => {})
-
-      // Muestreo del color REAL de las letras: se dibuja el frame del video en
-      // un canvas con el mismo recorte y escala que tiene en pantalla, y se
-      // leen los píxeles de la franja donde cae el titular. Un rango angosto
-      // significa letras planas, aunque el video esté corriendo.
-      const franja = (() => {
-        const c = document.createElement('canvas')
-        c.width = 40
-        c.height = 12
-        const ctx = c.getContext('2d')
-        const vr = v.getBoundingClientRect()
-        const lr = linea.getBoundingClientRect()
-        // Fracción del alto del elemento de video donde cae la línea.
-        const y0 = (lr.top - vr.top) / vr.height
-        const y1 = (lr.bottom - vr.top) / vr.height
-        ctx.drawImage(
-          v,
-          0,
-          Math.max(0, y0) * v.videoHeight,
-          v.videoWidth,
-          Math.max(1, (y1 - y0) * v.videoHeight),
-          0,
-          0,
-          40,
-          12,
-        )
-        const d = ctx.getImageData(0, 0, 40, 12).data
-        let min = 255
-        let max = 0
-        let suma = 0
-        for (let i = 0; i < d.length; i += 4) {
-          const l = (d[i] + d[i + 1] + d[i + 2]) / 3
-          min = Math.min(min, l)
-          max = Math.max(max, l)
-          suma += l
-        }
-        return {
-          min: Math.round(min),
-          max: Math.round(max),
-          medio: Math.round(suma / (d.length / 4)),
-          rango: Math.round(max - min),
-        }
-      })()
-
-      return {
-        blend: getComputedStyle(document.querySelector('.cta-mascara')).mixBlendMode,
-        transformVideo: getComputedStyle(v).transform,
-        franjaDelTitular: franja,
-        aislamiento: getComputedStyle(caja).isolation,
-        colorTitular: getComputedStyle(linea).color,
-        videoCorre: dif > 0,
-        difEntreFrames: dif,
-        cajaCentrada:
-          Math.abs(
-            cajaR.left - (window.innerWidth - cajaR.right),
-          ) < 60,
-        linea: { w: Math.round(r.width), h: Math.round(r.height) },
-      }
-    })
-    console.log(`[shots] ${nombreVp} CTA calado:`, JSON.stringify(calado))
-
-    // La prueba definitiva: dos capturas del MISMO recorte de la caja en dos
-    // momentos del video. Se comparan mirándolas.
-    const cajaBox = await page.locator('.cta-caja').boundingBox()
-    if (cajaBox) {
-      await shot(page, `${nombreVp}/31a-cta-letras-t0`, { clip: cajaBox })
-      await page.evaluate(() => {
-        const v = document.querySelector('.cta-caja video')
-        if (v) {
-          v.pause()
-          v.currentTime = Math.min(6, (v.duration || 12) - 1)
-        }
-      })
-      await page.waitForTimeout(700)
-      await shot(page, `${nombreVp}/31b-cta-letras-t1`, { clip: cajaBox })
-      await page.evaluate(() => {
-        const v = document.querySelector('.cta-caja video')
-        if (v) v.play().catch(() => {})
-      })
-    }
-  }
-
   // ── BOTÓN FLOTANTE DE WHATSAPP ─────────────────────────────────────
   const wa = page.locator('.wa-btn')
   if (await wa.count()) {
@@ -925,64 +797,11 @@ async function capturarPagina(browser, nombreVp) {
     )
   }
 
-  // Simulador: estado inicial y después de mover los dos sliders y cambiar el
-  // plazo, para ver que la cuota se recalcula y que la pista llena acompaña.
-  const sliders = page.locator('#plan .slider')
-  if (await sliders.count()) {
-    await page.evaluate(() => {
-      document.getElementById('plan')?.scrollIntoView({ behavior: 'instant' })
-    })
-    await page.waitForTimeout(500)
-    await shot(page, `${nombreVp}/20-simulador`)
-
-    await sliders.nth(0).fill('42000000')
-    await sliders.nth(1).fill('15')
-    await page.locator('#plan button[aria-pressed]').nth(4).click()
-    await page.waitForTimeout(400)
-    await shot(page, `${nombreVp}/21-simulador-movido`)
-    console.log(
-      `[shots] ${nombreVp} cuota simulada:`,
-      await page.$eval('#plan [data-cuota]', (e) => e.textContent),
-    )
-  }
-
-  // Cotizador: vacío, escaneando y con el resultado ya contado.
-  const cotizador = page.locator('#cotizador')
-  if (await cotizador.count()) {
-    await page.evaluate(() => {
-      document
-        .getElementById('cotizador')
-        ?.scrollIntoView({ behavior: 'instant' })
-    })
-    await page.waitForTimeout(400)
-    await shot(page, `${nombreVp}/25-cotizador`)
-
-    const selects = cotizador.locator('select')
-    await selects.nth(0).selectOption('fiat')
-    await selects.nth(1).selectOption('toro')
-    await selects.nth(2).selectOption('2021')
-    await page.waitForTimeout(250)
-    await cotizador.locator('button[type=button]').last().click()
-    // Dos momentos del escaneo: la línea cruza la card dos veces en 1,2 s, y
-    // con una sola captura es puro azar dónde cae.
-    await page.waitForTimeout(160)
-    await shot(page, `${nombreVp}/26a-cotizador-escaneando`)
-    // +140 ms cae a mitad de la primera pasada; el segundo tramo espera lo
-    // suficiente para agarrar la segunda. Sumar 600 justos volvería a caer en
-    // la misma fase y las dos capturas saldrían iguales.
-    await page.waitForTimeout(140)
-    await shot(page, `${nombreVp}/26b-cotizador-escaneando`)
-    await page.waitForTimeout(2400)
-    await shot(page, `${nombreVp}/27-cotizador-resultado`)
-    console.log(
-      `[shots] ${nombreVp} rango cotizado:`,
-      await cotizador.locator('[aria-live] .num').first().innerText(),
-    )
-  }
-
-  // Contacto: formulario vacío, con errores de validación y en estado de éxito.
-  // La validación es todo lo que hay (no hay backend), así que se prueba de
-  // verdad: se envía vacío, se leen los mensajes, y después se completa bien.
+  // Contacto: formulario vacío, con errores de validación y completo.
+  // La validación es todo lo que hay, así que se prueba de verdad: se envía
+  // vacío, se leen los mensajes, y después se completa bien. El envío ya no
+  // deja un estado en pantalla —abre WhatsApp—, así que lo que se verifica es
+  // el link que se arma.
   const form = page.locator('#contacto form')
   if (await form.count()) {
     await page.evaluate(() => {
@@ -1022,15 +841,22 @@ async function capturarPagina(browser, nombreVp) {
     await page.waitForTimeout(300)
     await shot(page, `${nombreVp}/72-contacto-completo`)
 
-    await form.locator('button[type=submit]').click()
-    await page.waitForTimeout(500)
+    // `window.open` se reemplaza por un espía: sin esto el submit abriría una
+    // pestaña a web.whatsapp.com en medio de la corrida. Lo que importa mirar
+    // es la URL, no la pestaña.
     await page.evaluate(() => {
-      document
-        .getElementById('contacto')
-        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
+      window.__waUrl = null
+      window.open = (u) => {
+        window.__waUrl = u
+        return null
+      }
     })
+    await form.locator('button[type=submit]').click()
     await page.waitForTimeout(300)
-    await shot(page, `${nombreVp}/73-contacto-enviado`)
+    console.log(
+      `[shots] ${nombreVp} link de WhatsApp del formulario:`,
+      await page.evaluate(() => window.__waUrl),
+    )
   }
 
   // Footer entero.
@@ -1209,6 +1035,7 @@ async function main() {
     await auditarAnchos(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
     await auditarReducedMotion(browser, BASE, shot)
     await auditarTactil(browser, BASE, shot)
+    await auditarBarraDelNavegador(browser, BASE, esperarFinDeIntro)
     await auditarTeclado(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
 
     console.log(`[shots] listo → ${OUT}`)

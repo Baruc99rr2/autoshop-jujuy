@@ -1,6 +1,6 @@
 import Bevel from './Bevel'
 import Icono from './Icono'
-import { FLOTANTE } from '../data/cta'
+import { FLOTANTE } from '../data/contacto'
 
 /**
  * Botón flotante de WhatsApp, abajo a la derecha.
