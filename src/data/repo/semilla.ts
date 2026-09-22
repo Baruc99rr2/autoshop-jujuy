@@ -47,7 +47,14 @@ export const SEMILLA: Vehiculo[] = [
     estado: 'disponible',
     publicado: true,
     destacado: true,
-    fotos: [{ id: 'demo-tucson-f1', ...CAR_1, orden: 0 }],
+    // DOS FOTOS a propósito: es la unidad con la que se prueba el barrido a la
+    // segunda foto en hover. La segunda es otra imagen de la muestra, no otra
+    // toma del mismo auto —hay tres archivos en total—; las unidades reales
+    // van a tener sus propias fotos cargadas desde el panel.
+    fotos: [
+      { id: 'demo-tucson-f1', ...CAR_1, orden: 0 },
+      { id: 'demo-tucson-f2', ...CAR_2, orden: 1 },
+    ],
     video: null,
     etiquetas: [
       {
@@ -100,7 +107,12 @@ export const SEMILLA: Vehiculo[] = [
     estado: 'disponible',
     publicado: true,
     destacado: true,
-    fotos: [{ id: 'demo-ram-f1', ...CAR_3, orden: 0 }],
+    // La segunda unidad con dos fotos: sirve para ver el barrido al lado de
+    // una card que tiene una sola (la Swift), que es el caso mezclado.
+    fotos: [
+      { id: 'demo-ram-f1', ...CAR_3, orden: 0 },
+      { id: 'demo-ram-f2', ...CAR_1, orden: 1 },
+    ],
     video: null,
     etiquetas: [
       {

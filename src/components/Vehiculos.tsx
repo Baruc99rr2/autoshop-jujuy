@@ -2,160 +2,29 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import Bevel from './Bevel'
 import SectionHeader from './SectionHeader'
+import VehiculoCard from './VehiculoCard'
 import { FILTROS } from '../data/catalogo'
 import { seccion } from '../data/nav'
 import { repo } from '../data/repo'
-import {
-  CONDICION_LABEL,
-  ESTADO_LABEL,
-  formatearAnio,
-  formatearKm,
-  formatearPrecio,
-} from '../lib/formato'
-import { portada } from '../types/vehiculo'
-import type { EstadoVehiculo, Vehiculo } from '../types/vehiculo'
+import type { Vehiculo } from '../types/vehiculo'
 
 const S = seccion('vehiculos')
 
 /** Cuántas unidades muestra el home. El stock completo vive en `/catalogo`. */
 const CUANTAS = 3
 
-/** Chip de estado. El rojo aparece solo acá y en los errores del formulario. */
-const CHIP: Record<EstadoVehiculo, string> = {
-  disponible: 'bg-amber text-void',
-  reservado: 'bg-flag text-bone',
-  vendido: 'bg-flag text-bone',
-}
-
 /**
- * Las dos celdas de la fila HUD.
+ * El ancho de la card EN EL RIEL. Está elegido por el ALTO que resulta: con la
+ * foto en 4:3, una card del 46% del contenedor mide 660 px de ancho y 495 solo
+ * de foto, así que en un notebook de 900 px no entran la foto y el precio en la
+ * misma pantalla —y el precio es el dato de la sección—. Al 40% la card entera
+ * entra, y siguen viéndose dos completas más el borde de la tercera, que es lo
+ * que hace que el conjunto se lea como riel y no como grilla.
  *
- * Eran cuatro —año, km, motor y caja— y quedaron dos cuando el modelo de datos
- * se quedó con lo que la dueña puede cargar desde el celular: no hay ficha
- * técnica, el detalle se resuelve por WhatsApp. Con dos celdas entran en una
- * fila a cualquier ancho y desaparece la grilla 2×2 de mobile.
- *
- * Las clases van escritas celda por celda en este array y no calculadas con
- * condiciones, por la decisión 33: `border-l` junto a `border-l-0` en el mismo
- * atributo lo resuelve el orden en que Tailwind emite las reglas, no el orden
- * en que uno las escribe.
+ * En la grilla del catálogo la misma card va al 100% de su columna: ese ancho
+ * lo pone `/catalogo`, no este archivo.
  */
-const CELDA = ['flex-1 pr-3', 'flex-1 border-l border-graphite pl-3']
-
-function Dato({ label, valor, i }: { label: string; valor: string; i: number }) {
-  return (
-    <div className={`min-w-0 ${CELDA[i]}`}>
-      <span className="font-hud block text-bone/40">{label}</span>
-      <span className="font-hud num mt-1 block truncate text-bone">{valor}</span>
-    </div>
-  )
-}
-
-/**
- * Una card.
- *
- * El ancho está elegido por el ALTO que resulta. Con la foto en 4:3, una card
- * del 46% del contenedor mide 660 px de ancho y 495 solo de foto, así que en
- * un notebook de 900 px no entran la foto y el precio en la misma pantalla —y
- * el precio es el dato de la sección—. Al 40% la card entera entra, y siguen
- * viéndose dos completas más el borde de la tercera, que es lo que hace que el
- * conjunto se lea como riel y no como grilla.
- *
- * La card ENTERA es el link a la ficha. Un botón "ver más" adentro de una card
- * que ya se ve clickeable es un blanco chico al lado de uno grande.
- */
-function Card({ v }: { v: Vehiculo }) {
-  const foto = portada(v)
-
-  return (
-    <article className="veh-card w-[85vw] shrink-0 md:w-[56%] lg:w-[40%]">
-      <Link
-        to={`/vehiculo/${v.slug}`}
-        className="block h-full"
-        aria-label={`${v.titulo} — ver ficha`}
-      >
-        <Bevel
-          variant="outline"
-          bevel={16}
-          outerClassName="block h-full"
-          className="flex h-full flex-col p-0"
-        >
-          {/* ── Foto ──────────────────────────────────────────────── */}
-          <div className="relative aspect-4/3 overflow-hidden bg-void">
-            {foto ? (
-              <img
-                src={foto.url}
-                alt={v.titulo}
-                width={foto.ancho}
-                height={foto.alto}
-                loading="lazy"
-                decoding="async"
-                className="veh-foto absolute inset-0 h-full w-full object-cover"
-              />
-            ) : (
-              /* Una unidad cargada y todavía sin fotos es un estado REAL del
-                 panel, no un error: se dice, no se disimula con un ícono. */
-              <div className="absolute inset-0 grid place-items-center bg-asphalt">
-                <span className="font-hud text-bone/35">SIN FOTOS TODAVÍA</span>
-              </div>
-            )}
-
-            <Bevel
-              variant="ghost"
-              bevel={8}
-              surfaceClassName={CHIP[v.estado]}
-              className="veh-chip font-hud absolute top-3 right-3 px-3 py-1.5"
-            >
-              {ESTADO_LABEL[v.estado].toUpperCase()}
-            </Bevel>
-          </div>
-
-          {/* ── Datos ─────────────────────────────────────────────── */}
-          <div className="flex flex-1 flex-col p-5 md:p-6">
-            <h3 className="font-display text-h2 leading-none text-bone">
-              {v.titulo}
-            </h3>
-            <p className="font-hud mt-2 text-bone/45">
-              {CONDICION_LABEL[v.condicion].toUpperCase()}
-            </p>
-
-            <div className="mt-5 flex border-y border-graphite py-3">
-              <Dato i={0} label="AÑO" valor={formatearAnio(v.anio)} />
-              <Dato i={1} label="KM" valor={formatearKm(v.km)} />
-            </div>
-
-            <div className="mt-5 mb-5">
-              <span className="font-hud block text-bone/40">PRECIO</span>
-              {/* "Consultar precio" NO va en Martian Mono: la mono es para
-                  cifras, y una frase de dos palabras en mono a 30px se come el
-                  ancho de la card y se lee como un error. */}
-              {v.precio === null ? (
-                <span className="font-display mt-1 block text-xl text-bone">
-                  {formatearPrecio(null)}
-                </span>
-              ) : (
-                <span className="font-hud num mt-1 block text-2xl text-bone md:text-3xl">
-                  {formatearPrecio(v.precio)}
-                </span>
-              )}
-            </div>
-
-            {/* Barrido ámbar de izquierda a derecha, el mismo gesto de la FAQ y
-                de post-venta. Acá además cumple una función: es lo que avisa
-                que la card entera es un link a la ficha. */}
-            {/* Sin `mt-*`: la separación mínima la pone el `mb-5` del precio y
-                el resto lo empuja el `margin-top: auto` de `.veh-ficha`, que
-                deja la tira al ras de abajo en las tres cards por igual. */}
-            <p className="veh-ficha font-hud flex items-center justify-between px-4 py-3">
-              <span>VER FICHA</span>
-              <span aria-hidden="true">\</span>
-            </p>
-          </div>
-        </Bevel>
-      </Link>
-    </article>
-  )
-}
+const ANCHO_RIEL = 'w-[85vw] shrink-0 md:w-[56%] lg:w-[40%]'
 
 /**
  * Vehículos destacados.
@@ -203,7 +72,8 @@ export function Vehiculos() {
   const visibles =
     filtro === 'todos' ? lista : lista.filter((v) => v.condicion === filtro)
 
-  // Arrastre con puntero.
+  // Arrastre con puntero. ES DEL RIEL, no de la card: la grilla del catálogo
+  // usa la misma card y ahí no hay nada que arrastrar.
   //
   // La captura NO se pide en el `pointerdown` sino recién cuando el gesto
   // superó el umbral. Pedirla antes rompía la navegación entera: con
@@ -305,7 +175,7 @@ export function Vehiculos() {
         onDragStart={(e) => e.preventDefault()}
       >
         {visibles.map((v) => (
-          <Card key={v.id} v={v} />
+          <VehiculoCard key={v.id} v={v} className={ANCHO_RIEL} />
         ))}
       </div>
 
