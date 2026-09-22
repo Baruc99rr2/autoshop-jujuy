@@ -16,6 +16,15 @@ type PaginaInternaProps = {
   titulo: ReactNode
   lead?: ReactNode
   children?: ReactNode
+  /**
+   * Cuándo se muestra el botón flotante de WhatsApp.
+   *
+   * La ficha lo pide en `'desktop'`: en mobile ya tiene su propia barra fija
+   * con el mismo botón, y los dos juntos son dos biseles ámbar superpuestos
+   * pidiendo lo mismo. El resto de las páginas internas no pasa nada y lo
+   * muestran siempre.
+   */
+  flotante?: 'siempre' | 'desktop'
 }
 
 /**
@@ -37,6 +46,7 @@ export function PaginaInterna({
   titulo,
   lead,
   children,
+  flotante = 'siempre',
 }: PaginaInternaProps) {
   const [menuAbierto, setMenuAbierto] = useState(false)
 
@@ -70,7 +80,7 @@ export function PaginaInterna({
 
       <Footer />
 
-      {!menuAbierto && <WhatsApp />}
+      {!menuAbierto && <WhatsApp soloDesktop={flotante === 'desktop'} />}
     </>
   )
 }

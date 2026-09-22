@@ -17,6 +17,7 @@ export type NombreIcono =
   | 'service'
   | 'accesorio'
   | 'chat'
+  | 'play'
 
 const TRAZOS: Record<NombreIcono, React.ReactNode> = {
   /**
@@ -27,6 +28,10 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
    * marca registrada. El botón dice "WhatsApp" con todas las letras, que
    * identifica igual de bien y no copia nada.
    */
+  // Triángulo de play, con el mismo trazo abierto que el resto. Va SIN círculo
+  // alrededor: el botón que lo lleva ya es un bisel ámbar, y un círculo dentro
+  // de una forma biselada es la única curva del sitio.
+  play: <path d="M8.25 5.5 19 12 8.25 18.5V5.5Z" />,
   chat: (
     <>
       <path d="M20.5 12.4c0 4-3.8 7.2-8.5 7.2a9.9 9.9 0 0 1-3-.45L4.2 20.5l1.4-3.35A6.8 6.8 0 0 1 3.5 12.4c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2Z" />

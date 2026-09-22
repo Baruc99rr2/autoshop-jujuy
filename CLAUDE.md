@@ -6,16 +6,16 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
-- Rutas con react-router 7: `/` (home), `/catalogo`, `/vehiculo/:slug`,
-  `/admin` (lazy) y un 404. La intro corre solo si la pestaña ENTRÓ por `/`.
+- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin` (lazy) y un 404 con
+  salida al catálogo. La intro corre solo si la pestaña ENTRÓ por `/`.
 - `src/data/repo/` es la única puerta a los datos (mock sobre localStorage;
   `CLAVE` sube de versión cada vez que cambia la semilla, si no gana lo viejo).
-- `VehiculoCard` es compartida: riel del home y grilla del catálogo. El ancho
-  lo pone el contenedor. Con 2+ fotos, el hover barre a la segunda con
-  `clip-path` (montada recién al hover); con una sola queda la tira VER FICHA.
-- `/catalogo` completo: chips + buscador, ambos EN LA URL (`?condicion=&q=`),
-  vendidos al final, borradores nunca, esqueletos y estado vacío con salida.
-- Por hacer: la ficha real de `/vehiculo/:slug` y el panel de carga.
+- `VehiculoCard` es compartida: riel del home, grilla del catálogo y "otros
+  vehículos". El ancho lo pone el contenedor.
+- `/catalogo`: chips + buscador EN LA URL (`?condicion=&q=`).
+- `/vehiculo/:slug`: galería con DOS layouts (tira con snap en mobile, grande +
+  miniaturas en desktop), precio sticky, barra fija de mobile en z-40 (debajo
+  del menú), video sin montar hasta el click, etiquetas con barrido. Falta `/admin`.
 
 ---
 

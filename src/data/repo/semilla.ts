@@ -18,6 +18,13 @@ import type { Vehiculo } from '../../types/vehiculo'
  * cómo se comporta una grilla con portadas repetidas y con unidades sin foto
  * propia, que es exactamente lo que va a pasar mientras se carga el stock.
  *
+ * La cantidad de fotos y de etiquetas está REPARTIDA para poder probar la
+ * ficha entera con esta muestra: el Tucson va al máximo útil (cinco fotos,
+ * video y cinco etiquetas), la RAM queda en el medio (tres fotos, una
+ * etiqueta) y la Swift en el mínimo (una foto, ninguna etiqueta), que es el
+ * caso donde la galería tiene que quedarse sin controles y la sección de
+ * etiquetas tiene que no existir.
+ *
  * La muestra incluye a propósito los tres casos que suelen romper una vista:
  * un BORRADOR (`publicado: false`), uno VENDIDO y uno SIN PRECIO (`null`).
  */
@@ -47,15 +54,35 @@ export const SEMILLA: Vehiculo[] = [
     estado: 'disponible',
     publicado: true,
     destacado: true,
-    // DOS FOTOS a propósito: es la unidad con la que se prueba el barrido a la
-    // segunda foto en hover. La segunda es otra imagen de la muestra, no otra
-    // toma del mismo auto —hay tres archivos en total—; las unidades reales
-    // van a tener sus propias fotos cargadas desde el panel.
+    // LA UNIDAD COMPLETA de la muestra: cinco fotos, video y cinco etiquetas.
+    // Es con la que se prueba la galería de verdad —el deslizamiento con el
+    // dedo, el indicador "2 / 5" y la tira de miniaturas—, y también el
+    // barrido a la segunda foto en hover de la card.
+    //
+    // Hay TRES archivos de imagen en total, así que las cinco fotos los
+    // repiten. No es un descuido: lo que se prueba es el comportamiento de la
+    // galería con cinco fotos, no que sean cinco tomas distintas. Las unidades
+    // reales van a tener sus propias fotos cargadas desde el panel.
     fotos: [
       { id: 'demo-tucson-f1', ...CAR_1, orden: 0 },
       { id: 'demo-tucson-f2', ...CAR_2, orden: 1 },
+      { id: 'demo-tucson-f3', ...CAR_3, orden: 2 },
+      { id: 'demo-tucson-f4', ...CAR_1, orden: 3 },
+      { id: 'demo-tucson-f5', ...CAR_2, orden: 4 },
     ],
-    video: null,
+    // VIDEO DE MUESTRA: es el clip del hero reusado, no una filmación de este
+    // auto. Está solo para que el bloque de video de la ficha —póster, botón
+    // de play y `preload="none"`— se pueda ver funcionando antes de que la
+    // dueña suba uno. Se borra con el resto de los datos `demo-`.
+    video: {
+      url: '/video/hero-desktop.mp4',
+      posterUrl: '/img/vehiculos/car-1.webp',
+      pesoBytes: 1_424_784,
+    },
+    // CINCO ETIQUETAS, cuatro con foto de fondo y una sin: la grilla de la
+    // ficha tiene que verse bien en las dos —foto bajo un velo oscuro y fondo
+    // asphalt liso— y con un número impar, que es el que deja un hueco en la
+    // última fila.
     etiquetas: [
       {
         id: 'demo-tucson-e1',
@@ -68,8 +95,29 @@ export const SEMILLA: Vehiculo[] = [
         id: 'demo-tucson-e2',
         titulo: 'Un solo dueño',
         texto: 'Comprada 0km en Jujuy y usada siempre en ciudad.',
-        fotoFondoId: null,
+        fotoFondoId: 'demo-tucson-f2',
         orden: 1,
+      },
+      {
+        id: 'demo-tucson-e3',
+        titulo: 'Cubiertas nuevas',
+        texto: 'Las cuatro cambiadas en julio, con la factura del gomería.',
+        fotoFondoId: 'demo-tucson-f3',
+        orden: 2,
+      },
+      {
+        id: 'demo-tucson-e4',
+        titulo: 'Siempre en garaje',
+        texto: 'Nunca durmió en la calle. La pintura está sana y sin retoques.',
+        fotoFondoId: 'demo-tucson-f4',
+        orden: 3,
+      },
+      {
+        id: 'demo-tucson-e5',
+        titulo: 'Tomamos tu usado',
+        texto: 'Lo tasamos en el salón y va como parte de pago.',
+        fotoFondoId: null,
+        orden: 4,
       },
     ],
     creadoEn: '2026-08-04T13:00:00.000Z',
@@ -88,6 +136,10 @@ export const SEMILLA: Vehiculo[] = [
     estado: 'reservado',
     publicado: true,
     destacado: true,
+    // UNA SOLA FOTO Y NINGUNA ETIQUETA, a propósito: es el extremo pobre de la
+    // muestra y el que más se rompe. La galería tiene que quedarse sin
+    // controles ni indicador, y la sección de etiquetas tiene que desaparecer
+    // entera en vez de dejar un titular sobre el vacío.
     fotos: [{ id: 'demo-swift-f1', ...CAR_2, orden: 0 }],
     video: null,
     etiquetas: [],
@@ -107,11 +159,13 @@ export const SEMILLA: Vehiculo[] = [
     estado: 'disponible',
     publicado: true,
     destacado: true,
-    // La segunda unidad con dos fotos: sirve para ver el barrido al lado de
-    // una card que tiene una sola (la Swift), que es el caso mezclado.
+    // TRES FOTOS: el caso intermedio. Sirve para ver el barrido a la segunda
+    // foto al lado de una card que tiene una sola (la Swift), y en la ficha,
+    // una tira de miniaturas corta.
     fotos: [
       { id: 'demo-ram-f1', ...CAR_3, orden: 0 },
       { id: 'demo-ram-f2', ...CAR_1, orden: 1 },
+      { id: 'demo-ram-f3', ...CAR_2, orden: 2 },
     ],
     video: null,
     etiquetas: [

@@ -14,9 +14,16 @@ import { FLOTANTE } from '../data/contacto'
  * además es marca registrada. La palabra "WhatsApp" en el `aria-label` y en el
  * texto de desktop identifica igual de bien.
  */
-export function WhatsApp() {
+export function WhatsApp({ soloDesktop = false }: { soloDesktop?: boolean }) {
   return (
-    <div className="fixed right-4 bottom-24 z-60 md:right-6 md:bottom-6">
+    <div
+      className={`fixed right-4 bottom-24 z-60 md:right-6 md:bottom-6 ${
+        // La ficha lo esconde en mobile porque ahí tiene su propia barra fija
+        // con el mismo botón. Se esconde con `lg:` y no con `md:` porque la
+        // barra de la ficha también vive hasta `lg`.
+        soloDesktop ? 'hidden lg:block' : ''
+      }`}
+    >
       <Bevel
         as="a"
         variant="solid"

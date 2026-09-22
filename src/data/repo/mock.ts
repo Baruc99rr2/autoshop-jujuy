@@ -24,8 +24,10 @@ import type {
 // El número de versión se SUBE cada vez que cambia la semilla: lo guardado en
 // localStorage gana sobre la semilla nueva, así que sin subirlo un navegador
 // que ya visitó el sitio se queda con los datos de muestra viejos para
-// siempre. v2 agregó la segunda foto del Tucson y de la RAM.
-const CLAVE = 'autoshop.vehiculos.v2'
+// siempre. v2 agregó la segunda foto del Tucson y de la RAM; v3 llevó el
+// Tucson a cinco fotos, cinco etiquetas y video, y la RAM a tres fotos, para
+// poder probar la galería de la ficha.
+const CLAVE = 'autoshop.vehiculos.v3'
 
 // ── Persistencia ──────────────────────────────────────────────────────────
 

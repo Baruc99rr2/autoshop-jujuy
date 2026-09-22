@@ -1114,3 +1114,144 @@
 .wa-btn:focus-visible .barras > i:nth-child(3) {
   transition-delay: 0.1s;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — GALERÍA
+
+   Dos layouts distintos, uno por dispositivo (ver GaleriaVehiculo.tsx). Lo que
+   comparten es el gesto: el borde del recorte se mueve de izquierda a derecha,
+   el mismo barrido de la FAQ y de la card.
+   ───────────────────────────────────────────────────────────── */
+
+/* Mobile: la tira que se desliza con el dedo. `mandatory` y no `proximity`,
+   igual que los otros rieles del sitio: con las fotos al 100% del ancho,
+   proximity deja media foto a la vista si el gesto fue corto. */
+.gal-tira {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.gal-tira::-webkit-scrollbar {
+  display: none;
+}
+
+.gal-slide {
+  scroll-snap-align: center;
+}
+
+/* Desktop: las fotos van apiladas y el clip-path decide cuál se ve. Se anima
+   clip-path y nada más — ni opacity ni un montaje y desmontaje, que entraría
+   de un corte porque un elemento recién montado no transiciona desde su valor
+   inicial. */
+.gal-foto {
+  transition: clip-path 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — ETIQUETAS
+
+   El mismo barrido de los tiles de post-venta, con una capa más: la foto de
+   fondo. El apilado va con z-index negativos sobre un `isolation: isolate`,
+   así el orden es foto → velo → barrido → contenido, y todo queda por encima
+   del fondo asphalt que trae el bisel.
+
+   El estado lo tiene el contenedor exterior (`.etq-host`, que es el <li>),
+   porque el `clip-path` del bisel vive en el hijo: por eso los selectores son
+   descendentes y no `.etq:hover`. `data-activo` es el tap, que en un teléfono
+   es lo único que hay — ver el comentario de EtiquetasVehiculo.tsx.
+   ───────────────────────────────────────────────────────────── */
+
+.etq {
+  isolation: isolate;
+  position: relative;
+  color: var(--color-bone);
+  transition: color 0.3s ease;
+}
+
+.etq-foto {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* El velo. Sin él un texto bone sobre la foto de un auto claro desaparece; el
+   degradado deja más limpia la parte de arriba, que es donde se ve el auto. */
+.etq-velo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(
+    to top,
+    rgb(0 0 0 / 0.9),
+    rgb(0 0 0 / 0.72) 45%,
+    rgb(0 0 0 / 0.45)
+  );
+}
+
+.etq-barrido {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.etq-host:hover .etq-barrido,
+.etq-host:focus-within .etq-barrido,
+.etq-host[data-activo='true'] .etq-barrido {
+  transform: scaleX(1);
+}
+
+/* El texto pasa a negro con la demora justa para que el barrido lo alcance.
+   Al salir no hay demora: el color vuelve enseguida. */
+.etq-host:hover .etq,
+.etq-host:focus-within .etq,
+.etq-host[data-activo='true'] .etq {
+  color: var(--color-void);
+  transition-delay: 0.12s;
+}
+
+/* El acercamiento de la foto. Corto: es el fondo, no el sujeto. */
+.etq-host:hover .etq-foto,
+.etq-host:focus-within .etq-foto,
+.etq-host[data-activo='true'] .etq-foto {
+  transform: scale(1.06);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — VIDEO
+   El póster se aclara un poco al pasar por encima: es lo que dice que el
+   bloque entero es el botón, no solo el bisel del medio.
+   ───────────────────────────────────────────────────────────── */
+
+.video-poster {
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .video-play:hover .video-poster {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gal-foto,
+  .etq-foto,
+  .etq-barrido,
+  .video-poster {
+    transition: none;
+  }
+  .etq-host:hover .etq-foto,
+  .etq-host:focus-within .etq-foto,
+  .etq-host[data-activo='true'] .etq-foto,
+  .video-play:hover .video-poster {
+    transform: none;
+  }
+}
