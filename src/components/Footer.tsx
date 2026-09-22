@@ -86,9 +86,27 @@ export function Footer() {
       </div>
 
       <div className="mt-24 flex flex-col gap-5 border-t border-graphite pt-8 md:flex-row md:items-baseline md:justify-between">
-        <p className="font-hud text-bone/40">
-          © {año} {CONTACTO.nombreLegal}
-        </p>
+        {/* El © del cliente y la firma del estudio, en la misma tinta y en el
+            mismo tamaño: la firma acompaña, no compite. Quien lee el pie busca
+            el nombre de la concesionaria, y ponerlo a la par de quien hizo el
+            sitio sería cobrarse la obra en la fachada del cliente. */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-baseline md:gap-6">
+          <p className="font-hud text-bone/40">
+            © {año} {CONTACTO.nombreLegal}
+          </p>
+
+          <p className="font-hud text-bone/40">
+            Sitio desarrollado por{' '}
+            <a
+              href="https://skytechnorth.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-4 transition-colors duration-200 hover:text-amber hover:underline focus-visible:text-amber focus-visible:underline"
+            >
+              SkyTechNorth
+            </a>
+          </p>
+        </div>
 
         <button
           type="button"

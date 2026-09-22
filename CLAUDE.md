@@ -6,16 +6,16 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
-- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin` (lazy) y un 404 con
-  salida al catálogo. La intro corre solo si la pestaña ENTRÓ por `/`.
-- `src/data/repo/` es la única puerta a los datos (mock sobre localStorage;
-  `CLAVE` sube de versión cada vez que cambia la semilla, si no gana lo viejo).
-- `VehiculoCard` es compartida: riel del home, grilla del catálogo y "otros
-  vehículos". El ancho lo pone el contenedor.
-- `/catalogo`: chips + buscador EN LA URL (`?condicion=&q=`).
-- `/vehiculo/:slug`: galería con DOS layouts (tira con snap en mobile, grande +
-  miniaturas en desktop), precio sticky, barra fija de mobile en z-40 (debajo
-  del menú), video sin montar hasta el click, etiquetas con barrido. Falta `/admin`.
+- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin` (lazy) y 404. La intro
+  corre solo si la pestaña ENTRÓ por `/`. Falta `/admin`.
+- `src/data/repo/` es la única puerta a los datos (mock en localStorage; `CLAVE`
+  sube de versión al cambiar la semilla, hoy v4). 10 fotos; etiquetas sin tope.
+- `/catalogo`: chips + buscador EN LA URL, y en mobile lista/grilla 2×2 guardado
+  en localStorage (`VehiculoCard compacta`). Anota su query en sessionStorage.
+- `/vehiculo/:slug`: titular en escala `contenido`, grilla de dos filas con el
+  precio sticky (`useFitText`), galería con techo que abre `VisorFotos`, barra
+  fija de mobile (volver + WhatsApp) y "volver al catálogo" con los filtros.
+- El header lleva un velo degradado que aparece al scrollear (solo tono oscuro).
 
 ---
 

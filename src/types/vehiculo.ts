@@ -41,7 +41,12 @@ export interface Video {
  * Bloque de texto destacado dentro de la ficha ("Único dueño", "Service al
  * día"). **No sube imagen propia**: elige una de las fotos del mismo auto por
  * id, o ninguna. Una etiqueta con su propio uploader sería un segundo lugar
- * donde perder fotos, y la dueña ya tiene seis por unidad.
+ * donde perder fotos, y la dueña ya tiene diez por unidad.
+ *
+ * LAS ETIQUETAS NO TIENEN TOPE. No es un olvido: son texto, pesan nada y son
+ * la única parte de la ficha donde la dueña puede contar lo que quiera de la
+ * unidad. La grilla se banca cualquier cantidad; lo único que cambia con
+ * muchas es cuánto hay que scrollear.
  */
 export interface Etiqueta {
   id: string
@@ -79,11 +84,16 @@ export interface Vehiculo {
 }
 
 /**
- * Seis fotos por unidad. No es un límite técnico: es el punto donde una
- * galería deja de ayudar a decidir y empieza a ser un álbum, y además es lo
- * que se puede sacar con un celular en una recorrida sin abandonar a la mitad.
+ * Diez fotos por unidad.
+ *
+ * Eran seis y se quedaban cortas: con el visor a pantalla completa las fotos
+ * dejaron de ser miniaturas de apoyo y pasaron a ser la forma en que se mira
+ * el auto, así que interior, baúl y detalles ya no entran en media docena.
+ * Diez sigue siendo lo que se saca con un celular en una recorrida sin
+ * abandonar a la mitad, y es el punto donde la galería todavía se recorre de
+ * un vistazo en vez de ser un álbum.
  */
-export const MAX_FOTOS = 6
+export const MAX_FOTOS = 10
 
 /** La portada, o `null` si la unidad todavía no tiene fotos. */
 export function portada(v: Vehiculo): Foto | null {

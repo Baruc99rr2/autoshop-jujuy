@@ -18,6 +18,12 @@ export type NombreIcono =
   | 'accesorio'
   | 'chat'
   | 'play'
+  | 'lista'
+  | 'grilla'
+  | 'cerrar'
+  | 'izquierda'
+  | 'derecha'
+  | 'expandir'
 
 const TRAZOS: Record<NombreIcono, React.ReactNode> = {
   /**
@@ -32,6 +38,37 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
   // alrededor: el botón que lo lleva ya es un bisel ámbar, y un círculo dentro
   // de una forma biselada es la única curva del sitio.
   play: <path d="M8.25 5.5 19 12 8.25 18.5V5.5Z" />,
+
+  /**
+   * Los dos estados del catálogo en mobile: una unidad por fila, o dos por
+   * fila. Los íconos DIBUJAN el resultado —una columna de fichas anchas contra
+   * una grilla de cuatro— y no una metáfora: el control no tiene etiqueta
+   * visible, así que el dibujo es todo lo que explica qué hace.
+   *
+   * Sin `border-radius`, como todo el resto: son rectángulos rectos.
+   */
+  lista: (
+    <>
+      <rect x="3.25" y="4.25" width="17.5" height="6" />
+      <rect x="3.25" y="13.75" width="17.5" height="6" />
+    </>
+  ),
+  grilla: (
+    <>
+      <rect x="3.25" y="3.25" width="7.5" height="7.5" />
+      <rect x="13.25" y="3.25" width="7.5" height="7.5" />
+      <rect x="3.25" y="13.25" width="7.5" height="7.5" />
+      <rect x="13.25" y="13.25" width="7.5" height="7.5" />
+    </>
+  ),
+
+  /* El visor a pantalla completa: cerrar, moverse y la señal de que la foto
+     se puede abrir. Las flechas son un solo quiebre, sin asta: al tamaño al
+     que se usan (20-24 px sobre una foto) el asta se pierde igual. */
+  cerrar: <path d="M6 6 18 18M18 6 6 18" />,
+  izquierda: <path d="M14.75 5 7.75 12l7 7" />,
+  derecha: <path d="M9.25 5l7 7-7 7" />,
+  expandir: <path d="M9.5 3.75H3.75V9.5M14.5 3.75h5.75V9.5M9.5 20.25H3.75V14.5M14.5 20.25h5.75V14.5" />,
   chat: (
     <>
       <path d="M20.5 12.4c0 4-3.8 7.2-8.5 7.2a9.9 9.9 0 0 1-3-.45L4.2 20.5l1.4-3.35A6.8 6.8 0 0 1 3.5 12.4c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2Z" />

@@ -65,7 +65,7 @@ export interface RepoVehiculos {
   actualizar(id: string, cambios: CambiosVehiculo): Promise<Vehiculo>
   eliminar(id: string): Promise<void>
 
-  /** Falla si la unidad ya llegó a `MAX_FOTOS`. La primera queda de portada. */
+  /** Falla si la unidad ya llegó a `MAX_FOTOS` (diez). La primera queda de portada. */
   subirFoto(id: string, archivo: File): Promise<Foto>
   eliminarFoto(id: string, fotoId: string): Promise<void>
   /** `idsEnOrden` es la lista completa de fotos de la unidad, en el orden nuevo. */

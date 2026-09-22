@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 import Bevel from './Bevel'
+import Icono from './Icono'
+import VisorFotos from './VisorFotos'
 import { useMedia } from '../lib/use-media'
 import type { Foto } from '../types/vehiculo'
 
@@ -8,13 +10,18 @@ import type { Foto } from '../types/vehiculo'
  *
  * DOS LAYOUTS DISTINTOS, no uno responsive. En un teléfono el gesto natural
  * es deslizar con el dedo, así que las fotos van en una tira con scroll-snap
- * y un indicador "2 / 5". En desktop no hay dedo: va una foto grande con la
+ * y un indicador "3 / 10". En desktop no hay dedo: va una foto grande con la
  * tira de miniaturas debajo. Hacer que uno solo sirva para los dos casos
  * terminaba en flechas chiquitas en mobile o en una tira que se arrastra con
  * el mouse en desktop; ninguna de las dos es lo que la gente espera.
  *
  * Se monta UNO SOLO de los dos (`useMedia`), no los dos con `md:hidden`: con
- * los dos en el DOM, las seis fotos se descargan dos veces.
+ * los dos en el DOM, las diez fotos se descargan dos veces.
+ *
+ * LAS DOS ABREN EL VISOR. Tocar una foto —o hacerle click a la grande— la
+ * lleva a pantalla completa (`VisorFotos`). Acá la galería es una vista
+ * previa que tiene que convivir con el precio y el botón sin empujarlos fuera
+ * de pantalla; mirar el auto de verdad se hace en el visor.
  */
 
 const MD = '(min-width: 768px)'
@@ -25,18 +32,23 @@ type GaleriaProps = {
   titulo: string
 }
 
+type LayoutProps = GaleriaProps & {
+  /** Abre el visor a pantalla completa en la foto que se tocó. */
+  onAbrir: (i: number) => void
+}
+
 /**
  * El `alt` de la primera foto nombra el auto; el de las demás va vacío.
  *
  * No es pereza: son tomas del MISMO vehículo que el titular de la página ya
- * nombró, y un lector de pantalla leyendo cinco veces "Hyundai Tucson 2.0 GL"
+ * nombró, y un lector de pantalla leyendo diez veces "Hyundai Tucson 2.0 GL"
  * no agrega nada. El número de foto sí lo dice el indicador.
  */
 function alt(titulo: string, i: number): string {
   return i === 0 ? titulo : ''
 }
 
-/** "2 / 5" en la esquina. Visible siempre; el detalle hablado va aparte. */
+/** "3 / 10" en la esquina. Visible siempre; el detalle hablado va aparte. */
 function Indicador({ i, total }: { i: number; total: number }) {
   return (
     <>
@@ -50,11 +62,30 @@ function Indicador({ i, total }: { i: number; total: number }) {
         {i + 1} / {total}
       </Bevel>
       {/* Lo que se anuncia al deslizar. El indicador de arriba se lee
-          "dos barra cinco", que no dice nada. */}
+          "tres barra diez", que no dice nada. */}
       <p className="sr-only" aria-live="polite">
         Foto {i + 1} de {total}
       </p>
     </>
+  )
+}
+
+/**
+ * La señal de que la foto se abre a pantalla completa.
+ *
+ * Va siempre visible y no en hover: en un teléfono no hay hover, y es
+ * justamente ahí donde la foto chica es el problema. `pointer-events-none`
+ * porque quien recibe el toque es el botón que hay debajo, que ocupa la foto
+ * entera.
+ */
+function Lupa() {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute top-3 left-3 bg-void/80 p-2 text-bone"
+    >
+      <Icono name="expandir" className="h-4 w-4" />
+    </span>
   )
 }
 
@@ -69,7 +100,7 @@ function SinFotos() {
          variante `outline` ya lleva `h-full`, y un `height: 100%` contra un
          padre de alto automático más un `aspect-ratio` en el mismo elemento
          deja la altura a merced de cómo lo resuelva el navegador. */
-      outerClassName="block aspect-4/3 md:aspect-3/2"
+      outerClassName="block aspect-4/3 md:aspect-16/10"
       className="grid place-items-center p-0"
     >
       <span className="font-hud text-bone/35">SIN FOTOS TODAVÍA</span>
@@ -79,10 +110,29 @@ function SinFotos() {
 
 export function GaleriaVehiculo({ fotos, titulo }: GaleriaProps) {
   const grande = useMedia(MD)
+  /** Índice abierto a pantalla completa, o `null` si el visor está cerrado. */
+  const [visor, setVisor] = useState<number | null>(null)
 
   if (fotos.length === 0) return <SinFotos />
-  if (grande) return <Escritorio fotos={fotos} titulo={titulo} />
-  return <Tira fotos={fotos} titulo={titulo} />
+
+  return (
+    <>
+      {grande ? (
+        <Escritorio fotos={fotos} titulo={titulo} onAbrir={setVisor} />
+      ) : (
+        <Tira fotos={fotos} titulo={titulo} onAbrir={setVisor} />
+      )}
+
+      {visor !== null && (
+        <VisorFotos
+          fotos={fotos}
+          titulo={titulo}
+          inicial={visor}
+          onCerrar={() => setVisor(null)}
+        />
+      )}
+    </>
+  )
 }
 
 /**
@@ -96,7 +146,7 @@ export function GaleriaVehiculo({ fotos, titulo }: GaleriaProps) {
  * mantener sincronizado con el gesto: el scroll es la única verdad, y así
  * también acierta cuando se llega deslizando a mitad de camino y se suelta.
  */
-function Tira({ fotos, titulo }: GaleriaProps) {
+function Tira({ fotos, titulo, onAbrir }: LayoutProps) {
   const [i, setI] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
   const sola = fotos.length === 1
@@ -128,23 +178,38 @@ function Tira({ fotos, titulo }: GaleriaProps) {
              escritorio este es el layout que se monta. */
           tabIndex={sola ? undefined : 0}
         >
+          {/* Cada foto es un BOTÓN, no una imagen suelta: el toque tiene que
+              abrir el visor, y un `onClick` sobre un `<img>` no existe para el
+              teclado ni para un lector de pantalla. El navegador no dispara el
+              click si el dedo arrastró, así que deslizar sigue siendo
+              deslizar. */}
           {fotos.map((f, k) => (
-            <img
+            <button
               key={f.id}
-              src={f.url}
-              alt={alt(titulo, k)}
-              width={f.ancho}
-              height={f.alto}
-              /* La primera es lo primero que se ve de la unidad; las demás
-                 están fuera de pantalla hasta que alguien deslice. */
-              loading={k === 0 ? 'eager' : 'lazy'}
-              decoding="async"
-              className="gal-slide aspect-4/3 w-full shrink-0 object-cover"
-            />
+              type="button"
+              onClick={() => onAbrir(k)}
+              className="gal-slide relative block w-full shrink-0"
+            >
+              <img
+                src={f.url}
+                alt={alt(titulo, k)}
+                width={f.ancho}
+                height={f.alto}
+                /* La primera es lo primero que se ve de la unidad; las demás
+                   están fuera de pantalla hasta que alguien deslice. */
+                loading={k === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                className="aspect-4/3 w-full object-cover"
+              />
+              <span className="sr-only">
+                Ver la foto {k + 1} a pantalla completa
+              </span>
+            </button>
           ))}
         </div>
       </Bevel>
 
+      <Lupa />
       {!sola && <Indicador i={i} total={fotos.length} />}
     </div>
   )
@@ -162,10 +227,15 @@ function Tira({ fotos, titulo }: GaleriaProps) {
  *
  * Está escrito así, y no montando y desmontando la foto activa, porque un
  * elemento recién montado no transiciona desde su valor inicial: entraría de
- * un corte. Acá los seis elementos ya existen y lo único que cambia es una
+ * un corte. Acá los diez elementos ya existen y lo único que cambia es una
  * propiedad animable.
+ *
+ * LA CAJA GRANDE TIENE TECHO. Era `aspect-3/2` a todo el ancho de la columna
+ * y en 1440 eso son más de 600 px de foto: el precio quedaba abajo del pliegue
+ * en una página que existe para mostrar un precio. Ahora es 16:10 con
+ * `max-h`, y la foto completa se mira en el visor.
  */
-function Escritorio({ fotos, titulo }: GaleriaProps) {
+function Escritorio({ fotos, titulo, onAbrir }: LayoutProps) {
   const [i, setI] = useState(0)
   const sola = fotos.length === 1
 
@@ -178,7 +248,12 @@ function Escritorio({ fotos, titulo }: GaleriaProps) {
           borderClassName="bg-graphite"
           /* La proporción va en el contenedor exterior, por lo mismo que en
              `SinFotos`. El hijo la llena con el `h-full` de la variante. */
-          outerClassName="block aspect-3/2"
+          /* Doble techo: 30rem en un monitor alto y medio viewport en uno
+             bajo. Sin el segundo, en una pantalla de 768 px de alto la foto
+             sola se comía la pantalla y el precio volvía a caer abajo del
+             pliegue, que es el problema que esto viene a resolver. `svh` y no
+             `vh`, como todo alto del sitio. */
+          outerClassName="block aspect-16/10 max-h-[min(30rem,50svh)]"
           className="relative overflow-hidden p-0"
         >
           {fotos.map((f, k) => (
@@ -197,16 +272,33 @@ function Escritorio({ fotos, titulo }: GaleriaProps) {
               }}
             />
           ))}
+
+          {/* El click sobre la foto grande abre el visor. Es un botón que la
+              cubre entera y va POR ENCIMA de las diez imágenes apiladas, que
+              llevan `z-index` propio: de ahí el `z-20`. */}
+          <button
+            type="button"
+            onClick={() => onAbrir(i)}
+            className="absolute inset-0 z-20 block h-full w-full cursor-zoom-in"
+          >
+            <span className="sr-only">
+              Ver la foto {i + 1} a pantalla completa
+            </span>
+          </button>
         </Bevel>
 
+        <Lupa />
         {!sola && <Indicador i={i} total={fotos.length} />}
       </div>
 
-      {/* Con una sola foto no hay nada que elegir: la tira no aparece. */}
+      {/* Con una sola foto no hay nada que elegir: la tira no aparece.
+          La tira SCROLLEA en lugar de envolverse: con diez miniaturas de 80 px
+          una grilla que envuelve suma una segunda fila y vuelve a empujar el
+          precio, que es el problema que veníamos de resolver. */}
       {!sola && (
-        <ul className="mt-3 flex gap-3">
+        <ul className="gal-miniaturas mt-3 flex gap-2 overflow-x-auto">
           {fotos.map((f, k) => (
-            <li key={f.id} className="w-24">
+            <li key={f.id} className="w-20 shrink-0">
               <Bevel
                 as="button"
                 type="button"

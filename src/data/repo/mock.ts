@@ -26,8 +26,10 @@ import type {
 // que ya visitó el sitio se queda con los datos de muestra viejos para
 // siempre. v2 agregó la segunda foto del Tucson y de la RAM; v3 llevó el
 // Tucson a cinco fotos, cinco etiquetas y video, y la RAM a tres fotos, para
-// poder probar la galería de la ficha.
-const CLAVE = 'autoshop.vehiculos.v3'
+// poder probar la galería de la ficha; v4 subió el tope a diez fotos y llevó
+// el Tucson a diez fotos y doce etiquetas, y el Amarok a seis y seis, que son
+// los tres tamaños con los que hay que mirar la galería y la grilla.
+const CLAVE = 'autoshop.vehiculos.v4'
 
 // ── Persistencia ──────────────────────────────────────────────────────────
 

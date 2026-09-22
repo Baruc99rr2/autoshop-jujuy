@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import Bevel from '../components/Bevel'
+import Icono from '../components/Icono'
 import PaginaInterna from '../components/PaginaInterna'
 import VehiculoCard, {
   VehiculoCardEsqueleto,
@@ -8,6 +9,7 @@ import VehiculoCard, {
 import { FILTROS } from '../data/catalogo'
 import { WHATSAPP_URL } from '../data/contacto'
 import { repo } from '../data/repo'
+import { recordarCatalogo } from '../lib/ultimo-catalogo'
 import type { Condicion, Vehiculo } from '../types/vehiculo'
 
 /**
@@ -39,7 +41,48 @@ const ESQUELETOS = 3
 /** Clase de ancho de la card dentro de la grilla. */
 const EN_GRILLA = 'w-full'
 
-const GRILLA = 'mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3'
+/**
+ * Las dos formas de ver el stock EN MOBILE.
+ *
+ * De `sm` para arriba las dos son lo mismo —dos columnas, y tres en `xl`—
+ * porque ahí ya entran cards completas y no hay nada que elegir. Lo que
+ * cambia es el teléfono: en lista se lee una unidad por vez con todos los
+ * datos, y en grilla entran cuatro de un vistazo con foto, nombre y precio.
+ * Recorrer veinte unidades de a una es mucho scroll; decidir con cuatro datos
+ * menos es mucho menos grave.
+ *
+ * El `gap` también cambia: 12 px entre dos columnas de 160 px, 20 px cuando
+ * las cards son anchas.
+ */
+const VISTAS = {
+  lista: {
+    icono: 'lista',
+    label: 'Ver una unidad por fila',
+    grilla: 'mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3',
+  },
+  grilla: {
+    icono: 'grilla',
+    label: 'Ver dos unidades por fila',
+    grilla: 'mt-8 grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3',
+  },
+} as const
+
+type Vista = keyof typeof VISTAS
+
+/**
+ * La vista elegida SOBREVIVE A LA VISITA (`localStorage`, no `sessionStorage`)
+ * y a propósito: es una preferencia de cómo se lee, no por dónde se iba. Quien
+ * prefiere la grilla la prefiere también la semana que viene.
+ */
+const CLAVE_VISTA = 'autoshop.catalogo.vista'
+
+function leerVista(): Vista {
+  try {
+    return localStorage.getItem(CLAVE_VISTA) === 'grilla' ? 'grilla' : 'lista'
+  } catch {
+    return 'lista'
+  }
+}
 
 /**
  * Los vendidos al fondo.
@@ -63,6 +106,28 @@ export function Catalogo() {
 
   const condicion = leerCondicion(params.get('condicion'))
   const q = params.get('q') ?? ''
+
+  // Se anota por dónde iba el visitante para que la ficha pueda ofrecer la
+  // vuelta a ESTOS filtros. Ver `lib/ultimo-catalogo.ts`.
+  const busqueda = params.toString()
+  useEffect(() => {
+    recordarCatalogo(busqueda ? `?${busqueda}` : '')
+  }, [busqueda])
+
+  // La vista se lee del almacenamiento UNA VEZ, en el inicializador: leerla en
+  // un efecto dejaría el primer pintado en lista y saltaría a grilla al frame
+  // siguiente, que es exactamente el parpadeo que el estado guardado tiene que
+  // evitar.
+  const [vista, setVista] = useState<Vista>(leerVista)
+
+  const elegirVista = (v: Vista) => {
+    setVista(v)
+    try {
+      localStorage.setItem(CLAVE_VISTA, v)
+    } catch {
+      /* sin memoria la elección vale igual, solo que para esta visita */
+    }
+  }
 
   // El resultado se guarda JUNTO CON la consulta que lo trajo, y "cargando" se
   // deduce comparando esa consulta con la actual. La alternativa —un
@@ -165,6 +230,7 @@ export function Catalogo() {
     >
       {/* ── Filtros ─────────────────────────────────────────────────── */}
       <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between">
+        <div className="flex items-start justify-between gap-3">
         <div
           className="flex flex-wrap gap-2"
           role="group"
@@ -192,6 +258,39 @@ export function Catalogo() {
               </Bevel>
             )
           })}
+        </div>
+
+          {/* Solo en mobile: de `sm` para arriba las dos vistas son la misma
+              grilla, así que el control no tendría nada que hacer. */}
+          <div
+            className="flex shrink-0 gap-2 sm:hidden"
+            role="group"
+            aria-label="Cómo ver el stock"
+          >
+            {(Object.keys(VISTAS) as Vista[]).map((v) => {
+              const activa = v === vista
+              return (
+                <Bevel
+                  key={v}
+                  as="button"
+                  type="button"
+                  variant={activa ? 'solid' : 'outline'}
+                  bevel={10}
+                  onClick={() => elegirVista(v)}
+                  aria-pressed={activa}
+                  outerClassName={
+                    activa
+                      ? undefined
+                      : 'block transition-colors duration-200 hover:bg-amber'
+                  }
+                  className="p-2.5"
+                >
+                  <Icono name={VISTAS[v].icono} className="h-5 w-5" />
+                  <span className="sr-only">{VISTAS[v].label}</span>
+                </Bevel>
+              )
+            })}
+          </div>
         </div>
 
         {/* `role="search"` y no un `<form>` que envía: no hay a dónde enviar,
@@ -255,20 +354,25 @@ export function Catalogo() {
 
       {/* ── Grilla ──────────────────────────────────────────────────── */}
       {esqueletos ? (
-        <div className={GRILLA}>
+        <div className={VISTAS[vista].grilla}>
           {Array.from({ length: ESQUELETOS }, (_, i) => (
             <VehiculoCardEsqueleto key={i} className={EN_GRILLA} />
           ))}
         </div>
       ) : lista.length > 0 ? (
         <div
-          className={`${GRILLA} transition-opacity duration-200 ${
+          className={`${VISTAS[vista].grilla} transition-opacity duration-200 ${
             cargando ? 'opacity-50' : 'opacity-100'
           }`}
           aria-busy={cargando}
         >
           {lista.map((v) => (
-            <VehiculoCard key={v.id} v={v} className={EN_GRILLA} />
+            <VehiculoCard
+              key={v.id}
+              v={v}
+              className={EN_GRILLA}
+              compacta={vista === 'grilla'}
+            />
           ))}
         </div>
       ) : (

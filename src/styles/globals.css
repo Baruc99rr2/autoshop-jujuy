@@ -18,6 +18,12 @@
 
   --text-hero: clamp(3rem, 11vw, 10rem);
   --text-h1: clamp(2.25rem, 6.5vw, 5rem);
+  /* El titular de una página de CONTENIDO, no de portada: la ficha de un auto.
+     Es --text-h1 con techo, así que en mobile mide exactamente lo mismo y en
+     desktop se queda en 52 px en vez de irse a 80. A 80 px el nombre del auto
+     ocupaba dos renglones y empujaba la galería y el precio fuera de la
+     primera pantalla, que es justo lo que la ficha tiene que mostrar. */
+  --text-h1-ficha: min(var(--text-h1), 3.25rem);
   --text-h2: clamp(1.75rem, 4vw, 3rem);
   --text-body: clamp(1rem, 1.1vw, 1.125rem);
   --text-hud: 0.8125rem;
@@ -556,6 +562,41 @@
    El SVG saca sus colores de --logo-white / --logo-yellow, así que invertir
    el blanco alcanza para recuperar el logo entero sin tocar los paths.
    ───────────────────────────────────────────────────────────── */
+
+/* ── El velo del header ──────────────────────────────────────────────
+   Un degradado negro corto, de arriba hacia abajo, que aparece recién cuando
+   la página se movió. Va degradado y no sólido con desenfoque: `backdrop-filter`
+   sobre una barra fija que cubre todo el ancho es de lo más caro que se le
+   puede pedir a un teléfono en cada frame de scroll, y acá el problema es de
+   legibilidad, no de profundidad.
+
+   Mide el doble del header para que el corte de abajo caiga en transparente y
+   no se vea el borde de una barra. */
+.header-velo {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: -1;
+  height: 200%;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--color-void) 0%,
+    color-mix(in srgb, var(--color-void) 72%, transparent) 55%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.header-velo[data-on='true'] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-velo {
+    transition: none;
+  }
+}
 
 .header-adapt[data-tono='claro'] {
   --logo-white: var(--color-void);
@@ -1138,6 +1179,19 @@
 
 .gal-slide {
   scroll-snap-align: center;
+}
+
+/* La tira de miniaturas de escritorio. Scrollea en vez de envolverse —con
+   diez fotos una grilla que envuelve suma una segunda fila y empuja el precio
+   fuera de pantalla— y va SIN scroll-snap: son blancos de 80 px que se eligen
+   con un click, no una tira que se recorre con el dedo. Lo único que se le
+   saca es la barra, que sobre el fondo negro se ve como un error. */
+.gal-miniaturas {
+  scrollbar-width: none;
+}
+
+.gal-miniaturas::-webkit-scrollbar {
+  display: none;
 }
 
 /* Desktop: las fotos van apiladas y el clip-path decide cuál se ve. Se anima

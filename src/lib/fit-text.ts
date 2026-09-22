@@ -25,6 +25,14 @@ export function useFitText(
   ref: RefObject<HTMLElement | null>,
   /** Tope duro, en px. Evita que en un monitor ancho el texto se vuelva absurdo. */
   max = 320,
+  /**
+   * Piso duro, en px. Por debajo de esto el texto deja de achicarse y prefiere
+   * desbordar: un precio de nueve dígitos metido a la fuerza en un panel
+   * angosto termina en cifras de 9 px que nadie lee, y un precio ilegible es
+   * peor que uno que roza el borde. Por defecto es 0, que es el
+   * comportamiento del logotipo del footer: ahí achicar siempre está bien.
+   */
+  min = 0,
 ) {
   useEffect(() => {
     const el = ref.current
@@ -50,7 +58,8 @@ export function useFitText(
       const pedido = rango.getBoundingClientRect().width
       if (!pedido) return
 
-      el.style.fontSize = `${Math.min((SONDA * disponible) / pedido, max)}px`
+      const exacto = (SONDA * disponible) / pedido
+      el.style.fontSize = `${Math.max(Math.min(exacto, max), min)}px`
     }
 
     const programar = () => {
@@ -87,5 +96,5 @@ export function useFitText(
       cancelAnimationFrame(frame)
       ro.disconnect()
     }
-  }, [ref, max])
+  }, [ref, max, min])
 }

@@ -22,6 +22,9 @@ import type { EstadoVehiculo, Vehiculo } from '../types/vehiculo'
  * La card no sabe en cuál de las dos está: lo único que cambia es el ancho, y
  * el ancho lo pone quien la usa con `className`. Tampoco trae márgenes: el
  * espacio entre cards es del contenedor (el `gap` del riel o de la grilla).
+ *
+ * LO ÚNICO QUE SÍ SABE es si está en la grilla 2×2 de mobile (`compacta`), y
+ * ahí se queda con foto, título y precio. Ver la prop.
  */
 
 /** Chip de estado. El rojo aparece solo acá y en los errores del formulario. */
@@ -62,13 +65,32 @@ type VehiculoCardProps = {
   v: Vehiculo
   /** Ancho y comportamiento de caja. Lo pone el contenedor: riel o grilla. */
   className?: string
+  /**
+   * La versión corta: foto, título y precio, y nada más.
+   *
+   * Es para la grilla 2×2 de mobile del catálogo, donde la card mide unos
+   * 160 px de ancho: ahí el año, los kilómetros y la tira "VER FICHA" entran
+   * apretados y el bloque de datos termina midiendo más que la foto, que es
+   * lo que la persona vino a mirar.
+   *
+   * Lo que se saca se saca SOLO POR DEBAJO DE `sm`, con `hidden sm:block`, y
+   * no desmontando nada: de `sm` para arriba la grilla vuelve a ser de dos y
+   * tres columnas anchas y el control de vista ya no existe, así que la card
+   * tiene que volver a estar completa sin que nadie se acuerde de apagar
+   * esta prop.
+   */
+  compacta?: boolean
 }
 
 /**
  * La card ENTERA es el link a la ficha. Un botón "ver más" adentro de una card
  * que ya se ve clickeable es un blanco chico al lado de uno grande.
  */
-export function VehiculoCard({ v, className = '' }: VehiculoCardProps) {
+export function VehiculoCard({
+  v,
+  className = '',
+  compacta = false,
+}: VehiculoCardProps) {
   const foto = portada(v)
   const segunda = v.fotos.length > 1 ? v.fotos[1] : null
   const fino = useMedia(PUNTERO_FINO)
@@ -127,7 +149,11 @@ export function VehiculoCard({ v, className = '' }: VehiculoCardProps) {
           className="flex h-full flex-col p-0"
         >
           {/* ── Foto ──────────────────────────────────────────────── */}
-          <div className="relative aspect-4/3 overflow-hidden bg-void">
+          {/* 16:10 y no 4:3. En 1440 la grilla es de tres columnas de unos
+              420 px: en 4:3 eso son 315 px de foto por card y la fila entera
+              medía más que la pantalla. Un auto es un objeto ancho, así que
+              el recorte más apaisado además lo muestra mejor. */}
+          <div className="relative aspect-16/10 overflow-hidden bg-void">
             {foto ? (
               <img
                 src={foto.url}
@@ -181,30 +207,61 @@ export function VehiculoCard({ v, className = '' }: VehiculoCardProps) {
           </div>
 
           {/* ── Datos ─────────────────────────────────────────────── */}
-          <div className="flex flex-1 flex-col p-5 md:p-6">
-            <h3 className="font-display text-h2 leading-none text-bone">
+          {/* El título bajó de `text-h2` (hasta 48 px) a 20/24 px: a la escala
+              anterior un nombre como "Volkswagen Amarok Comfortline 4x4"
+              ocupaba tres renglones y estiraba toda la fila de la grilla. */}
+          <div
+            className={`flex flex-1 flex-col ${
+              compacta ? 'p-3 sm:p-4 md:p-5' : 'p-4 md:p-5'
+            }`}
+          >
+            <h3
+              className={`font-display leading-tight text-bone ${
+                compacta
+                  ? 'line-clamp-2 text-base sm:line-clamp-none sm:text-xl md:text-2xl'
+                  : 'text-xl md:text-2xl'
+              }`}
+            >
               {v.titulo}
             </h3>
-            <p className="font-hud mt-2 text-bone/45">
+            <p
+              className={`font-hud mt-2 text-bone/45 ${compacta ? 'hidden sm:block' : ''}`}
+            >
               {CONDICION_LABEL[v.condicion].toUpperCase()}
             </p>
 
-            <div className="mt-5 flex border-y border-graphite py-3">
+            <div
+              className={`mt-4 border-y border-graphite py-3 ${
+                compacta ? 'hidden sm:flex' : 'flex'
+              }`}
+            >
               <Dato i={0} label="AÑO" valor={formatearAnio(v.anio)} />
               <Dato i={1} label="KM" valor={formatearKm(v.km)} />
             </div>
 
-            <div className="mt-5 mb-5">
-              <span className="font-hud block text-bone/40">PRECIO</span>
+            <div className={compacta ? 'mt-2 sm:mt-4 sm:mb-4' : 'mt-4 mb-4'}>
+              <span
+                className={`font-hud block text-bone/40 ${compacta ? 'hidden sm:block' : ''}`}
+              >
+                PRECIO
+              </span>
               {/* "Consultar precio" NO va en Martian Mono: la mono es para
                   cifras, y una frase de dos palabras en mono a 30px se come el
                   ancho de la card y se lee como un error. */}
               {v.precio === null ? (
-                <span className="font-display mt-1 block text-xl text-bone">
+                <span
+                  className={`font-display mt-1 block truncate text-bone ${
+                    compacta ? 'text-base sm:text-lg' : 'text-lg'
+                  }`}
+                >
                   {formatearPrecio(null)}
                 </span>
               ) : (
-                <span className="font-hud num mt-1 block text-2xl text-bone md:text-3xl">
+                <span
+                  className={`font-hud num mt-1 block truncate text-bone ${
+                    compacta ? 'text-base sm:text-xl md:text-2xl' : 'text-xl md:text-2xl'
+                  }`}
+                >
                   {formatearPrecio(v.precio)}
                 </span>
               )}
@@ -219,7 +276,11 @@ export function VehiculoCard({ v, className = '' }: VehiculoCardProps) {
             {/* Sin `mt-*`: la separación mínima la pone el `mb-5` del precio y
                 el resto lo empuja el `margin-top: auto` de `.veh-ficha`, que
                 deja la tira al ras de abajo en todas las cards por igual. */}
-            <p className="veh-ficha font-hud flex items-center justify-between px-4 py-3">
+            <p
+              className={`veh-ficha font-hud items-center justify-between px-4 py-3 ${
+                compacta ? 'hidden sm:flex' : 'flex'
+              }`}
+            >
               <span>VER FICHA</span>
               <span aria-hidden="true">\</span>
             </p>
@@ -233,7 +294,7 @@ export function VehiculoCard({ v, className = '' }: VehiculoCardProps) {
 /**
  * El hueco de una card mientras se cargan los datos.
  *
- * Repite la FORMA —bisel, foto en 4:3, título, fila HUD, precio y tira— y no
+ * Repite la FORMA —bisel, foto en 16:10, título, fila HUD, precio y tira— y no
  * un spinner centrado: lo que evita el salto es que el hueco mida lo mismo que
  * lo que va a entrar. Con el mock sobre localStorage esto dura un frame, pero
  * Supabase va a tardar lo que tarde una request y ahí se ve.
@@ -252,15 +313,15 @@ export function VehiculoCardEsqueleto({
         outerClassName="block h-full"
         className="flex h-full animate-pulse flex-col p-0"
       >
-        <div className="aspect-4/3 bg-graphite/60" />
-        <div className="flex flex-1 flex-col p-5 md:p-6">
-          <div className="h-7 w-3/4 bg-graphite/60" />
+        <div className="aspect-16/10 bg-graphite/60" />
+        <div className="flex flex-1 flex-col p-4 md:p-5">
+          <div className="h-6 w-3/4 bg-graphite/60" />
           <div className="mt-3 h-3 w-20 bg-graphite/40" />
-          <div className="mt-5 flex gap-3 border-y border-graphite py-3">
+          <div className="mt-4 flex gap-3 border-y border-graphite py-3">
             <div className="h-8 flex-1 bg-graphite/40" />
             <div className="h-8 flex-1 bg-graphite/40" />
           </div>
-          <div className="mt-5 mb-5 h-9 w-2/3 bg-graphite/60" />
+          <div className="mt-4 mb-4 h-8 w-2/3 bg-graphite/60" />
           <div className="mt-auto h-11 bg-graphite/30" />
         </div>
       </Bevel>

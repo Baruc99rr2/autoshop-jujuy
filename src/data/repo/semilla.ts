@@ -18,12 +18,13 @@ import type { Vehiculo } from '../../types/vehiculo'
  * cómo se comporta una grilla con portadas repetidas y con unidades sin foto
  * propia, que es exactamente lo que va a pasar mientras se carga el stock.
  *
- * La cantidad de fotos y de etiquetas está REPARTIDA para poder probar la
- * ficha entera con esta muestra: el Tucson va al máximo útil (cinco fotos,
- * video y cinco etiquetas), la RAM queda en el medio (tres fotos, una
- * etiqueta) y la Swift en el mínimo (una foto, ninguna etiqueta), que es el
- * caso donde la galería tiene que quedarse sin controles y la sección de
- * etiquetas tiene que no existir.
+ * La cantidad de fotos y de etiquetas está REPARTIDA para cubrir los tres
+ * tamaños con los que hay que mirar la ficha —uno, media docena y el máximo—
+ * sin tener que cargar nada a mano: el Tucson va al tope (DIEZ fotos, video y
+ * DOCE etiquetas, que es el caso sin tope), el Amarok queda en el medio (SEIS
+ * y SEIS), la RAM en tres fotos con una etiqueta, y la Swift en el mínimo (una
+ * foto, ninguna etiqueta), que es el caso donde la galería tiene que quedarse
+ * sin controles y la sección de etiquetas tiene que no existir.
  *
  * La muestra incluye a propósito los tres casos que suelen romper una vista:
  * un BORRADOR (`publicado: false`), uno VENDIDO y uno SIN PRECIO (`null`).
@@ -54,21 +55,27 @@ export const SEMILLA: Vehiculo[] = [
     estado: 'disponible',
     publicado: true,
     destacado: true,
-    // LA UNIDAD COMPLETA de la muestra: cinco fotos, video y cinco etiquetas.
-    // Es con la que se prueba la galería de verdad —el deslizamiento con el
-    // dedo, el indicador "2 / 5" y la tira de miniaturas—, y también el
-    // barrido a la segunda foto en hover de la card.
+    // LA UNIDAD COMPLETA de la muestra: DIEZ fotos (el tope), video y DOCE
+    // etiquetas. Es con la que se prueba la galería de verdad —el
+    // deslizamiento con el dedo, el indicador "3 / 10", la tira de miniaturas
+    // y el visor a pantalla completa— y también la grilla de etiquetas cuando
+    // la dueña carga más de las que entran en dos filas.
     //
-    // Hay TRES archivos de imagen en total, así que las cinco fotos los
-    // repiten. No es un descuido: lo que se prueba es el comportamiento de la
-    // galería con cinco fotos, no que sean cinco tomas distintas. Las unidades
-    // reales van a tener sus propias fotos cargadas desde el panel.
+    // Hay TRES archivos de imagen en total, así que las diez fotos los repiten.
+    // No es un descuido: lo que se prueba es el comportamiento de la galería
+    // con diez fotos, no que sean diez tomas distintas. Las unidades reales van
+    // a tener sus propias fotos cargadas desde el panel.
     fotos: [
       { id: 'demo-tucson-f1', ...CAR_1, orden: 0 },
       { id: 'demo-tucson-f2', ...CAR_2, orden: 1 },
       { id: 'demo-tucson-f3', ...CAR_3, orden: 2 },
       { id: 'demo-tucson-f4', ...CAR_1, orden: 3 },
       { id: 'demo-tucson-f5', ...CAR_2, orden: 4 },
+      { id: 'demo-tucson-f6', ...CAR_3, orden: 5 },
+      { id: 'demo-tucson-f7', ...CAR_1, orden: 6 },
+      { id: 'demo-tucson-f8', ...CAR_2, orden: 7 },
+      { id: 'demo-tucson-f9', ...CAR_3, orden: 8 },
+      { id: 'demo-tucson-f10', ...CAR_1, orden: 9 },
     ],
     // VIDEO DE MUESTRA: es el clip del hero reusado, no una filmación de este
     // auto. Está solo para que el bloque de video de la ficha —póster, botón
@@ -79,10 +86,11 @@ export const SEMILLA: Vehiculo[] = [
       posterUrl: '/img/vehiculos/car-1.webp',
       pesoBytes: 1_424_784,
     },
-    // CINCO ETIQUETAS, cuatro con foto de fondo y una sin: la grilla de la
-    // ficha tiene que verse bien en las dos —foto bajo un velo oscuro y fondo
-    // asphalt liso— y con un número impar, que es el que deja un hueco en la
-    // última fila.
+    // DOCE ETIQUETAS, con y sin foto de fondo: la grilla de la ficha tiene que
+    // verse bien en las dos —foto bajo un velo oscuro y fondo asphalt liso— y
+    // con una cantidad que llena seis filas en mobile y cuatro en desktop.
+    // Doce no es un tope: las etiquetas no lo tienen. Es la cantidad con la
+    // que se mira que la grilla siga siendo legible si la dueña se entusiasma.
     etiquetas: [
       {
         id: 'demo-tucson-e1',
@@ -118,6 +126,55 @@ export const SEMILLA: Vehiculo[] = [
         texto: 'Lo tasamos en el salón y va como parte de pago.',
         fotoFondoId: null,
         orden: 4,
+      },
+      {
+        id: 'demo-tucson-e6',
+        titulo: 'Baúl amplio',
+        texto: 'Entra el changuito y las valijas de un viaje largo sin pelear.',
+        fotoFondoId: 'demo-tucson-f5',
+        orden: 5,
+      },
+      {
+        id: 'demo-tucson-e7',
+        titulo: 'Caja automática',
+        texto: 'Seis marchas, probada en la cuesta de Volcán sin un tirón.',
+        fotoFondoId: 'demo-tucson-f6',
+        orden: 6,
+      },
+      {
+        id: 'demo-tucson-e8',
+        titulo: 'Tapizados sanos',
+        texto: 'Sin roturas ni quemaduras. Nunca se fumó adentro.',
+        fotoFondoId: null,
+        orden: 7,
+      },
+      {
+        id: 'demo-tucson-e9',
+        titulo: 'Patente al día',
+        texto: 'Sin deuda ni infracciones. La transferencia sale en el acto.',
+        fotoFondoId: 'demo-tucson-f8',
+        orden: 8,
+      },
+      {
+        id: 'demo-tucson-e10',
+        titulo: 'Aire funcionando',
+        texto: 'Cargado en septiembre. Enfría desde la primera cuadra.',
+        fotoFondoId: null,
+        orden: 9,
+      },
+      {
+        id: 'demo-tucson-e11',
+        titulo: 'Rueda de auxilio',
+        texto: 'Sin usar, con crique y llave de rueda completos.',
+        fotoFondoId: 'demo-tucson-f10',
+        orden: 10,
+      },
+      {
+        id: 'demo-tucson-e12',
+        titulo: 'Lo probás cuando quieras',
+        texto: 'Vení al salón y manejalo. Te acompañamos y no hay apuro.',
+        fotoFondoId: null,
+        orden: 11,
       },
     ],
     creadoEn: '2026-08-04T13:00:00.000Z',
@@ -196,9 +253,62 @@ export const SEMILLA: Vehiculo[] = [
     estado: 'disponible',
     publicado: true,
     destacado: false,
-    fotos: [{ id: 'demo-amarok-f1', ...CAR_3, orden: 0 }],
+    // SEIS FOTOS Y SEIS ETIQUETAS: el caso de media docena. Llena exactamente
+    // dos filas de la grilla de etiquetas en desktop y tres en mobile, y deja
+    // la tira de miniaturas de la galería llena pero sin desbordar.
+    fotos: [
+      { id: 'demo-amarok-f1', ...CAR_3, orden: 0 },
+      { id: 'demo-amarok-f2', ...CAR_1, orden: 1 },
+      { id: 'demo-amarok-f3', ...CAR_2, orden: 2 },
+      { id: 'demo-amarok-f4', ...CAR_3, orden: 3 },
+      { id: 'demo-amarok-f5', ...CAR_1, orden: 4 },
+      { id: 'demo-amarok-f6', ...CAR_2, orden: 5 },
+    ],
     video: null,
-    etiquetas: [],
+    etiquetas: [
+      {
+        id: 'demo-amarok-e1',
+        titulo: 'Cobertor de caja',
+        texto: 'Rígido y con llave. La caja quedó sin marcas de carga.',
+        fotoFondoId: 'demo-amarok-f1',
+        orden: 0,
+      },
+      {
+        id: 'demo-amarok-e2',
+        titulo: 'Barras de techo',
+        texto: 'Originales, para bajar con la moto o con los bidones.',
+        fotoFondoId: 'demo-amarok-f2',
+        orden: 1,
+      },
+      {
+        id: 'demo-amarok-e3',
+        titulo: '4x4 con reductora',
+        texto: 'Usada en ripio, nunca en barro pesado ni con acoplado.',
+        fotoFondoId: 'demo-amarok-f3',
+        orden: 2,
+      },
+      {
+        id: 'demo-amarok-e4',
+        titulo: 'Cubiertas al 70%',
+        texto: 'Las cuatro iguales, con dibujo parejo en los dos ejes.',
+        fotoFondoId: null,
+        orden: 3,
+      },
+      {
+        id: 'demo-amarok-e5',
+        titulo: 'Service de 90 mil',
+        texto: 'Hecho a los 89.000 km, con filtros y correa cambiados.',
+        fotoFondoId: 'demo-amarok-f5',
+        orden: 4,
+      },
+      {
+        id: 'demo-amarok-e6',
+        titulo: 'El precio lo charlamos',
+        texto: 'Cambia según la forma de pago. Escribinos y lo cerramos.',
+        fotoFondoId: null,
+        orden: 5,
+      },
+    ],
     creadoEn: '2026-08-26T13:00:00.000Z',
     actualizadoEn: '2026-09-08T13:00:00.000Z',
   },
