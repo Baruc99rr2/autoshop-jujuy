@@ -21,7 +21,13 @@ export interface FiltrosVehiculos {
   texto?: string
   /** Por defecto `true`. El panel pide `false` para ver también los borradores. */
   soloPublicados?: boolean
-  orden?: 'recientes' | 'precio-asc' | 'precio-desc'
+  /**
+   * `recientes` ordena por fecha de ALTA y `actualizados` por fecha de último
+   * cambio. El sitio público quiere lo primero —una unidad editada no es una
+   * unidad nueva— y el panel lo segundo: ahí arriba tiene que estar lo que se
+   * estuvo tocando recién.
+   */
+  orden?: 'recientes' | 'actualizados' | 'precio-asc' | 'precio-desc'
   limite?: number
 }
 
@@ -58,6 +64,13 @@ export type CambiosVehiculo = Partial<NuevoVehiculo>
 export interface RepoVehiculos {
   listar(filtros?: FiltrosVehiculos): Promise<Vehiculo[]>
   obtenerPorSlug(slug: string): Promise<Vehiculo | null>
+  /**
+   * Por id y no por slug. Lo usa el PANEL: el slug de una unidad cambia
+   * cuando se le corrige el título, así que una pantalla de edición
+   * direccionada por slug se quedaría apuntando a una dirección que ya no
+   * existe apenas se guarda el primer cambio.
+   */
+  obtenerPorId(id: string): Promise<Vehiculo | null>
   /** Solo publicados y destacados, más nuevo primero. */
   listarDestacados(limite?: number): Promise<Vehiculo[]>
 

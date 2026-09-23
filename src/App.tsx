@@ -83,8 +83,11 @@ function Rutas() {
         <Route path="/" element={<Home />} />
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/vehiculo/:slug" element={<Vehiculo />} />
+        {/* `/admin/*` y no `/admin`: el panel tiene sus propias rutas
+            adentro —listado, alta, edición— y sin el comodín solo entraría la
+            primera. Ver `routes/Admin`. */}
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <Suspense fallback={<Cargando />}>
               <Admin />

@@ -1482,3 +1482,16 @@
     transform: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL — DIÁLOGO
+   El `<dialog>` nativo trae su propia capa superior, así que su fondo NO se
+   puede pintar con un div: se pinta con `::backdrop`, que es el único
+   pseudo-elemento que vive en esa capa. Negro casi opaco y nada más: lo que
+   hay detrás es el formulario que se está por perder o la unidad que se está
+   por borrar, y no tiene que competir con la pregunta.
+   ───────────────────────────────────────────────────────────── */
+
+.dialogo::backdrop {
+  background: rgb(0 0 0 / 0.82);
+}

@@ -1,3 +1,4 @@
+import { slugificar } from '../../lib/texto'
 import { MAX_FOTOS } from '../../types/vehiculo'
 import type { Foto, Vehiculo, Video } from '../../types/vehiculo'
 import { SEMILLA } from './semilla'
@@ -84,14 +85,6 @@ function plano(s: string): string {
     .toLowerCase()
 }
 
-function slugificar(titulo: string): string {
-  return (
-    plano(titulo)
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'vehiculo'
-  )
-}
-
 /** Un slug que no choque: el segundo "Corolla XEI" pasa a ser `...-2`. */
 function slugLibre(base: string, lista: Vehiculo[], exceptoId?: string): string {
   let slug = base
@@ -142,6 +135,10 @@ function medir(url: string): Promise<{ ancho: number; alto: number }> {
 const masNuevoPrimero = (a: Vehiculo, b: Vehiculo) =>
   b.creadoEn.localeCompare(a.creadoEn)
 
+/** Lo último que se tocó, arriba. Es el orden con el que trabaja el panel. */
+const ultimoTocadoPrimero = (a: Vehiculo, b: Vehiculo) =>
+  b.actualizadoEn.localeCompare(a.actualizadoEn)
+
 /**
  * `null` va SIEMPRE al final, ordene como ordene: "Consultar precio" no es ni
  * el más barato ni el más caro, y ponerlo primero en el orden ascendente haría
@@ -178,13 +175,17 @@ export const repoMock: RepoVehiculos = {
       )
     }
 
-    lista.sort((a, b) =>
-      orden === 'recientes'
-        ? masNuevoPrimero(a, b)
-        : porPrecio(a, b, orden === 'precio-asc'),
-    )
+    lista.sort((a, b) => {
+      if (orden === 'recientes') return masNuevoPrimero(a, b)
+      if (orden === 'actualizados') return ultimoTocadoPrimero(a, b)
+      return porPrecio(a, b, orden === 'precio-asc')
+    })
 
     return limite ? lista.slice(0, limite) : lista
+  },
+
+  async obtenerPorId(vid) {
+    return leer().find((v) => v.id === vid) ?? null
   },
 
   async obtenerPorSlug(slug) {

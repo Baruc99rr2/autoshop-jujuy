@@ -42,3 +42,36 @@ export const CONDICION_LABEL: Record<Condicion, string> = {
   '0km': '0km',
   usado: 'Usado',
 }
+
+/**
+ * Un número MIENTRAS SE ESCRIBE en el panel.
+ *
+ * El precio de un auto son ocho cifras. Sin separador, "12500000" y "1250000"
+ * se distinguen contando ceros en la pantalla del celular, que es exactamente
+ * cómo se publica un auto a la décima parte de su precio. Por eso el campo se
+ * reformatea en cada tecla en vez de esperar al `blur`.
+ *
+ * El campo guarda TEXTO, no un número: mientras se escribe hay estados que no
+ * son ningún número —vacío, a medias— y un `number` obligaría a inventar un 0
+ * para representarlos.
+ */
+export function soloDigitos(texto: string): string {
+  return texto.replace(/\D+/g, '')
+}
+
+/** Tope de cifras: doce ya es cien mil millones, y frena el pegado accidental. */
+const MAX_DIGITOS = 12
+
+/** "12500000" → "12.500.000". Vacío queda vacío: no es 0. */
+export function separarMiles(texto: string): string {
+  const d = soloDigitos(texto)
+    .replace(/^0+(?=\d)/, '')
+    .slice(0, MAX_DIGITOS)
+  return d ? enteros.format(Number(d)) : ''
+}
+
+/** El número detrás de lo escrito, o `null` si no se escribió nada. */
+export function leerMiles(texto: string): number | null {
+  const d = soloDigitos(texto)
+  return d ? Number(d) : null
+}
