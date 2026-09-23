@@ -3,6 +3,7 @@ import Bevel from './Bevel'
 import { MENU } from '../data/nav'
 import { useIrA } from '../lib/ir-a'
 import { prefersReducedMotion } from '../lib/motion-prefs'
+import { usePieALaVista } from '../lib/pie-a-la-vista'
 import { startScroll, stopScroll } from '../lib/smooth'
 
 type MenuProps = {
@@ -40,6 +41,12 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
   const zonaBoton = useRef<HTMLDivElement>(null)
   const rm = prefersReducedMotion()
   const irAlDestino = useIrA()
+
+  // La barra se va por dos motivos distintos y con el mismo gesto: porque el
+  // menú se abrió (su lugar lo ocupa la barra CLOSE) o porque la página llegó
+  // al footer y estaría tapando el © y la firma.
+  const enElPie = usePieALaVista()
+  const barraEscondida = abierto || enElPie
 
   // Escape para cerrar y trampa de foco: con el scroll bloqueado y un overlay
   // opaco encima, un Tab que se escapa al contenido de atrás deja el foco en
@@ -110,8 +117,10 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
           ocupa la barra CLOSE, en la misma posición. */}
       <div
         ref={zonaBoton}
-        className={`fixed bottom-6 left-1/2 z-60 -translate-x-1/2 transition-all duration-300 ${
-          abierto ? 'pointer-events-none translate-y-4 opacity-0' : 'opacity-100'
+        className={`fixed bottom-6 left-1/2 z-60 -translate-x-1/2 transition-[opacity,transform] duration-300 ${
+          barraEscondida
+            ? 'pointer-events-none translate-y-4 opacity-0'
+            : 'opacity-100'
         }`}
       >
         <Bevel
@@ -141,7 +150,7 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
         ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-label="Menú principal"
+        aria-label="Navegación"
         data-abierto={abierto}
         inert={!abierto}
         className="menu-panel fixed inset-0 z-45 flex flex-col bg-bone"

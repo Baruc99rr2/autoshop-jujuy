@@ -164,6 +164,7 @@ export function Home() {
       <Header
         logoRef={headerLogoRef}
         tono={menuAbierto ? 'claro' : fondoHeader}
+        oculto={menuAbierto}
       />
 
       {/* El menú va acá, justo después del header, y NO al final del árbol.

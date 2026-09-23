@@ -14,6 +14,11 @@ import { scrollTo } from './smooth'
  *
  * Sin esto, "Nosotros" desde la ficha de un auto no hacía nada: `scrollTo`
  * buscaba un `#contadores` que en esa página no existe.
+ *
+ * Y hay un tercer caso: una RUTA que es la que ya se está mirando. "Menú
+ * principal" apunta a `/`, así que desde el home `navigate('/')` no cambia el
+ * pathname, no remonta nada y no pasa absolutamente nada en pantalla. Lo que
+ * corresponde ahí es subir.
  */
 export function useIrA(): (href: string) => void {
   const navigate = useNavigate()
@@ -22,6 +27,10 @@ export function useIrA(): (href: string) => void {
   return useCallback(
     (href: string) => {
       if (!href.startsWith('#')) {
+        if (href === pathname) {
+          scrollTo(0)
+          return
+        }
         navigate(href)
         return
       }

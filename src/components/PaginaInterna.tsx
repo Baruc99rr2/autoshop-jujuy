@@ -71,7 +71,7 @@ export function PaginaInterna({
         label={eyebrow}
         tono={menuAbierto ? 'claro' : 'oscuro'}
       />
-      <Header tono={menuAbierto ? 'claro' : 'oscuro'} />
+      <Header tono={menuAbierto ? 'claro' : 'oscuro'} oculto={menuAbierto} />
 
       <Menu
         abierto={menuAbierto}

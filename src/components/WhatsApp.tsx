@@ -1,6 +1,7 @@
 import Bevel from './Bevel'
 import Icono from './Icono'
 import { FLOTANTE } from '../data/contacto'
+import { usePieALaVista } from '../lib/pie-a-la-vista'
 
 /**
  * Botón flotante de WhatsApp, abajo a la derecha.
@@ -15,12 +16,21 @@ import { FLOTANTE } from '../data/contacto'
  * texto de desktop identifica igual de bien.
  */
 export function WhatsApp() {
+  // Al llegar al footer se aparta: abajo a la derecha quedaba encima del © y,
+  // en desktop, del enlace del estudio. El footer tiene su propio WhatsApp en
+  // la columna de redes, así que no se pierde nada.
+  const enElPie = usePieALaVista()
+
   return (
     /* Quién lo muestra y quién no lo decide `PaginaInterna`: la ficha lo saca
        entero porque ya tiene su propio botón de WhatsApp, arriba en el panel
-       de precio y abajo en la barra fija de mobile. Acá adentro no hay
-       variantes. */
-    <div className="fixed right-4 bottom-24 z-60 md:right-6 md:bottom-6">
+       de precio y abajo en la barra fija de mobile. Acá adentro la única
+       variante es apartarse del pie. */
+    <div
+      className={`fixed right-4 bottom-24 z-60 transition-[opacity,transform] duration-300 md:right-6 md:bottom-6 ${
+        enElPie ? 'pointer-events-none translate-y-4 opacity-0' : 'opacity-100'
+      }`}
+    >
       <Bevel
         as="a"
         variant="solid"

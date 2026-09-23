@@ -16,6 +16,7 @@ import {
   formatearKm,
   formatearPrecio,
 } from '../lib/formato'
+import { usePieALaVista } from '../lib/pie-a-la-vista'
 import { getLenis } from '../lib/smooth'
 import { useTitulo } from '../lib/titulo'
 import { linkAlCatalogo } from '../lib/ultimo-catalogo'
@@ -206,6 +207,11 @@ export function Vehiculo() {
   // render, bastaría con que algo más escribiera en `sessionStorage` para que
   // el enlace cambiara de destino abajo del dedo.
   const [volver] = useState(linkAlCatalogo)
+
+  // La barra fija de mobile es mueble flotante como la barra MENU, así que se
+  // aparta igual al llegar al footer: si no, tapa el © y la firma con dos
+  // biseles a todo el ancho, que es peor que lo que tapaba el flotante.
+  const enElPie = usePieALaVista()
 
   // El resultado se guarda JUNTO CON el slug que lo trajo, igual que en el
   // catálogo: "todavía no sé" se DEDUCE comparando ese slug con el de la URL.
@@ -422,7 +428,11 @@ export function Vehiculo() {
           del menú vive en z-45 y con la barra por encima quedaría un bisel
           ámbar flotando sobre el panel bone con el menú abierto. A z-40 el
           panel la tapa, que es lo que corresponde. */}
-      <div className="fixed inset-x-4 bottom-[5.5rem] z-40 flex gap-2 lg:hidden">
+      <div
+        className={`fixed inset-x-4 bottom-[5.5rem] z-40 flex gap-2 transition-[opacity,transform] duration-300 lg:hidden ${
+          enElPie ? 'pointer-events-none translate-y-4 opacity-0' : 'opacity-100'
+        }`}
+      >
         <Bevel
           as={Link}
           to={volver}

@@ -36,7 +36,11 @@ export const SECCIONES: Seccion[] = [
     indice: '02',
     id: 'contadores',
     eyebrow: 'NÚMEROS',
-    titulo: 'Nueve años entregando autos',
+    /* El titular NO dice cuántos años: el contador de al lado los calcula
+       desde 2023 (ver `contadores.ts`) y un número escrito acá volvería a
+       quedar viejo cada 1 de enero, además de contradecir a la cifra que
+       tiene debajo. */
+    titulo: 'Entregando autos en Jujuy desde 2023',
     fondo: 'ambar',
   },
   { indice: '03', id: 'segmentos', eyebrow: 'SEGMENTOS', titulo: 'Qué estás buscando' },
@@ -44,8 +48,12 @@ export const SECCIONES: Seccion[] = [
   { indice: '05', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
   {
     indice: '06',
+    /* El id se quedó en `postventa` a propósito aunque la sección pase a
+       llamarse SERVICIOS: es el ancla de `#postventa`, no un nombre visible, y
+       renombrarlo rompería cualquier link ya compartido sin que nadie vea la
+       diferencia. Lo que el visitante lee sale del eyebrow. */
     id: 'postventa',
-    eyebrow: 'POST-VENTA',
+    eyebrow: 'SERVICIOS',
     titulo: 'No termina cuando te llevás el auto',
   },
   {
@@ -89,9 +97,15 @@ export interface ItemMenu {
 }
 
 export const MENU: ItemMenu[] = [
-  { label: 'Vehículos', href: '#vehiculos' },
+  /* El primer ítem lleva al INICIO de la página, no a la sección de
+     vehículos: es el único del menú que sirve para salir de donde sea y
+     empezar de nuevo, y desde una ficha "Vehículos" llevaba a media página
+     del home sin que nada explicara por qué. Estando ya en `/`, `useIrA` lo
+     resuelve subiendo con scroll suave. */
+  { label: 'Menú principal', href: '/' },
   { label: 'Catálogo', href: '/catalogo' },
   { label: 'Nosotros', href: '#contadores' },
+  { label: 'Servicios', href: '#postventa' },
   { label: 'Contacto', href: '#contacto' },
 ]
 
@@ -109,7 +123,7 @@ export const FOOTER: ColumnaFooter[] = [
       { label: 'Catálogo', href: '/catalogo' },
       { label: 'Segmentos', href: '#segmentos' },
       { label: 'Marcas', href: '#marcas' },
-      { label: 'Post-venta', href: '#postventa' },
+      { label: 'Servicios', href: '#postventa' },
     ],
   },
   {

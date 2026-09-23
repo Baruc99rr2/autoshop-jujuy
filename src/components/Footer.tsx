@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from 'react'
 import { CONTACTO } from '../data/contacto'
 import { FOOTER } from '../data/nav'
 import { useFitText } from '../lib/fit-text'
+import { useObservarPie } from '../lib/pie-a-la-vista'
 import { useIrA } from '../lib/ir-a'
 import { scrollTo } from '../lib/smooth'
 
@@ -17,6 +18,11 @@ export function Footer() {
   const año = new Date().getFullYear()
   const logotipo = useRef<HTMLHeadingElement>(null)
   useFitText(logotipo)
+
+  // El footer es el que sabe dónde está su franja de abajo, así que es el que
+  // la observa; los flotantes solo leen el booleano. Ver `pie-a-la-vista.ts`.
+  const pie = useRef<HTMLDivElement>(null)
+  useObservarPie(pie)
   const irA = useIrA()
 
   return (
@@ -85,7 +91,13 @@ export function Footer() {
         ))}
       </div>
 
-      <div className="mt-24 flex flex-col gap-5 border-t border-graphite pt-8 md:flex-row md:items-baseline md:justify-between">
+      {/* Esta franja es la que se observa: cuando aparece, la barra MENU, el
+          botón de WhatsApp y la barra fija de la ficha se apartan en vez de
+          quedarse encima del © y de la firma. */}
+      <div
+        ref={pie}
+        className="mt-24 flex flex-col gap-5 border-t border-graphite pt-8 md:flex-row md:items-baseline md:justify-between"
+      >
         {/* El © del cliente y la firma del estudio, en la misma tinta y en el
             mismo tamaño: la firma acompaña, no compite. Quien lee el pie busca
             el nombre de la concesionaria, y ponerlo a la par de quien hizo el

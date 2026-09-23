@@ -10,13 +10,12 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
   corre solo si la pestaña ENTRÓ por `/`. Falta `/admin`.
 - `src/data/repo/` es la única puerta a los datos (mock en localStorage; `CLAVE`
   sube de versión al cambiar la semilla, hoy v4). 10 fotos; etiquetas sin tope.
-- `/catalogo`: chips + buscador EN LA URL, y en mobile lista/grilla 2×2 guardado
-  en localStorage (`VehiculoCard compacta`). Anota su query en sessionStorage.
-- `/vehiculo/:slug`: titular en escala `contenido`, grilla de dos filas con el
-  precio sticky (`useFitText`), galería con techo que abre `VisorFotos`, barra
-  fija de mobile (volver + WhatsApp) y "volver al catálogo" con los filtros.
-- Header: el logo es un `<Link>` a `/` fuera del home, y lleva un velo degradado
-  que aparece al scrollear (solo con tono oscuro).
+- `/catalogo`: chips + buscador EN LA URL, y en mobile lista/grilla 2×2 en
+  localStorage. Anota su query en sessionStorage para el "volver" de la ficha.
+- `/vehiculo/:slug`: titular en escala `contenido`, precio sticky con
+  `useFitText`, galería con techo que abre `VisorFotos`, barra fija de mobile.
+- Header: logo `<Link>` a `/`, velo al scrollear, y oculto con el menú abierto.
+- Los flotantes se apartan al llegar al footer (`lib/pie-a-la-vista.ts`).
 
 ---
 

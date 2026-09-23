@@ -14,6 +14,16 @@ type HeaderProps = {
    * desaparece justamente ese "SHOP".
    */
   tono?: 'claro' | 'ambar' | 'oscuro'
+  /**
+   * Saca el header de la pantalla mientras el menú está abierto.
+   *
+   * El menú es un diálogo a pantalla completa con fondo bone y su propia barra
+   * CLOSE: ahí arriba a la izquierda el logo quedaba flotando sobre el panel
+   * claro sin pertenecer a nada, y encima era un enlace interactivo FUERA de
+   * un `aria-modal`. Como el menú ahora tiene su propio "Menú principal", el
+   * logo tampoco hace falta como salida.
+   */
+  oculto?: boolean
 }
 
 /**
@@ -55,7 +65,7 @@ const LOGO = {
   style: { '--bevel': '6px' } as CSSProperties,
 }
 
-export function Header({ logoRef, tono = 'oscuro' }: HeaderProps) {
+export function Header({ logoRef, tono = 'oscuro', oculto = false }: HeaderProps) {
   const { pathname } = useLocation()
   const enHome = pathname === '/'
 
@@ -74,7 +84,13 @@ export function Header({ logoRef, tono = 'oscuro' }: HeaderProps) {
   return (
     <header
       data-tono={tono}
-      className="header-adapt fixed top-0 right-0 left-0 z-55 flex items-center justify-between py-4 shell"
+      /* `inert` además de `opacity-0`: un header invisible pero tabulable deja
+         el foco en un enlace que no se ve, que es justo lo que la trampa de
+         foco del menú viene a evitar. */
+      inert={oculto}
+      className={`header-adapt fixed top-0 right-0 left-0 z-55 flex items-center justify-between py-4 shell transition-[opacity,transform] duration-300 ${
+        oculto ? 'pointer-events-none -translate-y-3 opacity-0' : 'opacity-100'
+      }`}
     >
       {/* Va en `z-index: -1` DENTRO del header: el header ya crea su propio
           contexto de apilado con `z-55`, así que el velo queda detrás del logo
