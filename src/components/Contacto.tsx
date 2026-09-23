@@ -9,14 +9,7 @@ import {
   REDES,
   whatsappCon,
 } from '../data/contacto'
-import { seccion } from '../data/nav'
-
-/**
- * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
- * sección nueva se corren todos los números, y con el índice a mano el riel
- * diría una cosa y el encabezado de la sección otra.
- */
-const S = seccion('contacto')
+import type { Seccion } from '../data/nav'
 
 type Campos = {
   nombre: string
@@ -210,8 +203,11 @@ function CampoTexto({
   )
 }
 
-
-export function Contacto() {
+/**
+ * Índice y eyebrow llegan de `Home`: si Servicios o Preguntas quedan vacías y
+ * no se dibujan, el número de Contacto se corre con el del riel.
+ */
+export function Contacto({ s: S }: { s: Seccion }) {
   const uid = useId()
   const [campos, setCampos] = useState<Campos>(VACIO)
   const [errores, setErrores] = useState<Errores>({})

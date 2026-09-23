@@ -6,6 +6,7 @@ import type {
   Vehiculo,
   Video,
 } from '../../types/vehiculo'
+import type { Contadores, Pregunta, Servicio } from '../../types/contenido'
 
 /**
  * Filtros del listado.
@@ -87,6 +88,29 @@ export interface RepoVehiculos {
   /** Una unidad tiene un video o ninguno. Subir otro reemplaza al anterior. */
   subirVideo(id: string, archivo: File, poster?: File): Promise<Video>
   eliminarVideo(id: string): Promise<void>
+}
+
+/**
+ * El contenido fijo del inicio: contadores, servicios y preguntas.
+ *
+ * Cada bloque se lee y se guarda ENTERO, porque en el panel cada bloque tiene
+ * su propio botón de guardar y lo que se manda es la lista como quedó: con
+ * altas, bajas y el orden nuevo. En Supabase eso es un upsert de la lista más
+ * un delete de los ids que ya no vinieron.
+ *
+ * Las listas salen ordenadas por `orden`, y al guardar el repositorio
+ * renumera desde 0 según la posición: el orden de la lista manda.
+ */
+export interface RepoContenido {
+  obtenerContadores(): Promise<Contadores>
+  /** Falla si no son exactamente cuatro. */
+  guardarContadores(datos: Contadores): Promise<Contadores>
+
+  listarServicios(): Promise<Servicio[]>
+  guardarServicios(lista: Servicio[]): Promise<Servicio[]>
+
+  listarPreguntas(): Promise<Pregunta[]>
+  guardarPreguntas(lista: Pregunta[]): Promise<Pregunta[]>
 }
 
 /** Error propio del repositorio, para poder distinguirlo de un bug al mostrarlo. */

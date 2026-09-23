@@ -285,6 +285,7 @@ type AreaProps = Base & {
   ref?: Ref<HTMLTextAreaElement>
   placeholder?: string
   filas?: number
+  maxLength?: number
 }
 
 export function AreaTexto({
@@ -298,6 +299,7 @@ export function AreaTexto({
   ref,
   placeholder,
   filas = 5,
+  maxLength,
 }: AreaProps) {
   return (
     <div className={className}>
@@ -307,6 +309,7 @@ export function AreaTexto({
           id={id}
           ref={ref}
           rows={filas}
+          maxLength={maxLength}
           value={valor}
           onChange={(e) => onCambio(e.target.value)}
           placeholder={placeholder}

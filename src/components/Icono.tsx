@@ -17,6 +17,7 @@ export type NombreIcono =
   | 'garantia'
   | 'limpieza'
   | 'aceite'
+  | 'llave'
   | 'chat'
   | 'play'
   | 'lista'
@@ -98,9 +99,10 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
     </>
   ),
   /* ── Servicios ─────────────────────────────────────────────────────────
-     Los cinco de la sección 06. Reemplazaron a los cuatro de post-venta
-     —turnos, repuestos, mantenimiento y accesorios—, que se fueron con los
-     servicios que nombraban.
+     Los seis que puede elegir un servicio en el panel (ver
+     `ICONOS_SERVICIO`). Reemplazaron a los cuatro de post-venta —turnos,
+     repuestos, mantenimiento y accesorios—, que se fueron con los servicios
+     que nombraban.
 
      SEGURO Y GARANTÍA SON LO MÁS DIFÍCIL DE SEPARAR: los dos son "algo que te
      cubre", y el escudo sirve para cualquiera de los dos. Por eso el seguro es
@@ -165,6 +167,15 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
       <path d="M12.25 13.5 18.25 9.25" />
       <path d="M19.4 5.5c1.05 1.35 1.6 2.25 1.6 3a1.6 1.6 0 0 1-3.2 0c0-.75.55-1.65 1.6-3Z" />
     </>
+  ),
+
+  // Llave de boca, en diagonal: el comodín para un servicio nuevo que no
+  // calce con los otros cinco. Es el símbolo del taller en general, así que
+  // no promete nada puntual que el título después desmienta. Cabeza de 5 de
+  // radio con la boca abierta hacia arriba a la derecha, mango de 3.2 de
+  // ancho con la punta redondeada.
+  llave: (
+    <path d="M19.98 6.28 18.19 8.08 15.92 5.81 17.72 4.02A5 5 0 0 0 11.02 10.72L5.18 16.56A1.6 1.6 0 0 0 7.44 18.82L13.28 12.98A5 5 0 0 0 19.98 6.28Z" />
   ),
 }
 

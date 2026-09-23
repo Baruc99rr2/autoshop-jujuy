@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useParams } from 'react-router'
+import Contenido from '../components/admin/Contenido'
 import Formulario from '../components/admin/Formulario'
 import Listado from '../components/admin/Listado'
 import Login from '../components/admin/Login'
@@ -8,7 +9,8 @@ import { useSesion } from '../data/sesion'
  * El panel de carga.
  *
  * TIENE SUS PROPIAS RUTAS, colgadas de `/admin/*`: `/admin` es el listado,
- * `/admin/nuevo` el formulario vacío y `/admin/editar/:id` el de una unidad.
+ * `/admin/nuevo` el formulario vacío, `/admin/editar/:id` el de una unidad y
+ * `/admin/contenido` los números, servicios y preguntas del inicio.
  * Podrían ser tres estados de un mismo componente y sería peor: la dueña
  * trabaja desde el celular, donde el gesto de volver es el del sistema
  * operativo, y sin rutas de verdad ese gesto la sacaría del panel entero en
@@ -82,6 +84,15 @@ export function Admin() {
         element={
           <Protegida>
             <Editar />
+          </Protegida>
+        }
+      />
+
+      <Route
+        path="contenido"
+        element={
+          <Protegida>
+            <Contenido />
           </Protegida>
         }
       />

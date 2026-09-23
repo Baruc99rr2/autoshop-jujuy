@@ -6,16 +6,16 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
-- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin/*` (lazy) y 404; la intro corre solo si la pestaña ENTRÓ por `/`.
-- `src/data/repo/` es la única puerta al catálogo y `data/sesion.ts` la única al acceso (falso: entra cualquiera).
-- El mock va PARTIDO: la ficha en localStorage (subir `CLAVE`, hoy v4) y los archivos en IndexedDB (`repo/blobs.ts`), unidos por `idb:<clave>`. Como data URL no entraban ni cuatro fotos.
-- `/admin` está completo: fotos (tope `MAX_FOTOS`, hoy 10), video (25 MB, póster de un frame) y etiquetas. Fotos y video se guardan SOLOS —son archivos contra un id que ya existe—; las etiquetas van en el borrador. Los tres bloques aparecen recién con la unidad creada.
-- Las fotos se achican en `lib/archivos.ts` a 1600 px y WebP antes de tocar el repo: medido, 180–195 KB.
-- Los campos del panel van a NIVEL DE MÓDULO (`admin/Campos.tsx`), y toda `<ul>` en grilla lleva `grid-cols-1`: con `grid` a secas la columna `auto` la estira el carril de miniaturas y el documento se va de 390 px. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`, nunca en `className`.
-- `npm run shots -- --panel` recorre el panel entero en 390 px (`scripts/panel.mjs`) y no borra el resto de `docs/shots/`.
-- `/catalogo`: chips + buscador EN LA URL, lista/grilla 2×2 en mobile (localStorage), y anota su query en sessionStorage para el "volver" de la ficha.
-- `/vehiculo/:slug`: precio sticky con `useFitText`, galería que abre `VisorFotos`, barra fija de mobile. En `VideoVehiculo` las DOS formas del clip-path llevan 8 vértices o la transición salta.
-- `MeshOverlay` corre SOLO con puntero fino; el titular del hero se corta a mano y su clamp se MIDE con nowrap; los flotantes se apartan del footer (`lib/pie-a-la-vista.ts`).
+- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin/*` (lazy: listado, nuevo, editar/:id, contenido) y 404; la intro corre solo si la pestaña ENTRÓ por `/`.
+- `src/data/repo/` es la única puerta a los datos: `repo` (vehículos) y `repoContenido` (contadores, servicios, preguntas). `data/sesion.ts` es la del acceso (falso).
+- Vehículos: ficha en localStorage (subir `CLAVE`, hoy v4) y archivos en IndexedDB (`repo/blobs.ts`) vía `idb:<clave>`. Contenido: una clave, `autoshop.contenido.v1`, semilla en `repo/semilla-contenido.ts`.
+- El inicio lee el contenido con `lib/contenido.ts` (un pedido compartido; el panel llama `olvidarContenido()` al guardar). Servicios o Preguntas vacías NO se dibujan: `seccionesVisibles()` renumera el riel y Menú/Footer sacan sus links. Por eso Servicios, Faq y Contacto reciben `s` por props.
+- `/admin/contenido`: tres bloques con guardado propio (`admin/Bloque.tsx` + `estado-bloque.ts`). Los 4 contadores son fijos; el de años lleva `desdeApertura`. Íconos de servicio: se eligen de `ICONOS_SERVICIO` (6, incluida `llave`), nunca se suben.
+- `/admin` unidad: fotos (tope `MAX_FOTOS`, 10) y video se guardan solos; etiquetas van en el borrador. Fotos a 1600 px WebP en `lib/archivos.ts` (180–195 KB).
+- Campos del panel a NIVEL DE MÓDULO (`admin/Campos.tsx`); toda `<ul>` en grilla lleva `grid-cols-1`. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`; en `solid` no hay contenedor de afuera. Todo control del panel ≥ 44 px (lo mide `scripts/panel.mjs`).
+- `npm run shots -- --panel` recorre el panel entero en 390 px, incluido contenido (9 servicios, 0 preguntas) y el inicio resultante en 390 y 1440.
+- `/catalogo`: chips + buscador en la URL, lista/grilla 2×2 en mobile. `/vehiculo/:slug`: precio sticky con `useFitText`, `VisorFotos`, barra fija en mobile; en `VideoVehiculo` las dos formas del clip-path llevan 8 vértices.
+- `MeshOverlay` solo con puntero fino; el titular del hero se corta a mano; los flotantes se apartan del footer (`lib/pie-a-la-vista.ts`).
 
 ---
 

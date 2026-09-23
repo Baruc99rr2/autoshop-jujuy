@@ -7,15 +7,20 @@
  * ser una línea.
  */
 import { repoMock } from './mock'
-import type { RepoVehiculos } from './tipos'
+import { contenidoMock } from './mock-contenido'
+import type { RepoContenido, RepoVehiculos } from './tipos'
 
 export const repo: RepoVehiculos = repoMock
+
+/** Contadores, servicios y preguntas del inicio. Misma regla que `repo`. */
+export const repoContenido: RepoContenido = contenidoMock
 
 export { ErrorRepo } from './tipos'
 export type {
   CambiosVehiculo,
   FiltrosVehiculos,
   NuevoVehiculo,
+  RepoContenido,
   RepoVehiculos,
 } from './tipos'
 export { esDemo, PREFIJO_DEMO } from './semilla'

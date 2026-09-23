@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
+import { Link } from 'react-router'
 import Bevel from '../Bevel'
 import Header from '../Header'
 import Rail from '../Rail'
@@ -34,7 +35,25 @@ type MarcoProps = {
    * renglón sin perder el hilo entre la etiqueta y el campo.
    */
   ancho?: 'formulario' | 'listado'
+  /**
+   * Las dos pantallas de arriba del panel —las unidades y el contenido del
+   * sitio— llevan las pestañas para pasar de una a la otra. El formulario de
+   * una unidad no: ahí la salida es «volver al listado».
+   */
+  pestania?: Pestania
+  /**
+   * Se consulta antes de cambiar de pestaña. Devolver `false` frena la
+   * navegación: lo usa el contenido para avisar de cambios sin guardar.
+   */
+  antesDeIr?: (destino: string) => boolean
 }
+
+type Pestania = 'unidades' | 'contenido'
+
+const PESTANIAS: readonly { id: Pestania; label: string; to: string }[] = [
+  { id: 'unidades', label: 'UNIDADES', to: '/admin' },
+  { id: 'contenido', label: 'CONTENIDO DEL SITIO', to: '/admin/contenido' },
+]
 
 const ANCHO = {
   formulario: 'max-w-[46rem]',
@@ -49,6 +68,8 @@ export function Marco({
   arriba,
   children,
   ancho = 'listado',
+  pestania,
+  antesDeIr,
 }: MarcoProps) {
   const sesion = useSesion()
 
@@ -72,11 +93,46 @@ export function Marco({
               <button
                 type="button"
                 onClick={() => cerrarSesion()}
-                className="font-hud shrink-0 px-2 py-2 text-bone/55 transition-colors duration-200 hover:text-amber focus-visible:text-amber"
+                className="font-hud flex min-h-[2.75rem] shrink-0 items-center px-3 text-bone/55 transition-colors duration-200 hover:text-amber focus-visible:text-amber"
               >
                 SALIR
               </button>
             </div>
+          )}
+
+          {pestania && (
+            <nav aria-label="Secciones del panel" className="mb-10 flex gap-2">
+              {PESTANIAS.map((p) => {
+                const activa = p.id === pestania
+                return (
+                  <Bevel
+                    key={p.id}
+                    as={Link}
+                    to={p.to}
+                    onClick={(e: MouseEvent) => {
+                      if (activa) e.preventDefault()
+                      else if (antesDeIr && !antesDeIr(p.to)) e.preventDefault()
+                    }}
+                    aria-current={activa ? 'page' : undefined}
+                    variant={activa ? 'solid' : 'outline'}
+                    bevel={10}
+                    borderClassName="bg-graphite"
+                    outerClassName={
+                      activa
+                        ? 'flex-1'
+                        : 'flex-1 transition-colors duration-200 hover:bg-amber focus-visible:bg-amber'
+                    }
+                    /* La sólida no tiene contenedor de afuera: su `flex-1` va
+                       acá, o la pestaña activa se encoge al ancho del texto. */
+                    className={`font-hud flex min-h-[3rem] items-center justify-center px-3 text-center leading-tight ${
+                      activa ? 'flex-1' : 'text-bone'
+                    }`}
+                  >
+                    {p.label}
+                  </Bevel>
+                )
+              })}
+            </nav>
           )}
 
           {arriba}
@@ -108,7 +164,7 @@ export function Volver({ onVolver }: { onVolver: () => void }) {
     <button
       type="button"
       onClick={onVolver}
-      className="font-hud mb-8 inline-flex items-center gap-3 py-2 text-bone/55 transition-colors duration-200 hover:text-amber focus-visible:text-amber"
+      className="font-hud mb-8 inline-flex min-h-[2.75rem] items-center gap-3 pr-3 text-bone/55 transition-colors duration-200 hover:text-amber focus-visible:text-amber"
     >
       <span aria-hidden="true">/</span>
       <span>VOLVER AL LISTADO</span>

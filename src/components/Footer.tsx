@@ -3,6 +3,7 @@ import { CONTACTO } from '../data/contacto'
 import { FOOTER } from '../data/nav'
 import { useFitText } from '../lib/fit-text'
 import { useObservarPie } from '../lib/pie-a-la-vista'
+import { apuntaAOculta, seccionesOcultas, useContenido } from '../lib/contenido'
 import { useIrA } from '../lib/ir-a'
 import { scrollTo } from '../lib/smooth'
 
@@ -24,6 +25,8 @@ export function Footer() {
   const pie = useRef<HTMLDivElement>(null)
   useObservarPie(pie)
   const irA = useIrA()
+  // Los links a Servicios y Preguntas se van si esas secciones están vacías.
+  const ocultas = seccionesOcultas(useContenido())
 
   return (
     <footer
@@ -62,7 +65,9 @@ export function Footer() {
             </h3>
 
             <ul className="mt-6 space-y-1.5">
-              {col.items.map((item, i) => (
+              {col.items
+                .filter((item) => !apuntaAOculta(item.href, ocultas))
+                .map((item, i) => (
                 <li
                   key={item.label}
                   className="stagger-item"

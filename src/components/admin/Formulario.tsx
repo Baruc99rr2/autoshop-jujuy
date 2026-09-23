@@ -489,21 +489,21 @@ export function Formulario({ id }: FormularioProps) {
             <>
               Se arma sola del título. Cambiala solo si hace falta: si ya
               mandaste el link por WhatsApp, cambiarla rompe el que mandaste.
+              {/* En su propio renglón y con 44 px de alto: metido al final
+                  de la frase era un blanco de una línea de texto, que con el
+                  pulgar se falla. */}
               {slugTocado && (
-                <>
-                  {' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSlugTocado(false)
-                      set('slug', slugificar(b.titulo))
-                      limpiarError('slug')
-                    }}
-                    className="text-amber underline-offset-4 hover:underline focus-visible:underline"
-                  >
-                    Armarla del título
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSlugTocado(false)
+                    set('slug', slugificar(b.titulo))
+                    limpiarError('slug')
+                  }}
+                  className="flex min-h-[2.75rem] items-center pr-3 text-amber underline-offset-4 hover:underline focus-visible:underline"
+                >
+                  Armarla del título
+                </button>
               )}
             </>
           }

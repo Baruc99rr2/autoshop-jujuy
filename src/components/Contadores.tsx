@@ -2,8 +2,9 @@ import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { CONTADORES } from '../data/contadores'
 import { prefersReducedMotion } from '../lib/motion-prefs'
+import { valorContador } from '../types/contenido'
+import type { Contadores as DatosContadores } from '../types/contenido'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger)
 
@@ -36,8 +37,12 @@ const CELDA = [
  * El bloque entero tiene que entrar en pantalla de una: el efecto es ver las
  * cuatro cifras subir **al mismo tiempo**. Por eso la franja es baja y en
  * mobile va 2×2 y no en una columna.
+ *
+ * Las cifras vienen del repositorio (las edita la dueña en el panel). Mientras
+ * llegan, la franja se dibuja igual y vacía: el riel y el header la buscan por
+ * id desde el primer render, y el conteo arranca recién cuando hay cifras.
  */
-export function Contadores() {
+export function Contadores({ datos }: { datos: DatosContadores | null }) {
   const root = useRef<HTMLElement>(null)
 
   useGSAP(
@@ -84,7 +89,8 @@ export function Contadores() {
         onComplete: () => gsap.set(sufijos, { autoAlpha: 1 }),
       })
     },
-    { scope: root },
+    // Se rearma si cambian las cifras: la primera pasada corre sin datos.
+    { scope: root, dependencies: [datos], revertOnUpdate: true },
   )
 
   return (
@@ -105,7 +111,7 @@ export function Contadores() {
            así que las cifras siguen alineadas con el resto de la página. */
         style={{ paddingInline: 'var(--shell-pad)' }}
       >
-        {CONTADORES.map((c, i) => (
+        {datos?.lista.map((c, i) => (
           // column-reverse: en el DOM va primero el término y después la cifra
           // —así el lector de pantalla lee "Unidades entregadas: 500"— pero en
           // pantalla la cifra va arriba. El `gap` no depende de la dirección,
@@ -114,11 +120,11 @@ export function Contadores() {
             key={c.id}
             className={`flex flex-col-reverse gap-4 pr-4 md:pr-6 ${CELDA[i] ?? ''}`}
           >
-            <dt className="font-hud text-void/65">{c.label}</dt>
+            <dt className="font-hud text-void/65">{c.etiqueta}</dt>
 
             <dd className="num flex items-baseline font-bold text-void">
               <span
-                data-cifra={c.valor}
+                data-cifra={valorContador(c, datos.apertura)}
                 className="text-[clamp(2.75rem,7vw,4.5rem)] leading-none"
               >
                 0

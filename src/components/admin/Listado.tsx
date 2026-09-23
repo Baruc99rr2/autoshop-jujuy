@@ -92,6 +92,7 @@ export function Listado() {
       eyebrow="PANEL"
       titulo="Tus unidades"
       lead="Todo lo que está cargado, publicado o no. Tocá una unidad para editarla."
+      pestania="unidades"
     >
       {/* ── Buscar y crear ──────────────────────────────────────────── */}
       <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">

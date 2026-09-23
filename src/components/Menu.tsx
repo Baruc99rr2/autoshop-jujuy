@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import Bevel from './Bevel'
 import { MENU } from '../data/nav'
+import { apuntaAOculta, seccionesOcultas, useContenido } from '../lib/contenido'
 import { useIrA } from '../lib/ir-a'
 import { prefersReducedMotion } from '../lib/motion-prefs'
 import { usePieALaVista } from '../lib/pie-a-la-vista'
@@ -41,6 +42,9 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
   const zonaBoton = useRef<HTMLDivElement>(null)
   const rm = prefersReducedMotion()
   const irAlDestino = useIrA()
+  // Sin servicios cargados, "Servicios" no lleva a ningún lado: se saca.
+  const ocultas = seccionesOcultas(useContenido())
+  const items = MENU.filter((item) => !apuntaAOculta(item.href, ocultas))
 
   // La barra se va por dos motivos distintos y con el mismo gesto: porque el
   // menú se abrió (su lugar lo ocupa la barra CLOSE) o porque la página llegó
@@ -163,7 +167,7 @@ export function Menu({ abierto, onAbrir, onCerrar }: MenuProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <ul>
-              {MENU.map((item, i) => (
+              {items.map((item, i) => (
                 <li
                   key={item.label}
                   className="menu-item-host"

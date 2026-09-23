@@ -36,11 +36,10 @@ export const SECCIONES: Seccion[] = [
     indice: '02',
     id: 'contadores',
     eyebrow: 'NÚMEROS',
-    /* El titular NO dice cuántos años: el contador de al lado los calcula
-       desde 2023 (ver `contadores.ts`) y un número escrito acá volvería a
-       quedar viejo cada 1 de enero, además de contradecir a la cifra que
-       tiene debajo. */
-    titulo: 'Entregando autos en Jujuy desde 2023',
+    /* El titular NO dice desde cuándo: el año de apertura lo edita la dueña
+       en el panel y el contador lo calcula de ahí. Un año escrito acá
+       contradiría a la cifra que tiene debajo el día que lo corrija. */
+    titulo: 'Entregando autos en Jujuy',
     fondo: 'ambar',
   },
   { indice: '03', id: 'segmentos', eyebrow: 'SEGMENTOS', titulo: 'Qué estás buscando' },
@@ -82,6 +81,20 @@ export function seccion(id: string): Seccion {
   const s = SECCIONES.find((x) => x.id === id)
   if (!s) throw new Error(`Sección desconocida en nav.ts: ${id}`)
   return s
+}
+
+/**
+ * Las secciones que efectivamente se dibujan, renumeradas.
+ *
+ * Servicios y Preguntas dependen de lo que cargue la dueña, y con la lista
+ * vacía no aparecen. Si se sacaran sin renumerar, el riel saltaría del 05 al
+ * 07 y cualquiera que mire la numeración creería que falta algo.
+ */
+export function seccionesVisibles(ocultas: readonly string[]): Seccion[] {
+  return SECCIONES.filter((s) => !ocultas.includes(s.id)).map((s, i) => ({
+    ...s,
+    indice: String(i + 1).padStart(2, '0'),
+  }))
 }
 
 /**

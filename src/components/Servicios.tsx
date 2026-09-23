@@ -1,29 +1,26 @@
 import Bevel from './Bevel'
 import Icono from './Icono'
 import SectionHeader from './SectionHeader'
-import { seccion } from '../data/nav'
-import { SERVICIOS } from '../data/servicios'
+import type { Seccion } from '../data/nav'
 import { formatearPrecio } from '../lib/formato'
 import { scrollTo } from '../lib/smooth'
-
-/**
- * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
- * sección nueva se corren todos los números, y con el índice a mano el riel
- * diría una cosa y el encabezado de la sección otra.
- *
- * El id sigue siendo `postventa` aunque la sección se llame SERVICIOS: es el
- * ancla de `#postventa` y ya circulan links con ese hash. Lo que el visitante
- * lee sale del eyebrow.
- */
-const S = seccion('postventa')
+import type { Servicio } from '../types/contenido'
 
 /**
  * Servicios: los accesos en grilla.
  *
- * TRES COLUMNAS Y NO CUATRO. Hoy son cinco servicios y falta confirmar un
- * sexto. En cuatro columnas, cinco caen como 4+1 —un tile solo en una fila
- * entera— y seis como 4+2, que es peor. En tres, cinco caen como 3+2 y seis
- * como dos filas llenas: el día que llegue el sexto no hay nada que tocar.
+ * La lista la carga la dueña desde el panel y NO TIENE TOPE. Con cero
+ * servicios la sección no se dibuja (lo decide `Home`, que además saca su
+ * número del riel); con diez, la grilla simplemente suma filas.
+ *
+ * Índice y eyebrow llegan de `Home` y no de `seccion()`: si una sección de
+ * arriba desaparece por estar vacía, los números de las de abajo se corren.
+ * El id sigue siendo `postventa` aunque la sección se llame SERVICIOS: es el
+ * ancla de `#postventa` y ya circulan links con ese hash.
+ *
+ * TRES COLUMNAS Y NO CUATRO. En cuatro, cinco servicios caen como 4+1 —un
+ * tile solo en una fila entera— y seis como 4+2. En tres, cualquier cantidad
+ * deja como mucho una fila a medias al final.
  *
  * Cada tile es un enlace real a la sección de contacto, no un `<div>` con
  * hover. Así el bloque se recorre con Tab, el barrido responde igual al foco
@@ -34,7 +31,7 @@ const S = seccion('postventa')
  * pseudo-elemento con `scaleX` desde `transform-origin: left`, y el color del
  * contenido cambiando con `transition-delay` para que el barrido lo alcance.
  */
-export function Servicios() {
+export function Servicios({ s: S, servicios }: { s: Seccion; servicios: Servicio[] }) {
   return (
     <section
       id={S.id}
@@ -53,8 +50,8 @@ export function Servicios() {
         lead="Todo lo que el auto necesita después de la compra, en el mismo lugar donde lo comprás. Escribinos y coordinamos el turno o la contratación."
       />
 
-      <ul className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SERVICIOS.map((s) => (
+      <ul className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {servicios.map((s) => (
           <li key={s.id}>
             <Bevel
               as="a"

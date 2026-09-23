@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Contacto from '../components/Contacto'
 import Contadores from '../components/Contadores'
 import Faq from '../components/Faq'
@@ -15,27 +16,39 @@ import MeshOverlay from '../components/MeshOverlay'
 import Servicios from '../components/Servicios'
 import Segmentos from '../components/Segmentos'
 import Rail from '../components/Rail'
-import { SECCIONES } from '../data/nav'
+import { SECCIONES, seccionesVisibles } from '../data/nav'
+import type { Seccion } from '../data/nav'
+import { seccionesOcultas, useContenido } from '../lib/contenido'
+import type { ContenidoSitio } from '../lib/contenido'
 import { prefersReducedMotion } from '../lib/motion-prefs'
 import { scrollTo } from '../lib/smooth'
+
+type PropsSeccion = { s: Seccion; contenido: ContenidoSitio | null }
+type ComponenteSeccion = (p: PropsSeccion) => React.ReactElement | null
 
 /**
  * Componente de cada sección del home, por id. Ya están todas: si un id de
  * `SECCIONES` no aparece acá es un error de programación, y `componenteDe`
  * tira en vez de dibujar un hueco silencioso.
+ *
+ * Las tres que editan la dueña reciben su parte del contenido. Servicios y
+ * Preguntas no se dibujan mientras carga: con la lista vacía no deberían
+ * existir, y dibujarlas vacías un instante sería un salto de layout.
  */
-const SECCION_COMPONENTE: Record<string, () => React.ReactElement> = {
-  contacto: Contacto,
-  contadores: Contadores,
-  hero: Hero,
-  marcas: Marcas,
-  postventa: Servicios,
-  preguntas: Faq,
-  segmentos: Segmentos,
-  vehiculos: Vehiculos,
+const SECCION_COMPONENTE: Record<string, ComponenteSeccion> = {
+  contacto: ({ s }) => <Contacto s={s} />,
+  contadores: ({ contenido }) => <Contadores datos={contenido?.contadores ?? null} />,
+  hero: () => <Hero />,
+  marcas: () => <Marcas />,
+  postventa: ({ s, contenido }) =>
+    contenido ? <Servicios s={s} servicios={contenido.servicios} /> : null,
+  preguntas: ({ s, contenido }) =>
+    contenido ? <Faq s={s} preguntas={contenido.preguntas} /> : null,
+  segmentos: () => <Segmentos />,
+  vehiculos: () => <Vehiculos />,
 }
 
-function componenteDe(id: string): () => React.ReactElement {
+function componenteDe(id: string): ComponenteSeccion {
   const C = SECCION_COMPONENTE[id]
   if (!C) throw new Error(`Sección sin componente en Home.tsx: ${id}`)
   return C
@@ -84,21 +97,37 @@ export function Home() {
   const headerLogoRef = useRef<HTMLAnchorElement>(null)
   const { hash } = useLocation()
 
-  // Alguien llegó a `/#vehiculos` desde otra ruta: el home se monta arriba de
-  // todo y después baja. El rAF espera a que las secciones existan; si además
-  // corre la intro, el scroll está frenado y Lenis aplica el destino recién al
-  // soltarse, que es el orden correcto.
+  const contenido = useContenido()
+  const secciones = useMemo(
+    () => seccionesVisibles(seccionesOcultas(contenido)),
+    [contenido],
+  )
+
+  // Servicios y Preguntas entran al DOM recién con el contenido, así que todo
+  // lo que está debajo se corre: los ScrollTrigger de Contacto y del footer
+  // quedarían midiendo posiciones viejas.
   useEffect(() => {
-    if (!hash) return
+    if (!contenido) return
+    const t = requestAnimationFrame(() => ScrollTrigger.refresh())
+    return () => cancelAnimationFrame(t)
+  }, [contenido])
+
+  // Alguien llegó a `/#vehiculos` desde otra ruta: el home se monta arriba de
+  // todo y después baja. Espera al contenido porque `#preguntas` y
+  // `#postventa` no existen hasta que llega, y el rAF a que estén pintadas;
+  // si además corre la intro, el scroll está frenado y Lenis aplica el
+  // destino recién al soltarse, que es el orden correcto.
+  useEffect(() => {
+    if (!hash || !contenido) return
     const t = requestAnimationFrame(() => scrollTo(hash))
     return () => cancelAnimationFrame(t)
-  }, [hash])
+  }, [hash, contenido])
 
   // El riel muestra el índice de la sección en pantalla. IntersectionObserver
   // en vez de ScrollTrigger: es un cambio de texto, no una animación, y no
   // tiene por qué entrar en el ciclo de scrub.
   useEffect(() => {
-    const nodes = SECCIONES.map((s) => document.getElementById(s.id)).filter(
+    const nodes = secciones.map((s) => document.getElementById(s.id)).filter(
       (n): n is HTMLElement => Boolean(n),
     )
     const io = new IntersectionObserver(
@@ -107,14 +136,16 @@ export function Home() {
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
         if (!visible) return
-        const match = SECCIONES.find((s) => s.id === visible.target.id)
+        const match = secciones.find((s) => s.id === visible.target.id)
         if (match) setActiva(match)
       },
       { threshold: [0.25, 0.6], rootMargin: '-20% 0px -20% 0px' },
     )
     nodes.forEach((n) => io.observe(n))
     return () => io.disconnect()
-  }, [])
+    // Se vuelve a armar cuando llega el contenido: hay secciones nuevas que
+    // observar y los índices pudieron correrse.
+  }, [secciones])
 
   // El header es aparte. Ocupa ~70px arriba de todo, así que lo que le importa
   // no es qué sección domina la pantalla sino cuál le pasa POR DEBAJO: con la
@@ -125,7 +156,7 @@ export function Home() {
   // superior del viewport. Va en porcentaje y no en px porque rootMargin no
   // acepta calc() y así se adapta solo a cualquier alto de pantalla.
   useEffect(() => {
-    const conFondo = SECCIONES.filter((s) => s.fondo)
+    const conFondo = secciones.filter((s) => s.fondo)
     const nodes = conFondo
       .map((s) => document.getElementById(s.id))
       .filter((n): n is HTMLElement => Boolean(n))
@@ -145,7 +176,7 @@ export function Home() {
     )
     nodes.forEach((n) => io.observe(n))
     return () => io.disconnect()
-  }, [])
+  }, [secciones])
 
   // El menú es un overlay de fondo bone a pantalla completa, así que mientras
   // está abierto el riel y el header tienen encima el mismo blanco que la FAQ
@@ -187,9 +218,9 @@ export function Home() {
       )}
 
       <main>
-        {SECCIONES.map((s) => {
+        {secciones.map((s) => {
           const Componente = componenteDe(s.id)
-          return <Componente key={s.id} />
+          return <Componente key={s.id} s={s} contenido={contenido} />
         })}
       </main>
 

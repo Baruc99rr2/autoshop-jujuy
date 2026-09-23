@@ -391,10 +391,161 @@ export async function capturarPanel(browser, BASE, shot) {
     JSON.stringify(await medirArchivos(page)),
   )
 
+  await capturarContenido(browser, page, BASE, shot)
+
   console.log(
     '[panel] errores de consola:',
     consola.length === 0 ? 'ninguno ✓' : JSON.stringify(consola.slice(0, 6)),
   )
 
   await ctx.close()
+}
+
+/**
+ * «Contenido del sitio», y lo que produce en el inicio.
+ *
+ * Se lleva a propósito a los dos bordes que pidió el encargo: la lista de
+ * servicios a NUEVE (tres filas llenas en la compu) más una fila vacía que
+ * tiene que descartarse sola, y las preguntas a CERO, que tiene que sacar la
+ * sección del inicio, su link del footer y correr el número de Contacto.
+ */
+async function capturarContenido(browser, page, BASE, shot) {
+  const foto = (n, o) => shot(page, `panel/${n}`, o)
+  const bloque = (t) =>
+    page
+      .locator('main section')
+      .filter({ has: page.getByRole('heading', { name: t, exact: true }) })
+
+  // ── 20 · La pantalla ─────────────────────────────────────────────────
+  await page.goto(`${BASE}/admin/contenido`, { waitUntil: 'load' })
+  await page.waitForSelector('text=GUARDAR LOS NÚMEROS')
+  await page.waitForTimeout(500)
+  await foto('20-contenido-arriba')
+
+  // ── 21 · Números: primero con un error, después bien ─────────────────
+  const numeros = bloque('NÚMEROS')
+  await numeros.getByLabel('CIFRA').first().fill('650')
+  await numeros.getByLabel('AÑO DE APERTURA').fill('2022')
+  await numeros.getByLabel('TEXTO').nth(1).fill('')
+  await tocar(page, numeros.getByRole('button', { name: 'GUARDAR LOS NÚMEROS' }))
+  await asentar(page)
+  await foto('21-numeros-con-error')
+  await numeros.getByLabel('TEXTO').nth(1).fill('Marcas en el salón')
+  await tocar(page, numeros.getByRole('button', { name: 'GUARDAR LOS NÚMEROS' }))
+  await page.waitForTimeout(400)
+  await foto('22-numeros-guardados')
+
+  // ── 23 · Servicios: precio nuevo, cinco altas y una vacía ────────────
+  const servicios = bloque('SERVICIOS')
+  await servicios.getByLabel('PRECIO').nth(1).fill('38000')
+  const nuevos = [
+    ['Alineación y balanceo', 'Llave', '45000', 'Con turno previo'],
+    ['Gestoría del 08', 'Escudo', '', 'Transferencia y patentamiento'],
+    ['Polarizado de vidrios', 'Pulverizador', '90000', ''],
+    ['Tasación de tu usado', 'Escáner', '', 'Sin cargo'],
+    ['Lavado premium', 'Pulverizador', '30000', 'Reservá tu turno'],
+  ]
+  for (const [titulo, icono, precio, detalle] of nuevos) {
+    await tocar(page, servicios.getByRole('button', { name: 'AGREGAR UN SERVICIO' }))
+    await page.waitForTimeout(200)
+    const fila = servicios.locator('li').last()
+    await fila.getByLabel('TÍTULO').fill(titulo)
+    await tocar(page, fila.getByRole('radio', { name: icono, exact: true }))
+    if (precio) await fila.getByLabel('PRECIO').fill(precio)
+    if (detalle) await fila.getByLabel('DETALLE').fill(detalle)
+  }
+  // La que se agrega y no se llena: al guardar tiene que desaparecer sola.
+  await tocar(page, servicios.getByRole('button', { name: 'AGREGAR UN SERVICIO' }))
+  await page.waitForTimeout(300)
+  await foto('23-servicio-nuevo-enfocado')
+  console.log(
+    '[panel] foco tras agregar:',
+    await page.evaluate(() => document.activeElement?.closest('li') ? `${document.activeElement.tagName} en la fila nueva ✓` : '✗ el foco no fue a la fila nueva'),
+  )
+
+  // Medida con la lista en su punto más largo y desde arriba, quieta.
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await asentar(page)
+  console.log('[panel] contenido:', JSON.stringify(await auditarPantalla(page), null, 1))
+
+  // ── 24 · Reordenar y borrar ──────────────────────────────────────────
+  await tocar(page, page.getByLabel('Subir el servicio 10'))
+  await tocar(page, servicios.locator('li').nth(2).getByRole('button', { name: 'BORRAR' }))
+  await page.waitForTimeout(400)
+  await foto('24-borrar-servicio-dialogo')
+  await boton(page, 'BORRAR EL SERVICIO').click()
+  await page.waitForTimeout(300)
+  await tocar(page, servicios.getByRole('button', { name: 'GUARDAR LOS SERVICIOS' }))
+  await page.waitForTimeout(400)
+  await foto('25-servicios-guardados')
+  console.log(
+    '[panel] servicios tras guardar:',
+    await servicios.locator('li').count(),
+    '(esperado 9: 5 + 5 − 1, y la vacía descartada)',
+  )
+
+  // ── 26 · Cero preguntas ──────────────────────────────────────────────
+  const preguntas = bloque('PREGUNTAS FRECUENTES')
+  for (let i = 0; i < 6; i++) {
+    await tocar(page, preguntas.locator('li').first().getByRole('button', { name: 'BORRAR' }))
+    await page.waitForTimeout(250)
+    await boton(page, 'BORRAR LA PREGUNTA').click()
+    await page.waitForTimeout(250)
+  }
+  await tocar(page, preguntas.getByRole('button', { name: 'GUARDAR LAS PREGUNTAS' }))
+  await page.waitForTimeout(400)
+  await foto('26-sin-preguntas')
+  await foto('27-contenido-entero', { fullPage: true })
+
+  // ── 28 · El inicio con lo guardado ───────────────────────────────────
+  const guardado = await page.evaluate(() => localStorage.getItem('autoshop.contenido.v1'))
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem('intro-seen', '1')
+    } catch {
+      /* storage bloqueado */
+    }
+  })
+
+  const mirarInicio = async (p, nombre) => {
+    await p.goto(`${BASE}/`, { waitUntil: 'load' })
+    await p.waitForTimeout(900)
+    const datos = await p.evaluate(() => ({
+      tiles: document.querySelectorAll('#postventa li').length,
+      hayPreguntas: Boolean(document.getElementById('preguntas')),
+      cifras: [...document.querySelectorAll('#contadores [data-cifra]')].map((n) => n.dataset.cifra),
+      indiceContacto: document.getElementById('contacto')?.textContent.match(/\b0\d\b/)?.[0],
+      linkAPreguntas: [...document.querySelectorAll('a')].some((a) => a.getAttribute('href') === '#preguntas'),
+      scrollHorizontal: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      // Tiles que se salen de su columna o títulos que se salen del tile.
+      desbordan: [...document.querySelectorAll('#postventa li')].filter((li) => {
+        const r = li.getBoundingClientRect()
+        const h = li.querySelector('h3')
+        return r.right > document.documentElement.clientWidth || (h && h.scrollWidth > h.clientWidth + 1)
+      }).length,
+    }))
+    console.log(`[panel] inicio ${nombre}:`, JSON.stringify(datos))
+    const lista = p.locator('#postventa ul')
+    await lista.scrollIntoViewIfNeeded()
+    await asentar(p)
+    await lista.screenshot({ path: `docs/shots/panel/${nombre}-servicios.png` })
+  }
+
+  await mirarInicio(page, '28-inicio-390')
+
+  const escritorio = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+  })
+  const pc = await escritorio.newPage()
+  await pc.addInitScript((d) => {
+    try {
+      localStorage.setItem('autoshop.contenido.v1', d)
+      sessionStorage.setItem('intro-seen', '1')
+    } catch {
+      /* storage bloqueado */
+    }
+  }, guardado)
+  await mirarInicio(pc, '29-inicio-1440')
+  await escritorio.close()
 }
