@@ -10,12 +10,12 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 - `src/data/repo/` es la única puerta a los datos: `repo` (vehículos) y `repoContenido` (contadores, servicios, preguntas). `data/sesion.ts` es la del acceso (falso).
 - Vehículos: ficha en localStorage (subir `CLAVE`, hoy v4) y archivos en IndexedDB (`repo/blobs.ts`) vía `idb:<clave>`. Contenido: una clave, `autoshop.contenido.v1`, semilla en `repo/semilla-contenido.ts`.
 - El inicio lee el contenido con `lib/contenido.ts` (un pedido compartido; el panel llama `olvidarContenido()` al guardar). Servicios o Preguntas vacías NO se dibujan: `seccionesVisibles()` renumera el riel y Menú/Footer sacan sus links. Por eso Servicios, Faq y Contacto reciben `s` por props.
-- `/admin/contenido`: tres bloques con guardado propio (`admin/Bloque.tsx` + `estado-bloque.ts`). Los 4 contadores son fijos; el de años lleva `desdeApertura`. Íconos de servicio: se eligen de `ICONOS_SERVICIO` (6, incluida `llave`), nunca se suben.
-- `/admin` unidad: fotos (tope `MAX_FOTOS`, 10) y video se guardan solos; etiquetas van en el borrador. Fotos a 1600 px WebP en `lib/archivos.ts` (180–195 KB).
+- `/admin/contenido`: tres bloques con guardado propio (`admin/Bloque.tsx` + `estado-bloque.ts`); 4 contadores fijos (años = `desdeApertura`); íconos de `ICONOS_SERVICIO`, nunca se suben. Unidad: fotos (tope 10) y video se guardan solos, etiquetas van en el borrador; fotos a 1600 px WebP (`lib/archivos.ts`).
 - Campos del panel a NIVEL DE MÓDULO (`admin/Campos.tsx`); toda `<ul>` en grilla lleva `grid-cols-1`. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`; en `solid` no hay contenedor de afuera. Todo control del panel ≥ 44 px (lo mide `scripts/panel.mjs`).
 - `npm run shots -- --panel` recorre el panel entero en 390 px, incluido contenido (9 servicios, 0 preguntas) y el inicio resultante en 390 y 1440.
 - `/catalogo`: chips + buscador en la URL, lista/grilla 2×2 en mobile. `/vehiculo/:slug`: precio sticky con `useFitText`, `VisorFotos`, barra fija en mobile; en `VideoVehiculo` las dos formas del clip-path llevan 8 vértices.
 - `MeshOverlay` solo con puntero fino; el titular del hero se corta a mano; los flotantes se apartan del footer (`lib/pie-a-la-vista.ts`).
+- Supabase (8A, sin conectar hasta 8C): `supabase/schema.sql` idempotente + `PASOS.md`. Ids TEXTO, columnas snake_case, `ruta` para borrar del bucket; `sitio`/`contadores` solo UPDATE (upsert falla); RLS oculta borradores también en fotos/etiquetas/videos; `es_admin()` sirve por rpc. Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 ---
 
