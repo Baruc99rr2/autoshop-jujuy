@@ -926,8 +926,24 @@
    corrida con la medición `hero titular`.
    ───────────────────────────────────────────────────────────── */
 
+/* El clamp está CALCULADO contra la línea más larga del titular, no elegido a
+   ojo, y hay que recalcularlo cada vez que el titular cambia.
+
+   CÓMO SE MIDE. No sirve medir el ancho de la línea ya pintada con un Range:
+   si la línea SE PARTIÓ, el rectángulo que devuelve es la unión de los dos
+   renglones y sale más ANGOSTO que el texto, así que un titular partido se
+   informa como si entrara sobrado. Hay que medir el ancho NATURAL: una copia
+   de la línea con `white-space: nowrap`, fuera de flujo, y comparar contra la
+   caja. Con la medición mala, "La ruta que te / lleva a cumplir / tu sueño"
+   parecía entrar con aire en los siete anchos y en realidad se partía en los
+   siete.
+
+   Con "Tu próximo / auto, en / Jujuy" la línea más larga eran 10 caracteres y
+   entraba con `clamp(2.25rem, 6.1vw, 6.5rem)`. El titular nuevo llega a 12
+   ("que te lleva") y estos valores le dejan entre 10% y 25% de aire, medido a
+   360, 390, 414, 768, 900, 1024, 1180, 1280, 1366, 1440, 1600 y 1920. */
 .hero-titulo {
-  font-size: clamp(2.25rem, 6.1vw, 6.5rem);
+  font-size: clamp(1.95rem, 5vw, 6.25rem);
   line-height: 0.92;
   letter-spacing: -0.03em;
 }

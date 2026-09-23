@@ -12,7 +12,7 @@ import Vehiculos from '../components/Vehiculos'
 import WhatsApp from '../components/WhatsApp'
 import Intro, { INTRO_SEEN_KEY } from '../components/Intro'
 import MeshOverlay from '../components/MeshOverlay'
-import Postventa from '../components/Postventa'
+import Servicios from '../components/Servicios'
 import Segmentos from '../components/Segmentos'
 import Rail from '../components/Rail'
 import { SECCIONES } from '../data/nav'
@@ -29,7 +29,7 @@ const SECCION_COMPONENTE: Record<string, () => React.ReactElement> = {
   contadores: Contadores,
   hero: Hero,
   marcas: Marcas,
-  postventa: Postventa,
+  postventa: Servicios,
   preguntas: Faq,
   segmentos: Segmentos,
   vehiculos: Vehiculos,

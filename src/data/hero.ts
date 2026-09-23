@@ -24,7 +24,13 @@ export interface Hero {
 
 export const HERO: Hero = {
   kicker: 'San Salvador de Jujuy',
-  titulo: ['Tu próximo', 'auto, en', 'Jujuy'],
+  /* CUATRO LÍNEAS. El titular tiene nueve palabras y la escala del hero es
+     extendida y en mayúsculas: un carácter mide unos 0.74 em, así que en la
+     columna del 56% de 1440 entran doce caracteres por renglón y no veinte.
+     Cortado en cuatro, la línea más larga es "que te lleva" y ninguna queda
+     con una palabra sola, que es el corte que hay que evitar. El punto ámbar
+     lo agrega el componente, al final de la última. */
+  titulo: ['La ruta', 'que te lleva', 'a cumplir', 'tu sueño'],
   bajada:
     'Cero kilómetro y usados con garantía, financiación propia y toma de tu usado como parte de pago. Vení al salón o escribinos y coordinamos.',
   accionPrimaria: { label: 'Ver vehículos', href: '#vehiculos' },
