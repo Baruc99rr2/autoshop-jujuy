@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import Logo from './Logo'
 import { scrollTo } from '../lib/smooth'
 
@@ -39,9 +39,24 @@ type HeaderProps = {
 /** Cuánto hay que haber scrolleado para que aparezca el velo, en px. */
 const VELO_DESDE = 24
 
+/**
+ * Lo que comparten las dos versiones del logo, la del home y la del `<Link>`.
+ *
+ * El atenuado en hover es lo único que avisa que el logo lleva a algún lado:
+ * en el home se entiende porque no hay otro lado al que ir, pero en el
+ * catálogo y en la ficha es la única salida al inicio que hay en pantalla, y
+ * un logo que no reacciona se lee como un dibujo. Es `opacity` y nada más, que
+ * es una de las tres propiedades que este sitio anima.
+ */
+const LOGO = {
+  'aria-label': 'Automotores AutoShop Jujuy — volver al inicio',
+  className:
+    'bevel block transition-opacity duration-200 hover:opacity-70 focus-visible:opacity-70',
+  style: { '--bevel': '6px' } as CSSProperties,
+}
+
 export function Header({ logoRef, tono = 'oscuro' }: HeaderProps) {
   const { pathname } = useLocation()
-  const navigate = useNavigate()
   const enHome = pathname === '/'
 
   // Se lee `window.scrollY` y no la posición de Lenis: Lenis scrollea el
@@ -70,27 +85,36 @@ export function Header({ logoRef, tono = 'oscuro' }: HeaderProps) {
         data-on={tono === 'oscuro' && scrolleado}
       />
 
-      {/* El href es SIEMPRE "/" y no "#hero": desde una ficha, "#hero" no
+      {/* El destino es SIEMPRE "/" y no "#hero": desde una ficha, "#hero" no
           apunta a nada, y es el href el que decide qué copia el visitante
-          cuando usa "copiar dirección del enlace". Estando en el home el
-          click se intercepta y se resuelve con un scroll suave. */}
-      <a
-        ref={logoRef}
-        href="/"
-        onClick={(e) => {
-          e.preventDefault()
-          if (enHome) {
+          cuando usa "copiar dirección del enlace".
+
+          FUERA DEL HOME ES UN `<Link>` DE VERDAD, no un `<a>` con
+          `preventDefault` y un `navigate()` a mano. Los dos llegan al mismo
+          lado, pero el `<Link>` no depende de que corra un handler y deja
+          intactos el click del medio, el ctrl+click y el "abrir en una pestaña
+          nueva", que en un `<a>` interceptado funcionan de casualidad.
+
+          En el home sí se intercepta: ahí "/" es la página en la que ya se
+          está, así que navegar no haría nada visible y lo que corresponde es
+          subir con un scroll suave. */}
+      {enHome ? (
+        <a
+          ref={logoRef}
+          href="/"
+          onClick={(e) => {
+            e.preventDefault()
             scrollTo(0)
-            return
-          }
-          navigate('/')
-        }}
-        aria-label="Automotores AutoShop Jujuy — volver al inicio"
-        className="bevel block"
-        style={{ '--bevel': '6px' } as CSSProperties}
-      >
-        <Logo id="header-logo" className="h-8 w-auto md:h-10" decorative />
-      </a>
+          }}
+          {...LOGO}
+        >
+          <Logo id="header-logo" className="h-8 w-auto md:h-10" decorative />
+        </a>
+      ) : (
+        <Link ref={logoRef} to="/" {...LOGO}>
+          <Logo id="header-logo" className="h-8 w-auto md:h-10" decorative />
+        </Link>
+      )}
     </header>
   )
 }

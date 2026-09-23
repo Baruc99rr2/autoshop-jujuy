@@ -15,7 +15,8 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 - `/vehiculo/:slug`: titular en escala `contenido`, grilla de dos filas con el
   precio sticky (`useFitText`), galería con techo que abre `VisorFotos`, barra
   fija de mobile (volver + WhatsApp) y "volver al catálogo" con los filtros.
-- El header lleva un velo degradado que aparece al scrollear (solo tono oscuro).
+- Header: el logo es un `<Link>` a `/` fuera del home, y lleva un velo degradado
+  que aparece al scrollear (solo con tono oscuro).
 
 ---
 

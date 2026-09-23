@@ -17,9 +17,23 @@ export interface Contador {
   label: string
 }
 
+/**
+ * El año en que abrió el salón.
+ *
+ * El contador de años se CALCULA a partir de acá en vez de estar escrito: un
+ * número a mano en un dato que crece solo queda viejo el 1 de enero, y nadie
+ * se acuerda de volver a tocarlo. Se evalúa al importar el módulo, así que
+ * cada carga de la página trae el número del día.
+ */
+const APERTURA = 2023
+
+function aniosEnJujuy(): number {
+  return new Date().getFullYear() - APERTURA
+}
+
 export const CONTADORES: Contador[] = [
   { id: 'entregadas', valor: 500, sufijo: '+', label: 'Unidades entregadas' },
   { id: 'marcas', valor: 12, label: 'Marcas en el salón' },
-  { id: 'anios', valor: 9, label: 'Años en Jujuy' },
+  { id: 'anios', valor: aniosEnJujuy(), label: 'Años en Jujuy' },
   { id: 'financiacion', valor: 100, sufijo: '%', label: 'Financiación propia' },
 ]
