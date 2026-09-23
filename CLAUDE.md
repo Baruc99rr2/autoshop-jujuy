@@ -7,15 +7,15 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
 - Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin/*` (lazy) y 404; la intro corre solo si la pestaña ENTRÓ por `/`.
-- `src/data/repo/` es la única puerta al catálogo (mock; subir `CLAVE`, hoy v4) y `data/sesion.ts` la única al acceso (falso: entra cualquiera).
-- `/admin`: login, listado con borradores (orden `actualizados`) y alta/edición en `components/admin/`. Faltan fotos, video y etiquetas.
-- Los campos del panel van a NIVEL DE MÓDULO (`admin/Campos.tsx`): definidos dentro del formulario, el input pierde el foco en cada tecla.
+- `src/data/repo/` es la única puerta al catálogo y `data/sesion.ts` la única al acceso (falso: entra cualquiera).
+- El mock va PARTIDO: la ficha en localStorage (subir `CLAVE`, hoy v4) y los archivos en IndexedDB (`repo/blobs.ts`), unidos por `idb:<clave>`. Como data URL no entraban ni cuatro fotos.
+- `/admin` está completo: fotos (tope `MAX_FOTOS`, hoy 10), video (25 MB, póster de un frame) y etiquetas. Fotos y video se guardan SOLOS —son archivos contra un id que ya existe—; las etiquetas van en el borrador. Los tres bloques aparecen recién con la unidad creada.
+- Las fotos se achican en `lib/archivos.ts` a 1600 px y WebP antes de tocar el repo: medido, 180–195 KB.
+- Los campos del panel van a NIVEL DE MÓDULO (`admin/Campos.tsx`), y toda `<ul>` en grilla lleva `grid-cols-1`: con `grid` a secas la columna `auto` la estira el carril de miniaturas y el documento se va de 390 px. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`, nunca en `className`.
+- `npm run shots -- --panel` recorre el panel entero en 390 px (`scripts/panel.mjs`) y no borra el resto de `docs/shots/`.
 - `/catalogo`: chips + buscador EN LA URL, lista/grilla 2×2 en mobile (localStorage), y anota su query en sessionStorage para el "volver" de la ficha.
-- `/vehiculo/:slug`: titular `contenido`, precio sticky con `useFitText`, galería con techo que abre `VisorFotos`, barra fija de mobile.
-- `VideoVehiculo`: de foto a video con compresión y visor. Las DOS formas del clip-path llevan 8 vértices o la transición salta.
-- `MeshOverlay` es un `<svg>` con `<pattern>` + feTurbulence; el filtro corre SOLO con puntero fino (medido). Sección 06 = SERVICIOS (ancla `#postventa`).
-- El titular del hero se corta a mano y su clamp se MIDE con nowrap (ver el CSS).
-- Header: logo `<Link>` a `/`, velo al scrollear, oculto con el menú abierto. Los flotantes se apartan del footer (`lib/pie-a-la-vista.ts`).
+- `/vehiculo/:slug`: precio sticky con `useFitText`, galería que abre `VisorFotos`, barra fija de mobile. En `VideoVehiculo` las DOS formas del clip-path llevan 8 vértices o la transición salta.
+- `MeshOverlay` corre SOLO con puntero fino; el titular del hero se corta a mano y su clamp se MIDE con nowrap; los flotantes se apartan del footer (`lib/pie-a-la-vista.ts`).
 
 ---
 

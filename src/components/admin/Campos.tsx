@@ -451,3 +451,88 @@ export function Interruptor({
     </Bevel>
   )
 }
+
+// ── Bloques del formulario ────────────────────────────────────────────────
+
+/**
+ * Un tramo del formulario con su propio título: fotos, video, etiquetas.
+ *
+ * Los campos de texto no lo necesitan —la etiqueta de cada uno alcanza— pero
+ * los tres bloques de medios son listas con sus propios botones, y sin una
+ * línea que los separe el formulario se lee como una pila de controles
+ * sueltos. La línea de arriba es la misma que corta "ESTA UNIDAD".
+ */
+export function Seccion({
+  titulo,
+  contador,
+  ayuda,
+  children,
+  className = '',
+}: {
+  titulo: string
+  /** A la derecha, en cifras: "3 / 10". */
+  contador?: ReactNode
+  ayuda?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <section className={`border-t border-graphite pt-8 ${className}`}>
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-hud text-bone/55">{titulo}</h2>
+        {contador !== undefined && (
+          <p className="font-hud num shrink-0 text-bone/40">{contador}</p>
+        )}
+      </div>
+      {ayuda && (
+        <p className="font-hud mt-2 text-bone/40 normal-case">{ayuda}</p>
+      )}
+      {children}
+    </section>
+  )
+}
+
+/**
+ * El botón de una fila: subir, bajar, eliminar.
+ *
+ * 44 px de alto y no los 48 del resto del panel: van de a tres en una fila de
+ * 390 px al lado de una miniatura, y con 48 la fila no entra sin partirse. 44
+ * es el piso táctil, no un redondeo hacia abajo cómodo.
+ */
+export function BotonChico({
+  children,
+  onClick,
+  disabled = false,
+  tono = 'normal',
+  etiqueta,
+  className = '',
+}: {
+  children: ReactNode
+  onClick: () => void
+  disabled?: boolean
+  tono?: 'normal' | 'peligro'
+  /** Para los que muestran solo una flecha. */
+  etiqueta?: string
+  className?: string
+}) {
+  return (
+    <Bevel
+      as="button"
+      type="button"
+      variant="outline"
+      bevel={10}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={etiqueta}
+      borderClassName={tono === 'peligro' ? 'bg-flag/50' : 'bg-graphite'}
+      outerClassName={`${className} ${
+        disabled ? 'opacity-35' : 'transition-colors duration-200 hover:bg-amber'
+      }`}
+      className={`font-hud flex min-h-[2.75rem] items-center justify-center px-3 ${
+        tono === 'peligro' ? 'text-flag' : 'text-bone'
+      }`}
+    >
+      {children}
+    </Bevel>
+  )
+}

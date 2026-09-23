@@ -5,8 +5,9 @@
  * nadie vio nunca correr la intro ni una sección. Este script levanta el build
  * y saca las capturas necesarias para revisar el trabajo con los ojos.
  *
- *   npm run shots            # build + capturas
- *   npm run shots -- --fast  # sin build, reusa dist/
+ *   npm run shots             # build + capturas
+ *   npm run shots -- --fast   # sin build, reusa dist/
+ *   npm run shots -- --panel  # solo el recorrido del panel en 390 (ver panel.mjs)
  *
  * Todo va a docs/shots/. Los nombres empiezan por viewport para que el listado
  * quede agrupado.
@@ -23,11 +24,14 @@ import {
   auditarTactil,
   auditarTeclado,
 } from './auditoria.mjs'
+import { capturarPanel } from './panel.mjs'
 
 const OUT = path.resolve('docs/shots')
 const PORT = 4317
 const BASE = `http://127.0.0.1:${PORT}`
 const FAST = process.argv.includes('--fast')
+/** Solo el panel, en 390. El pase del sitio no se toca. */
+const SOLO_PANEL = process.argv.includes('--panel')
 
 /** Viewports probados. El de 390 es un iPhone 14; el de 1440 un notebook. */
 const VIEWPORTS = {
@@ -1006,13 +1010,20 @@ async function capturarOffline(browser, nombreVp) {
 }
 
 async function main() {
-  await rm(OUT, { recursive: true, force: true })
-  await mkdir(path.join(OUT, 'intro'), { recursive: true })
-  await mkdir(path.join(OUT, 'beats'), { recursive: true })
-  for (const vp of Object.keys(VIEWPORTS)) {
-    await mkdir(path.join(OUT, vp), { recursive: true })
+  // Con `--panel` NO se borra `docs/shots/`: el pase del panel es una revisión
+  // parcial, y tirar las capturas del sitio para mirar un formulario obliga a
+  // correr los cinco minutos del pase completo para recuperarlas.
+  if (!SOLO_PANEL) {
+    await rm(OUT, { recursive: true, force: true })
+    await mkdir(path.join(OUT, 'intro'), { recursive: true })
+    await mkdir(path.join(OUT, 'beats'), { recursive: true })
+    for (const vp of Object.keys(VIEWPORTS)) {
+      await mkdir(path.join(OUT, vp), { recursive: true })
+    }
+    await mkdir(path.join(OUT, 'audit'), { recursive: true })
   }
-  await mkdir(path.join(OUT, 'audit'), { recursive: true })
+  await rm(path.join(OUT, 'panel'), { recursive: true, force: true })
+  await mkdir(path.join(OUT, 'panel'), { recursive: true })
 
   if (!FAST) await run('npm', ['run', 'build'])
 
@@ -1027,19 +1038,23 @@ async function main() {
     await waitForServer(BASE)
     browser = await chromium.launch()
 
-    await capturarIntro(browser)
-    await capturarBeats(browser)
-    await capturarPagina(browser, 'desktop')
-    await capturarPagina(browser, 'mobile')
-    await capturarOffline(browser, 'desktop')
-    await capturarOffline(browser, 'mobile')
+    if (!SOLO_PANEL) {
+      await capturarIntro(browser)
+      await capturarBeats(browser)
+      await capturarPagina(browser, 'desktop')
+      await capturarPagina(browser, 'mobile')
+      await capturarOffline(browser, 'desktop')
+      await capturarOffline(browser, 'mobile')
 
-    // Auditoría de la fase L: cinco anchos, reduced-motion y teclado.
-    await auditarAnchos(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
-    await auditarReducedMotion(browser, BASE, shot)
-    await auditarTactil(browser, BASE, shot)
-    await auditarBarraDelNavegador(browser, BASE, esperarFinDeIntro)
-    await auditarTeclado(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
+      // Auditoría de la fase L: cinco anchos, reduced-motion y teclado.
+      await auditarAnchos(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
+      await auditarReducedMotion(browser, BASE, shot)
+      await auditarTactil(browser, BASE, shot)
+      await auditarBarraDelNavegador(browser, BASE, esperarFinDeIntro)
+      await auditarTeclado(browser, BASE, shot, nuevaPagina, esperarFinDeIntro)
+    }
+
+    await capturarPanel(browser, BASE, shot)
 
     console.log(`[shots] listo → ${OUT}`)
   } finally {

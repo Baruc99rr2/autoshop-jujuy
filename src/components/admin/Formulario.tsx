@@ -3,12 +3,22 @@ import { useNavigate } from 'react-router'
 import Bevel from '../Bevel'
 import { AreaTexto, Campo, CampoMiles, Interruptor, Opciones } from './Campos'
 import Dialogo from './Dialogo'
+import Etiquetas from './Etiquetas'
+import Fotos from './Fotos'
 import Marco, { AvisoError, Volver } from './Marco'
+import VideoUnidad from './VideoUnidad'
 import { repo } from '../../data/repo'
 import { leerMiles, separarMiles, soloDigitos } from '../../lib/formato'
 import { SLUG_VALIDO, slugificar } from '../../lib/texto'
 import { scrollTo } from '../../lib/smooth'
-import type { Condicion, EstadoVehiculo, Vehiculo } from '../../types/vehiculo'
+import type {
+  Condicion,
+  EstadoVehiculo,
+  Etiqueta,
+  Foto,
+  Vehiculo,
+  Video,
+} from '../../types/vehiculo'
 
 /**
  * Cargar y editar una unidad. ES EL MISMO COMPONENTE para las dos cosas.
@@ -23,6 +33,14 @@ import type { Condicion, EstadoVehiculo, Vehiculo } from '../../types/vehiculo'
  * Mientras se escribe hay estados que no son ningún número —vacío, a medias—
  * y representarlos con `number` obliga a inventar un 0, que después se guarda
  * como precio de verdad.
+ *
+ * LOS MEDIOS VAN POR DOS CAMINOS DISTINTOS Y NO ES UNA INCONSISTENCIA. Las
+ * fotos y el video son ARCHIVOS: se guardan apenas se eligen, contra una
+ * unidad que ya existe, porque un archivo que ya viajó y se pierde al cerrar
+ * la pestaña es media carga tirada. Las etiquetas son TEXTO: viven en el
+ * borrador y se guardan con el botón de abajo, como el título o el precio, así
+ * que arrepentirse es salir sin guardar. Por eso los tres bloques aparecen
+ * recién cuando la unidad existe: sin id no hay contra qué subir un archivo.
  */
 
 // ── Forma del borrador ────────────────────────────────────────────────────
@@ -43,6 +61,7 @@ type Borrador = {
   publicado: boolean
   destacado: boolean
   slug: string
+  etiquetas: Etiqueta[]
 }
 
 const VACIO: Borrador = {
@@ -57,6 +76,7 @@ const VACIO: Borrador = {
   publicado: false,
   destacado: false,
   slug: '',
+  etiquetas: [],
 }
 
 function desdeVehiculo(v: Vehiculo): Borrador {
@@ -71,6 +91,9 @@ function desdeVehiculo(v: Vehiculo): Borrador {
     publicado: v.publicado,
     destacado: v.destacado,
     slug: v.slug,
+    // Ordenadas acá y no al dibujar: la lista del panel ES el orden, así que
+    // subir una y guardar tiene que mandar lo que se ve, no lo que vino.
+    etiquetas: [...v.etiquetas].sort((a, b) => a.orden - b.orden),
   }
 }
 
@@ -215,6 +238,34 @@ export function Formulario({ id }: FormularioProps) {
     })
   }, [])
 
+  // ── Fotos y video ───────────────────────────────────────────────────────
+  // Se guardan solos, así que lo que hay que mantener al día acá es
+  // `guardada`: de ahí salen el contador del diálogo de borrar, el aviso de
+  // "publicada sin fotos" y las miniaturas que eligen las etiquetas.
+
+  const ponerFotos = useCallback((fotos: Foto[]) => {
+    setGuardada((v) => (v ? { ...v, fotos } : v))
+  }, [])
+
+  const ponerVideo = useCallback((video: Video | null) => {
+    setGuardada((v) => (v ? { ...v, video } : v))
+  }, [])
+
+  /**
+   * Una foto borrada deja sin fondo a las etiquetas que la usaban.
+   *
+   * El repositorio ya lo hizo del lado guardado; esto es lo mismo del lado del
+   * borrador. Se toca `base` ADEMÁS de `b` a propósito: el cambio ya está
+   * guardado, así que contarlo como "cambios sin guardar" sería mentir y
+   * dejaría el aviso encendido sin que haya nada para guardar.
+   */
+  const olvidarFoto = useCallback((fotoId: string) => {
+    const limpiar = (lista: Etiqueta[]) =>
+      lista.map((e) => (e.fotoFondoId === fotoId ? { ...e, fotoFondoId: null } : e))
+    setB((prev) => ({ ...prev, etiquetas: limpiar(prev.etiquetas) }))
+    setBase((prev) => ({ ...prev, etiquetas: limpiar(prev.etiquetas) }))
+  }, [])
+
   const escribirTitulo = (v: string) => {
     set('titulo', v)
     limpiarError('titulo')
@@ -306,6 +357,14 @@ export function Formulario({ id }: FormularioProps) {
         publicado: b.publicado,
         destacado: b.destacado,
         slug,
+        // Se renumera al guardar: el orden de la lista manda sobre el campo,
+        // que después es por el que ordena la ficha.
+        etiquetas: b.etiquetas.map((e, i) => ({
+          ...e,
+          titulo: e.titulo.trim(),
+          texto: e.texto.trim(),
+          orden: i,
+        })),
       }
 
       if (id) {
@@ -544,13 +603,52 @@ export function Formulario({ id }: FormularioProps) {
           className="mt-8"
         />
 
+        {/* ── Fotos, video y etiquetas ──────────────────────────────────
+            Solo con la unidad creada: una foto se sube CONTRA un id, y las
+            etiquetas eligen su fondo entre fotos que todavía no existen. */}
+        {id && guardada ? (
+          <div className="mt-10 grid grid-cols-1 gap-10">
+            <Fotos
+              vehiculoId={guardada.id}
+              fotos={guardada.fotos}
+              onFotos={ponerFotos}
+              onFotoBorrada={olvidarFoto}
+            />
+
+            <VideoUnidad
+              vehiculoId={guardada.id}
+              video={guardada.video}
+              onVideo={ponerVideo}
+              hayFotos={guardada.fotos.length > 0}
+            />
+
+            <Etiquetas
+              etiquetas={b.etiquetas}
+              fotos={guardada.fotos}
+              onCambio={(etiquetas) => set('etiquetas', etiquetas)}
+            />
+          </div>
+        ) : (
+          <section className="mt-10 border-t border-graphite pt-8">
+            <h2 className="font-hud text-bone/55">FOTOS, VIDEO Y ETIQUETAS</h2>
+            <p className="font-hud mt-2 flex gap-2 text-bone/40 normal-case">
+              <span aria-hidden="true" className="text-amber">
+                              </span>
+              <span>
+                Se cargan acá mismo apenas crees la unidad. Tocá «Crear unidad»
+                abajo y la pantalla sigue abierta, con los tres bloques puestos.
+              </span>
+            </p>
+          </section>
+        )}
+
         <Opciones
           label="ESTADO"
+          className="mt-10"
           valor={b.estado}
           opciones={ESTADOS}
           onCambio={(v) => set('estado', v)}
           ayuda="Reservada y vendida salen con el cartel rojo; la vendida se va al final del catálogo."
-          className="mt-8"
         />
 
         <div className="mt-8 grid gap-4">
@@ -585,8 +683,7 @@ export function Formulario({ id }: FormularioProps) {
             </span>
             <span>
               Esta unidad todavía no tiene fotos: en el catálogo va a salir con
-              el cartel «Sin fotos todavía». Las fotos se cargan en la próxima
-              versión del panel.
+              el cartel «Sin fotos todavía». Cargalas más arriba, en FOTOS.
             </span>
           </p>
         )}

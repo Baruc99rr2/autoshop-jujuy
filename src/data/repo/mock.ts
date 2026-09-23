@@ -1,6 +1,7 @@
 import { slugificar } from '../../lib/texto'
 import { MAX_FOTOS } from '../../types/vehiculo'
 import type { Foto, Vehiculo, Video } from '../../types/vehiculo'
+import { borrarBlobs, guardarBlob, urlDeBlob } from './blobs'
 import { SEMILLA } from './semilla'
 import { ErrorRepo } from './tipos'
 import type {
@@ -11,15 +12,22 @@ import type {
 } from './tipos'
 
 /**
- * Implementación de mentira sobre localStorage, para trabajar el catálogo, la
- * ficha y el panel antes de que exista Supabase.
+ * Implementación de mentira, para trabajar el catálogo, la ficha y el panel
+ * antes de que exista Supabase.
  *
- * LÍMITE CONOCIDO: localStorage son ~5 MB por origen y las fotos se guardan
- * como data URL, así que entran pocas y pesadas mal. No es un descuido: es el
- * único almacenamiento que sobrevive a una recarga sin servidor, y el mock se
- * tira a la basura el día que entre Supabase. Cuando no entra, `guardar()`
- * tira un `ErrorRepo` con un mensaje que se puede mostrar en el panel, en vez
- * de fallar en silencio y perder la carga.
+ * VA PARTIDO EN DOS, igual que va a ir Supabase: la FICHA del vehículo —texto,
+ * precio, orden de las fotos— vive en localStorage, y los ARCHIVOS viven en
+ * IndexedDB (ver `blobs.ts`). Donde la ficha guardaba una data URL ahora
+ * guarda una referencia `idb:<clave>`, y esa referencia se cambia por una
+ * dirección usable recién al salir, en `hidratar()`.
+ *
+ * Antes iba todo en localStorage y no daba: son ~5 MB de TEXTO, así que cada
+ * archivo abultaba un tercio más al pasar a base64 y la carga se rompía en la
+ * cuarta foto. Un video no entró nunca.
+ *
+ * Lo que SÍ puede seguir fallando es la ficha, si alguien pega una descripción
+ * enorme. Cuando no entra, `guardar()` tira un `ErrorRepo` con un mensaje que
+ * se puede mostrar en el panel, en vez de fallar en silencio y perder la carga.
  */
 
 // El número de versión se SUBE cada vez que cambia la semilla: lo guardado en
@@ -108,13 +116,64 @@ function renumerar(fotos: Foto[]): Foto[] {
 
 // ── Archivos ──────────────────────────────────────────────────────────────
 
-function aDataUrl(archivo: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const fr = new FileReader()
-    fr.onload = () => res(String(fr.result))
-    fr.onerror = () => rej(new ErrorRepo('No se pudo leer el archivo.'))
-    fr.readAsDataURL(archivo)
-  })
+/** Lo que se guarda en la ficha en lugar del archivo. */
+const REF = 'idb:'
+
+/** Mete los bytes en IndexedDB y devuelve la referencia que va en la ficha. */
+async function guardarArchivo(prefijo: string, archivo: Blob): Promise<string> {
+  const clave = nuevoId(prefijo)
+  await guardarBlob(clave, archivo)
+  return REF + clave
+}
+
+const esRef = (url: string) => url.startsWith(REF)
+const claveDe = (url: string) => url.slice(REF.length)
+
+/**
+ * La referencia, cambiada por una dirección que un `<img>` entiende.
+ *
+ * Si el archivo no está —almacenamiento borrado a mano, otro navegador— se
+ * devuelve la referencia tal cual: la imagen se ve rota, que es la verdad. Un
+ * `src` vacío sería peor, porque el navegador lo resuelve contra la página y
+ * se descarga el HTML como si fuera la foto.
+ */
+async function hidratarUrl(url: string): Promise<string> {
+  if (!esRef(url)) return url
+  return (await urlDeBlob(claveDe(url))) ?? url
+}
+
+/**
+ * Se aplica SOLO a lo que sale del repositorio, nunca a lo que se guarda: la
+ * ficha en localStorage tiene que seguir teniendo la referencia, porque una
+ * dirección de objeto muere con la pestaña que la creó.
+ */
+async function hidratar(original: Vehiculo): Promise<Vehiculo> {
+  // Copia profunda ANTES de tocar nada: es el único lugar por el que sale una
+  // unidad, así que acá se cumple la promesa de que quien lee no puede mutar
+  // lo guardado ni las etiquetas de la lista de trabajo.
+  const v = estructurar(original)
+  v.fotos = await Promise.all(
+    v.fotos.map(async (f) => ({ ...f, url: await hidratarUrl(f.url) })),
+  )
+  if (v.video) {
+    v.video = {
+      ...v.video,
+      url: await hidratarUrl(v.video.url),
+      posterUrl: await hidratarUrl(v.video.posterUrl),
+    }
+  }
+  return v
+}
+
+const hidratarLista = (lista: Vehiculo[]) => Promise.all(lista.map(hidratar))
+
+/** Las claves de IndexedDB que una unidad tiene para sí sola. */
+function archivosDe(v: Vehiculo): string[] {
+  const refs = [
+    ...v.fotos.map((f) => f.url),
+    ...(v.video ? [v.video.url, v.video.posterUrl] : []),
+  ]
+  return [...new Set(refs.filter(esRef).map(claveDe))]
 }
 
 /**
@@ -181,24 +240,28 @@ export const repoMock: RepoVehiculos = {
       return porPrecio(a, b, orden === 'precio-asc')
     })
 
-    return limite ? lista.slice(0, limite) : lista
+    return hidratarLista(limite ? lista.slice(0, limite) : lista)
   },
 
   async obtenerPorId(vid) {
-    return leer().find((v) => v.id === vid) ?? null
+    const v = leer().find((x) => x.id === vid)
+    return v ? hidratar(v) : null
   },
 
   async obtenerPorSlug(slug) {
     // Sin filtro de publicado: la ficha decide qué hacer con un borrador. Que
     // el repo devuelva null acá haría imposible previsualizar desde el panel.
-    return leer().find((v) => v.slug === slug) ?? null
+    const v = leer().find((x) => x.slug === slug)
+    return v ? hidratar(v) : null
   },
 
   async listarDestacados(limite = 3) {
-    return leer()
-      .filter((v) => v.publicado && v.destacado)
-      .sort(masNuevoPrimero)
-      .slice(0, limite)
+    return hidratarLista(
+      leer()
+        .filter((v) => v.publicado && v.destacado)
+        .sort(masNuevoPrimero)
+        .slice(0, limite),
+    )
   },
 
   async crear(datos: NuevoVehiculo) {
@@ -224,7 +287,7 @@ export const repoMock: RepoVehiculos = {
       actualizadoEn: t,
     }
     guardar([v, ...lista])
-    return estructurar(v)
+    return hidratar(v)
   },
 
   async actualizar(vid, cambios: CambiosVehiculo) {
@@ -239,16 +302,19 @@ export const repoMock: RepoVehiculos = {
     v.actualizadoEn = ahora()
 
     guardar(lista)
-    return estructurar(v)
+    return hidratar(v)
   },
 
   async eliminar(vid) {
     const lista = leer()
-    const quedan = lista.filter((v) => v.id !== vid)
-    if (quedan.length === lista.length) {
-      throw new ErrorRepo(`No existe el vehículo ${vid}.`)
-    }
-    guardar(quedan)
+    const v = lista.find((x) => x.id === vid)
+    if (!v) throw new ErrorRepo(`No existe el vehículo ${vid}.`)
+
+    guardar(lista.filter((x) => x.id !== vid))
+    // Los archivos se borran DESPUÉS de que la ficha ya no está: si esto
+    // fallara, lo que queda es un archivo huérfano en IndexedDB y no una
+    // unidad en el listado apuntando a fotos que ya no existen.
+    await borrarBlobs(archivosDe(v))
   },
 
   async subirFoto(vid, archivo) {
@@ -258,11 +324,11 @@ export const repoMock: RepoVehiculos = {
       throw new ErrorRepo(`Son ${MAX_FOTOS} fotos como máximo por unidad.`)
     }
 
-    const url = await aDataUrl(archivo)
-    const { ancho, alto } = await medir(url)
+    const ref = await guardarArchivo('foto', archivo)
+    const { ancho, alto } = await medir(await hidratarUrl(ref))
     const foto: Foto = {
       id: nuevoId('foto'),
-      url,
+      url: ref,
       ancho,
       alto,
       orden: v.fotos.length,
@@ -271,13 +337,14 @@ export const repoMock: RepoVehiculos = {
     v.fotos = renumerar([...v.fotos, foto])
     v.actualizadoEn = ahora()
     guardar(lista)
-    return estructurar(foto)
+    return { ...foto, url: await hidratarUrl(ref) }
   },
 
   async eliminarFoto(vid, fotoId) {
     const lista = leer()
     const v = buscar(lista, vid)
 
+    const fuera = v.fotos.find((f) => f.id === fotoId)
     v.fotos = renumerar(v.fotos.filter((f) => f.id !== fotoId))
     // Una etiqueta que apuntaba a esa foto queda sin fondo, no rota.
     v.etiquetas = v.etiquetas.map((e) =>
@@ -285,6 +352,17 @@ export const repoMock: RepoVehiculos = {
     )
     v.actualizadoEn = ahora()
     guardar(lista)
+
+    // El archivo se borra SOLO si no quedó nadie apuntándole. El póster del
+    // video puede ser la misma foto —es a lo que se cae `subirVideo` cuando no
+    // le dan uno— y borrar el archivo dejaría el bloque de video sin imagen.
+    if (fuera) {
+      const usadas = new Set(archivosDe(v))
+      const claves = archivosDe({ ...v, fotos: [fuera], video: null }).filter(
+        (c) => !usadas.has(c),
+      )
+      await borrarBlobs(claves)
+    }
   },
 
   async reordenarFotos(vid, idsEnOrden) {
@@ -302,33 +380,48 @@ export const repoMock: RepoVehiculos = {
     v.fotos = renumerar(movidas)
     v.actualizadoEn = ahora()
     guardar(lista)
-    return estructurar(v.fotos)
+    return (await hidratar(v)).fotos
   },
 
   async subirVideo(vid, archivo, poster) {
     const lista = leer()
     const v = buscar(lista, vid)
 
-    const url = await aDataUrl(archivo)
+    // Subir otro reemplaza al anterior, así que los archivos del viejo se van.
+    const viejos = v.video ? archivosDe({ ...v, fotos: [] }) : []
+
+    const url = await guardarArchivo('video', archivo)
     // Sin póster propio se usa la portada: el video va con `preload="none"`,
     // así que sin una imagen quedaría un rectángulo negro.
     const posterUrl = poster
-      ? await aDataUrl(poster)
+      ? await guardarArchivo('poster', poster)
       : (v.fotos[0]?.url ?? '/img/hero-poster.jpg')
 
     const video: Video = { url, posterUrl, pesoBytes: archivo.size }
     v.video = video
     v.actualizadoEn = ahora()
     guardar(lista)
-    return estructurar(video)
+
+    const enUso = new Set(archivosDe(v))
+    await borrarBlobs(viejos.filter((c) => !enUso.has(c)))
+
+    return (await hidratar(v)).video as Video
   },
 
   async eliminarVideo(vid) {
     const lista = leer()
     const v = buscar(lista, vid)
+    if (!v.video) return
+
+    const claves = archivosDe({ ...v, fotos: [] })
     v.video = null
     v.actualizadoEn = ahora()
     guardar(lista)
+
+    // El póster puede ser una foto de la unidad, que sigue viva: solo se borra
+    // lo que era del video y de nadie más.
+    const enUso = new Set(archivosDe(v))
+    await borrarBlobs(claves.filter((c) => !enUso.has(c)))
   },
 }
 
