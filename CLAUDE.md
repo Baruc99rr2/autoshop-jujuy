@@ -6,14 +6,14 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
-- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin` (lazy) y 404. La intro
-  corre solo si la pestaña ENTRÓ por `/`. Falta `/admin`.
+- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin` (lazy, falta) y 404; la intro corre solo si la pestaña ENTRÓ por `/`.
 - `src/data/repo/` es la única puerta al catálogo (mock; subir `CLAVE`, hoy v4).
 - `/catalogo`: chips + buscador EN LA URL, lista/grilla 2×2 en mobile (localStorage), y anota su query en sessionStorage para el "volver" de la ficha.
-- `/vehiculo/:slug`: titular en escala `contenido`, precio sticky con
-  `useFitText`, galería con techo que abre `VisorFotos`, barra fija de mobile.
-- Contenido: sección 06 = SERVICIOS (`data/servicios.ts`, ancla `#postventa`,
-  grilla de 3); el titular del hero se corta a mano y su clamp se MIDE (ver CSS).
+- `/vehiculo/:slug`: titular `contenido`, precio sticky con `useFitText`, galería con techo que abre `VisorFotos`, barra fija de mobile.
+- `VideoVehiculo`: de foto a video con compresión, visor y marcas de encuadre. Las DOS formas del clip-path llevan 8 vértices o la transición salta.
+- `MeshOverlay` es un `<svg>`: `<pattern>` con diagonales y cortes + feTurbulence/feDisplacementMap. El filtro corre SOLO con puntero fino (medido).
+- Sección 06 = SERVICIOS (`data/servicios.ts`, ancla `#postventa`, grilla de 3).
+- El titular del hero se corta a mano y su clamp se MIDE con nowrap (ver el CSS).
 - Header: logo `<Link>` a `/`, velo al scrollear, y oculto con el menú abierto.
 - Los flotantes se apartan al llegar al footer (`lib/pie-a-la-vista.ts`).
 

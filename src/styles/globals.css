@@ -312,15 +312,21 @@
    MALLA ÁMBAR (MeshOverlay)
    ───────────────────────────────────────────────────────────── */
 
+/* La malla es un <svg> y ya no dos degradados: el dibujo —diagonales, tramos
+   cortados— vive en un <pattern> y la ondulación en un filtro. Lo que queda
+   acá es la caja, el color y la linterna, que no cambiaron.
+
+   `color` y no `fill`: el <pattern> dibuja con `currentColor`, así que el
+   acento se define una sola vez y cualquier variante futura de tono se
+   resuelve cambiando esta línea. */
 .mesh {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 40;
-  background-image:
-    linear-gradient(to right, var(--color-amber) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-amber) 1px, transparent 1px);
-  background-size: 56px 56px;
+  color: var(--color-amber);
   opacity: var(--mesh-opacity, 0.28);
   mask-image: var(
     --mesh-mask,
@@ -1216,6 +1222,157 @@
    inicial. */
 .gal-foto {
   transition: clip-path 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — EL BLOQUE DE VIDEO
+
+   En reposo es una foto dentro del bisel de siempre. Con la intención —hover
+   en escritorio, primer toque en un teléfono— la caja se comprime, la foto se
+   funde con el video, el bisel se abre a una figura con las cuatro esquinas
+   cortadas y aparecen las marcas de encuadre. Se lee como un visor de cámara
+   que enfoca.
+
+   ── LAS DOS FORMAS TIENEN OCHO VÉRTICES ──────────────────────────────
+   Y ESO NO ES NEGOCIABLE: `clip-path` interpola punto por punto, así que dos
+   polígonos con distinta cantidad de vértices no se transicionan, saltan de
+   uno al otro de un corte.
+
+   El bisel de reposo corta DOS esquinas, así que sobran dos vértices. En vez
+   de dibujarlo con seis, se dibuja con ocho poniendo un punto DUPLICADO sobre
+   cada esquina sin cortar. Al pasar al estado activo esos pares se separan y
+   el corte "nace" de la esquina, que es justo el movimiento que se busca:
+
+     reposo   (b,0) (100,0) (100,0)   (100,100-b) (100-b,100) (0,100) (0,100)   (0,b)
+     activo   (c,0) (100-c,0) (100,c) (100,100-c) (100-c,100) (c,100) (0,100-c) (0,c)
+
+   `--b` es el bisel y `--c` el corte del visor; la capa interior los lleva 1px
+   más chicos para que el borde quede paralelo, igual que en `Bevel`.
+   ───────────────────────────────────────────────────────────── */
+
+.vv-forma {
+  clip-path: polygon(
+    var(--b) 0,
+    100% 0,
+    100% 0,
+    100% calc(100% - var(--b)),
+    calc(100% - var(--b)) 100%,
+    0 100%,
+    0 100%,
+    0 var(--b)
+  );
+  transition: clip-path 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.vv[data-activo='true'] .vv-forma {
+  clip-path: polygon(
+    var(--c) 0,
+    calc(100% - var(--c)) 0,
+    100% var(--c),
+    100% calc(100% - var(--c)),
+    calc(100% - var(--c)) 100%,
+    var(--c) 100%,
+    0 calc(100% - var(--c)),
+    0 var(--c)
+  );
+}
+
+/* La compresión. Va en la caja y NO en el marco, que es lo que deja las
+   marcas de encuadre afuera: la foto se retira y el visor se queda donde
+   estaba, que es lo que hace leer el gesto como "esto se está enfocando" y no
+   como "esto se achicó". */
+.vv-caja {
+  display: block;
+  width: 100%;
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.vv[data-activo='true'] .vv-caja {
+  transform: scale(0.96);
+}
+
+/* ── Las marcas de encuadre ──────────────────────────────────────────
+   Cuatro escuadras en las esquinas del marco. Son dos bordes de un cuadrado
+   vacío, no un SVG: a 20px, dos líneas de 1px es todo lo que hay que dibujar.
+   Entran con un retardo corto para que la caja ya se esté comprimiendo cuando
+   aparecen, y no las dos cosas a la vez. */
+.vv-marca {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 0 solid var(--color-amber);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.3s ease 0.1s,
+    transform 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.1s;
+  pointer-events: none;
+}
+
+.vv[data-activo='true'] .vv-marca {
+  opacity: 0.9;
+  transform: scale(1);
+}
+
+.vv-marca-ai {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.vv-marca-ad {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.vv-marca-bi {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.vv-marca-bd {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* El cruce entre la foto y el video. Solo `opacity`: las dos capas están
+   apiladas y ocupan lo mismo, así que no hay nada que mover. */
+.vv-capa {
+  transition: opacity 0.45s ease;
+}
+
+/* ── Sin animación ───────────────────────────────────────────────────
+   Se va la compresión, se va el cambio de forma y se van las marcas. Queda el
+   cambio de foto a video, que no es decoración: es el contenido. */
+@media (prefers-reduced-motion: reduce) {
+  .vv-caja,
+  .vv-forma,
+  .vv-capa,
+  .vv-marca {
+    transition: none;
+  }
+  .vv[data-activo='true'] .vv-caja {
+    transform: none;
+  }
+  .vv[data-activo='true'] .vv-forma {
+    clip-path: polygon(
+      var(--b) 0,
+      100% 0,
+      100% 0,
+      100% calc(100% - var(--b)),
+      calc(100% - var(--b)) 100%,
+      0 100%,
+      0 100%,
+      0 var(--b)
+    );
+  }
+  .vv-marca {
+    display: none;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
