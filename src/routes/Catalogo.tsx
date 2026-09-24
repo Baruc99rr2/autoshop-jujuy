@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import Bevel from '../components/Bevel'
+import ErrorCarga from '../components/ErrorCarga'
 import Icono from '../components/Icono'
 import PaginaInterna from '../components/PaginaInterna'
 import VehiculoCard, {
@@ -137,7 +138,12 @@ export function Catalogo() {
   const consulta = `${condicion}|${q}`
   const [datos, setDatos] = useState<{ consulta: string; lista: Vehiculo[] }>()
   const lista = datos?.lista ?? []
-  const cargando = datos?.consulta !== consulta
+  // La falla también se guarda con su consulta: cambiar de filtro después de
+  // un error vuelve a pedir, y el cartel se va solo si el pedido nuevo anda.
+  const [falla, setFalla] = useState<{ consulta: string; intento: number }>()
+  const [intento, setIntento] = useState(0)
+  const fallo = falla?.consulta === consulta && falla.intento === intento
+  const cargando = datos?.consulta !== consulta && !fallo
 
   // Lo que se ve tipeado. Es estado local y no la URL directamente: escribir
   // "ram" contra la URL son tres entradas en el historial y tres navegaciones,
@@ -201,25 +207,29 @@ export function Catalogo() {
   useEffect(() => {
     let vivo = true
     ;(async () => {
-      const encontrados = await repo.listar({
-        condicion: condicion === 'todos' ? undefined : (condicion as Condicion),
-        texto: q,
-        orden: 'recientes',
-      })
-      if (!vivo) return
-      setDatos({ consulta, lista: vendidosAlFinal(encontrados) })
+      try {
+        const encontrados = await repo.listar({
+          condicion: condicion === 'todos' ? undefined : (condicion as Condicion),
+          texto: q,
+          orden: 'recientes',
+        })
+        if (!vivo) return
+        setDatos({ consulta, lista: vendidosAlFinal(encontrados) })
+      } catch {
+        if (vivo) setFalla({ consulta, intento })
+      }
     })()
     return () => {
       vivo = false
     }
-  }, [condicion, q, consulta])
+  }, [condicion, q, consulta, intento])
 
   const hayFiltro = condicion !== 'todos' || q !== ''
   // Los esqueletos son para la PRIMERA carga, cuando no hay nada que mostrar.
   // Al cambiar de filtro con resultados en pantalla se atenúa la grilla y se
   // reemplaza cuando llegan los nuevos: parpadear a esqueletos en cada tecla
   // es más ruidoso que esperar.
-  const esqueletos = cargando && lista.length === 0
+  const esqueletos = cargando && lista.length === 0 && !fallo
 
   return (
     <PaginaInterna
@@ -340,8 +350,10 @@ export function Catalogo() {
         <span aria-hidden="true" className="text-amber">
           \
         </span>
-        <span className="num">{esqueletos ? 'BUSCANDO…' : contar(lista.length)}</span>
-        {hayFiltro && !esqueletos && (
+        <span className="num">
+          {esqueletos ? 'BUSCANDO…' : fallo ? 'SIN CONEXIÓN' : contar(lista.length)}
+        </span>
+        {hayFiltro && !esqueletos && !fallo && (
           <button
             type="button"
             onClick={limpiarTodo}
@@ -353,7 +365,15 @@ export function Catalogo() {
       </p>
 
       {/* ── Grilla ──────────────────────────────────────────────────── */}
-      {esqueletos ? (
+      {fallo ? (
+        <ErrorCarga
+          className="mt-8"
+          titulo="No pudimos traer las unidades"
+          texto="Puede ser la conexión. Revisá que tengas internet y probá de nuevo; si sigue sin cargar, preguntanos por WhatsApp qué hay en el salón."
+          onReintentar={() => setIntento((n) => n + 1)}
+          conWhatsapp
+        />
+      ) : esqueletos ? (
         <div className={VISTAS[vista].grilla}>
           {Array.from({ length: ESQUELETOS }, (_, i) => (
             <VehiculoCardEsqueleto key={i} className={EN_GRILLA} />

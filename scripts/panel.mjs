@@ -9,7 +9,7 @@
  * ninguna otra forma.
  *
  *   npm run shots -- --panel          # solo esto, con build
- *   npm run shots -- --panel --fast   # solo esto, reusando dist/
+ *   npm run shots -- --panel --fast   # solo esto, reusando dist-mock/
  *
  * Las fotos de prueba se DIBUJAN en un canvas de 2400x1600: hacen falta más
  * grandes que el tope de 1600 px para que la compresión del panel tenga algo

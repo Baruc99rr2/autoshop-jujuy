@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import Bevel from '../Bevel'
+import ErrorCarga from '../ErrorCarga'
 import { AreaTexto, Campo, CampoMiles, Interruptor, Opciones } from './Campos'
 import Dialogo from './Dialogo'
 import Etiquetas from './Etiquetas'
@@ -183,6 +184,9 @@ export function Formulario({ id }: FormularioProps) {
   const [errores, setErrores] = useState<Errores>({})
   const [falla, setFalla] = useState<string | null>(null)
   const [cargando, setCargando] = useState(Boolean(id))
+  /** Abrir la unidad falló por la red, que no es lo mismo que "no existe". */
+  const [fallaCarga, setFallaCarga] = useState<string | null>(null)
+  const [intento, setIntento] = useState(0)
   const [ocupado, setOcupado] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
   const [dialogo, setDialogo] = useState<null | 'salir' | 'borrar'>(null)
@@ -201,6 +205,8 @@ export function Formulario({ id }: FormularioProps) {
     if (!id) return
     let vivo = true
     ;(async () => {
+      setFallaCarga(null)
+      setCargando(true)
       try {
         const v = await repo.obtenerPorId(id)
         if (!vivo) return
@@ -213,7 +219,7 @@ export function Formulario({ id }: FormularioProps) {
           setGuardada(v)
         }
       } catch (err) {
-        if (vivo) setFalla(err instanceof Error ? err.message : 'No se pudo abrir la unidad.')
+        if (vivo) setFallaCarga(err instanceof Error ? err.message : 'No se pudo abrir la unidad.')
       } finally {
         if (vivo) setCargando(false)
       }
@@ -221,7 +227,7 @@ export function Formulario({ id }: FormularioProps) {
     return () => {
       vivo = false
     }
-  }, [id])
+  }, [id, intento])
 
   const set = useCallback(<K extends keyof Borrador>(k: K, v: Borrador[K]) => {
     setB((prev) => ({ ...prev, [k]: v }))
@@ -413,7 +419,34 @@ export function Formulario({ id }: FormularioProps) {
 
   if (cargando) {
     return (
-      <Marco indice="01" eyebrow="PANEL" titulo="Abriendo la unidad…" ancho="formulario" />
+      <Marco
+        indice="01"
+        eyebrow="PANEL"
+        titulo="Abriendo la unidad…"
+        ancho="formulario"
+        arriba={<Volver onVolver={() => navegar('/admin')} />}
+      >
+        <FormularioEsqueleto />
+      </Marco>
+    )
+  }
+
+  if (fallaCarga) {
+    return (
+      <Marco
+        indice="01"
+        eyebrow="PANEL"
+        titulo="Editar unidad"
+        ancho="formulario"
+        arriba={<Volver onVolver={() => navegar('/admin')} />}
+      >
+        <ErrorCarga
+          className="mt-8"
+          titulo="No pude abrir esta unidad"
+          texto={fallaCarga}
+          onReintentar={() => setIntento((n) => n + 1)}
+        />
+      </Marco>
     )
   }
 
@@ -830,6 +863,25 @@ export function Formulario({ id }: FormularioProps) {
         </p>
       </Dialogo>
     </Marco>
+  )
+}
+
+/**
+ * La forma del formulario mientras llega la unidad: los primeros campos, con
+ * su alto real. Un título solo en una pantalla negra se lee como colgado.
+ */
+function FormularioEsqueleto() {
+  return (
+    <div className="mt-10 grid animate-pulse grid-cols-1 gap-8" aria-hidden="true">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i}>
+          <div className="h-3.5 w-24 bg-graphite/60" />
+          <div className="mt-3 h-[3.25rem] bg-graphite/40" />
+          <div className="mt-2.5 h-3 w-2/3 bg-graphite/25" />
+        </div>
+      ))}
+      <div className="h-40 bg-graphite/25" />
+    </div>
   )
 }
 

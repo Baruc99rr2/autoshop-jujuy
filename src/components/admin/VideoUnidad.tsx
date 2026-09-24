@@ -49,6 +49,8 @@ export function VideoUnidad({ vehiculoId, video, onVideo, hayFotos }: VideoProps
 
   const [etapa, setEtapa] = useState<Etapa>(null)
   const [falla, setFalla] = useState<string | null>(null)
+  /** El archivo que no llegó a subir, para reintentar sin volver a elegirlo. */
+  const [fallido, setFallido] = useState<File | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [confirmando, setConfirmando] = useState(false)
 
@@ -56,6 +58,7 @@ export function VideoUnidad({ vehiculoId, video, onVideo, hayFotos }: VideoProps
 
   const elegir = async (archivo: File | undefined) => {
     setFalla(null)
+    setFallido(null)
     setAviso(null)
     if (!archivo) return
 
@@ -82,6 +85,7 @@ export function VideoUnidad({ vehiculoId, video, onVideo, hayFotos }: VideoProps
       }
     } catch (err) {
       setFalla(err instanceof Error ? err.message : 'No se pudo subir el video.')
+      setFallido(archivo)
     } finally {
       setEtapa(null)
       if (entrada.current) entrada.current.value = ''
@@ -211,6 +215,12 @@ export function VideoUnidad({ vehiculoId, video, onVideo, hayFotos }: VideoProps
           <span aria-hidden="true">\</span>
           <span>{falla}</span>
         </p>
+      )}
+
+      {falla && fallido && !ocupado && (
+        <BotonChico onClick={() => elegir(fallido)} className="mt-3 w-full">
+          PROBAR DE NUEVO
+        </BotonChico>
       )}
 
       {aviso && (

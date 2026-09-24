@@ -34,3 +34,15 @@ export function slugificar(titulo: string): string {
  * la dirección se escribe a mano.
  */
 export const SLUG_VALIDO = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/**
+ * Sin acentos ni mayúsculas, para comparar texto escrito a mano. Es la misma
+ * forma que la columna `busqueda` de la base (`lower(unaccent(...))`), así
+ * que lo que se busca y donde se busca hablan igual.
+ */
+export function plano(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+}

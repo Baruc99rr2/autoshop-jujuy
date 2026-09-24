@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { Link } from 'react-router'
 import Bevel from './Bevel'
+import ErrorCarga from './ErrorCarga'
 import SectionHeader from './SectionHeader'
-import VehiculoCard from './VehiculoCard'
+import VehiculoCard, { VehiculoCardEsqueleto } from './VehiculoCard'
 import { FILTROS } from '../data/catalogo'
 import { seccion } from '../data/nav'
 import { repo } from '../data/repo'
@@ -41,6 +43,8 @@ export function Vehiculos() {
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]['id']>('todos')
   const [lista, setLista] = useState<Vehiculo[]>([])
   const [cargando, setCargando] = useState(true)
+  const [fallo, setFallo] = useState(false)
+  const [intento, setIntento] = useState(0)
   const riel = useRef<HTMLDivElement>(null)
   const arrastre = useRef<{
     x: number
@@ -55,19 +59,40 @@ export function Vehiculos() {
   useEffect(() => {
     let vivo = true
     ;(async () => {
-      const destacados = await repo.listarDestacados(CUANTAS)
-      const final =
-        destacados.length > 0
-          ? destacados
-          : await repo.listar({ orden: 'recientes', limite: CUANTAS })
-      if (!vivo) return
-      setLista(final)
-      setCargando(false)
+      try {
+        const destacados = await repo.listarDestacados(CUANTAS)
+        const final =
+          destacados.length > 0
+            ? destacados
+            : await repo.listar({ orden: 'recientes', limite: CUANTAS })
+        if (!vivo) return
+        setLista(final)
+        setFallo(false)
+      } catch {
+        if (vivo) setFallo(true)
+      } finally {
+        if (vivo) setCargando(false)
+      }
     })()
     return () => {
       vivo = false
     }
-  }, [])
+  }, [intento])
+
+  // Las cards y el cartel de error no miden lo mismo que los esqueletos: al
+  // llegar la respuesta, lo de abajo se corre y los pines tienen que volver
+  // a medir.
+  useEffect(() => {
+    if (cargando) return
+    const t = requestAnimationFrame(() => ScrollTrigger.refresh())
+    return () => cancelAnimationFrame(t)
+  }, [cargando, fallo])
+
+  const reintentar = () => {
+    setFallo(false)
+    setCargando(true)
+    setIntento((n) => n + 1)
+  }
 
   const visibles =
     filtro === 'todos' ? lista : lista.filter((v) => v.condicion === filtro)
@@ -174,12 +199,27 @@ export function Vehiculos() {
         // gesto del riel con el fantasma del link colgando del mouse.
         onDragStart={(e) => e.preventDefault()}
       >
-        {visibles.map((v) => (
-          <VehiculoCard key={v.id} v={v} className={ANCHO_RIEL} />
-        ))}
+        {/* Mientras llegan, esqueletos del mismo ancho que las cards: debajo
+            hay secciones con pin, y una sección que crece de golpe cuando
+            responde la red corre todos los puntos de ScrollTrigger. */}
+        {cargando
+          ? Array.from({ length: CUANTAS }, (_, i) => (
+              <VehiculoCardEsqueleto key={i} className={ANCHO_RIEL} />
+            ))
+          : visibles.map((v) => <VehiculoCard key={v.id} v={v} className={ANCHO_RIEL} />)}
       </div>
 
-      {!cargando && visibles.length === 0 && (
+      {fallo && (
+        <div className="shell">
+          <ErrorCarga
+            titulo="No pudimos traer las unidades"
+            onReintentar={reintentar}
+            conWhatsapp
+          />
+        </div>
+      )}
+
+      {!cargando && !fallo && visibles.length === 0 && (
         <p className="mt-2 text-bone/55 shell">
           No hay unidades cargadas con esa condición. Escribinos y te avisamos
           apenas entre alguna.

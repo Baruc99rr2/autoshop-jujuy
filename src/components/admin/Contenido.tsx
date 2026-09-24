@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import ErrorCarga from '../ErrorCarga'
 import BloqueContadores from './BloqueContadores'
 import BloquePreguntas from './BloquePreguntas'
 import BloqueServicios from './BloqueServicios'
 import Dialogo from './Dialogo'
-import Marco, { AvisoError } from './Marco'
+import Marco from './Marco'
 import { repoContenido } from '../../data/repo'
 import type { Contadores, Pregunta, Servicio } from '../../types/contenido'
 
@@ -33,6 +34,7 @@ export function Contenido() {
     preguntas: false,
   })
   const [destino, setDestino] = useState<string | null>(null)
+  const [intento, setIntento] = useState(0)
 
   useEffect(() => {
     let vivo = true
@@ -50,7 +52,7 @@ export function Contenido() {
     return () => {
       vivo = false
     }
-  }, [])
+  }, [intento])
 
   // Estable: cada bloque avisa desde un efecto que depende de esta función,
   // y una nueva en cada render lo haría avisar en cada render.
@@ -91,12 +93,18 @@ export function Contenido() {
       }}
     >
       {falla && (
-        <div className="mt-8">
-          <AvisoError texto={falla} />
-        </div>
+        <ErrorCarga
+          className="mt-8"
+          titulo="No pude traer el contenido del sitio"
+          texto={falla}
+          onReintentar={() => {
+            setFalla(null)
+            setIntento((n) => n + 1)
+          }}
+        />
       )}
 
-      {!datos && !falla && <p className="font-hud mt-8 text-bone/45">CARGANDO…</p>}
+      {!datos && !falla && <ContenidoEsqueleto />}
 
       {datos && (
         <div className="mt-10 grid grid-cols-1 gap-14">
@@ -124,6 +132,25 @@ export function Contenido() {
         </p>
       </Dialogo>
     </Marco>
+  )
+}
+
+/** Los tres bloques, vacíos, mientras llega el contenido. */
+function ContenidoEsqueleto() {
+  return (
+    <div className="mt-10 grid animate-pulse grid-cols-1 gap-14" aria-hidden="true">
+      {[4, 3, 3].map((filas, i) => (
+        <div key={i} className="border-t border-graphite pt-8">
+          <div className="h-4 w-40 bg-graphite/60" />
+          <div className="mt-3 h-3 w-3/4 bg-graphite/30" />
+          <div className="mt-6 grid grid-cols-1 gap-3">
+            {Array.from({ length: filas }, (_, k) => (
+              <div key={k} className="h-20 bg-graphite/35" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

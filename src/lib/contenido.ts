@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { repoContenido } from '../data/repo'
 import type { Contadores, Pregunta, Servicio } from '../types/contenido'
 
@@ -8,7 +8,14 @@ import type { Contadores, Pregunta, Servicio } from '../types/contenido'
  * Lo leen tres lugares a la vez —el home, el menú y el footer, que tienen que
  * saber si Servicios y Preguntas existen para no ofrecer un link a una sección
  * que no está— y con Supabase serían tres viajes iguales. Acá hay uno solo:
- * el primero que lo pide dispara la promesa y el resto se cuelga de ella.
+ * el primero que lo pide dispara el pedido y el resto espera el mismo.
+ *
+ * SI FALLA, REINTENTA SOLO. Mientras tanto el inicio se dibuja sin cifras,
+ * sin servicios y sin preguntas —mejor que un inicio que no termina de
+ * cargar— y en cuanto vuelve la conexión (o a los pocos segundos) se vuelve a
+ * pedir y las secciones aparecen. No lleva un botón de "reintentar": son
+ * franjas de una portada, y un cartel de error en medio de la vidriera
+ * asusta más de lo que ayuda. Lo que sí tiene cartel es el stock.
  *
  * El panel llama a `olvidarContenido()` después de guardar: el panel y el
  * sitio viven en la misma pestaña, y sin eso volver al inicio mostraría lo de
@@ -22,39 +29,78 @@ export interface ContenidoSitio {
   preguntas: Pregunta[]
 }
 
-let pedido: Promise<ContenidoSitio> | null = null
+const VACIO: ContenidoSitio = { contadores: null, servicios: [], preguntas: [] }
 
-function cargar(): Promise<ContenidoSitio> {
-  pedido ??= Promise.all([
+/** `null` mientras llega el primer pedido. */
+let estado: ContenidoSitio | null = null
+/** Lo que hay en `estado` ya no sirve: hay que volver a pedir. */
+let viejo = true
+let enVuelo = false
+let reintentos = 0
+let espera: ReturnType<typeof setTimeout> | undefined
+const oyentes = new Set<() => void>()
+
+const avisar = () => oyentes.forEach((fn) => fn())
+
+/** Cuántas veces se reintenta solo, y cada cuánto (se estira de a poco). */
+const REINTENTOS = 4
+const PAUSA_MS = 3000
+
+function cargar(): void {
+  if (enVuelo) return
+  enVuelo = true
+  clearTimeout(espera)
+  Promise.all([
     repoContenido.obtenerContadores(),
     repoContenido.listarServicios(),
     repoContenido.listarPreguntas(),
   ])
-    .then(([contadores, servicios, preguntas]) => ({ contadores, servicios, preguntas }))
-    .catch(() => {
-      // Si el repositorio falla, el sitio sigue: sin cifras, sin servicios y
-      // sin preguntas, que es mejor que un inicio que no termina de cargar.
-      pedido = null
-      return { contadores: null, servicios: [], preguntas: [] }
+    .then(([contadores, servicios, preguntas]) => {
+      estado = { contadores, servicios, preguntas }
+      viejo = false
+      reintentos = 0
     })
-  return pedido
+    .catch(() => {
+      // Lo último bueno se queda; si nunca hubo nada, el inicio va vacío.
+      estado ??= VACIO
+      viejo = true
+      if (reintentos < REINTENTOS) {
+        reintentos++
+        espera = setTimeout(cargar, PAUSA_MS * reintentos)
+      }
+    })
+    .finally(() => {
+      enVuelo = false
+      avisar()
+    })
+}
+
+// Volvió la conexión: si lo que hay es viejo o un vacío por falla, se pide.
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    if (viejo && oyentes.size > 0) {
+      reintentos = 0
+      cargar()
+    }
+  })
 }
 
 export function olvidarContenido(): void {
-  pedido = null
+  viejo = true
 }
+
+function suscribir(fn: () => void): () => void {
+  oyentes.add(fn)
+  return () => oyentes.delete(fn)
+}
+
+const leer = () => estado
 
 /** `null` mientras carga. */
 export function useContenido(): ContenidoSitio | null {
-  const [c, setC] = useState<ContenidoSitio | null>(null)
+  const c = useSyncExternalStore(suscribir, leer, leer)
   useEffect(() => {
-    let vivo = true
-    cargar().then((d) => {
-      if (vivo) setC(d)
-    })
-    return () => {
-      vivo = false
-    }
+    if (viejo) cargar()
   }, [])
   return c
 }

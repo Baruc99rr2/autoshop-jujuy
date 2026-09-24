@@ -4,7 +4,7 @@ import Header from '../Header'
 import Rail from '../Rail'
 import { Campo } from './Campos'
 import { AvisoError } from './Marco'
-import { ErrorSesion, iniciarSesion } from '../../data/sesion'
+import { avisoDeSalida, ErrorSesion, iniciarSesion } from '../../data/sesion'
 
 /**
  * La puerta del panel.
@@ -12,9 +12,9 @@ import { ErrorSesion, iniciarSesion } from '../../data/sesion'
  * Una sola columna, centrada, sin nada más en pantalla: no hay a dónde ir
  * desde acá salvo entrar o volver al sitio por el logo.
  *
- * DICE QUE TODAVÍA NO VALIDA NADA. Ocultarlo sería peor: la dueña probaría
- * una contraseña cualquiera, entraría igual y creería que su cuenta está mal
- * hecha. El cartel es feo a propósito y se va el día que entre Supabase Auth.
+ * Si la sesión se cerró sola —venció, o se cerró desde otro lado— lo dice
+ * arriba del formulario. Sin eso, la dueña aparecería acá en medio de una
+ * carga sin saber qué tocó.
  */
 export function Login() {
   const uid = useId()
@@ -22,6 +22,7 @@ export function Login() {
   const [clave, setClave] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [entrando, setEntrando] = useState(false)
+  const [aviso] = useState(avisoDeSalida)
 
   const refEmail = useRef<HTMLInputElement>(null)
   const refClave = useRef<HTMLInputElement>(null)
@@ -72,6 +73,18 @@ export function Login() {
             Desde acá se cargan y se editan las unidades del catálogo.
           </p>
 
+          {aviso && !error && (
+            <p
+              role="status"
+              className="font-hud mt-8 flex gap-2 text-bone/70 normal-case"
+            >
+              <span aria-hidden="true" className="text-amber">
+                \
+              </span>
+              <span>{aviso}</span>
+            </p>
+          )}
+
           <form onSubmit={enviar} noValidate className="mt-10">
             <Campo
               id={`${uid}-email`}
@@ -116,21 +129,6 @@ export function Login() {
               <span aria-hidden="true">\</span>
             </Bevel>
           </form>
-
-          <Bevel
-            variant="outline"
-            bevel={12}
-            borderClassName="bg-graphite"
-            outerClassName="mt-10 block"
-            className="p-4"
-          >
-            <p className="font-hud text-amber">ACCESO DE PRUEBA</p>
-            <p className="font-hud mt-2 text-bone/45 normal-case">
-              Todavía no hay cuentas de verdad: por ahora entra cualquier email
-              con cualquier contraseña. Cuando el panel quede online se conecta
-              el acceso real y esta caja desaparece.
-            </p>
-          </Bevel>
         </div>
       </main>
     </>

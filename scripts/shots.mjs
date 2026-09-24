@@ -6,7 +6,7 @@
  * y saca las capturas necesarias para revisar el trabajo con los ojos.
  *
  *   npm run shots             # build + capturas
- *   npm run shots -- --fast   # sin build, reusa dist/
+ *   npm run shots -- --fast   # sin build, reusa dist-mock/
  *   npm run shots -- --panel  # solo el recorrido del panel en 390 (ver panel.mjs)
  *
  * Todo va a docs/shots/. Los nombres empiezan por viewport para que el listado
@@ -27,6 +27,8 @@ import {
 import { capturarPanel } from './panel.mjs'
 
 const OUT = path.resolve('docs/shots')
+/** El build de las capturas: con el mock, aparte del `dist/` de producción. */
+const OUT_BUILD = 'dist-mock'
 const PORT = 4317
 const BASE = `http://127.0.0.1:${PORT}`
 const FAST = process.argv.includes('--fast')
@@ -1025,11 +1027,30 @@ async function main() {
   await rm(path.join(OUT, 'panel'), { recursive: true, force: true })
   await mkdir(path.join(OUT, 'panel'), { recursive: true })
 
-  if (!FAST) await run('npm', ['run', 'build'])
+  // SIEMPRE CON EL MOCK y en su propia carpeta. Las capturas no pueden
+  // depender de la red ni escribir en la base de verdad (el recorrido del
+  // panel crea y borra unidades). Carpeta aparte para que `--fast` nunca
+  // agarre por error un `dist/` armado contra Supabase.
+  if (!FAST) {
+    await run('npx', ['tsc', '-b'])
+    await run('npx', ['vite', 'build', '--outDir', OUT_BUILD, '--emptyOutDir'], {
+      env: { ...process.env, VITE_DATOS: 'mock' },
+    })
+  }
 
   const server = spawn(
     'npx',
-    ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'],
+    [
+      'vite',
+      'preview',
+      '--outDir',
+      OUT_BUILD,
+      '--port',
+      String(PORT),
+      '--strictPort',
+      '--host',
+      '127.0.0.1',
+    ],
     { stdio: 'ignore', shell: process.platform === 'win32', detached: false },
   )
 

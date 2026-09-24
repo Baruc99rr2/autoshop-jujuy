@@ -77,7 +77,10 @@ sigue usando los datos del navegador. Hacer estos pasos antes no rompe nada.
 | Variable | Valor |
 |---|---|
 | `VITE_SUPABASE_URL` | la Project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | la Publishable key (o la anon public) |
+| `VITE_SUPABASE_ANON_KEY` o `VITE_SUPABASE_PUBLISHABLE_KEY` | la Publishable key (o la anon public) |
+
+La clave puede ir con cualquiera de los dos nombres; el sitio lee el que
+esté. La dirección puede terminar o no en `/rest/v1/`: el sitio la limpia.
 
 ## F. En tu compu
 
@@ -86,8 +89,11 @@ sigue usando los datos del navegador. Hacer estos pasos antes no rompe nada.
 
     ```
     VITE_SUPABASE_URL=https://xxxx.supabase.co
-    VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxx
+    VITE_SUPABASE_ANON_KEY=sb_publishable_xxxx
     ```
+
+    Para trabajar SIN conexión, con los datos de muestra del navegador,
+    agregá `VITE_DATOS=mock` (y sacalo para volver a Supabase).
 
     Git lo ignora (`*.local` en `.gitignore`), así que no se sube. Si
     `npm run dev` estaba corriendo, cortalo y volvé a arrancarlo: Vite lee
@@ -103,6 +109,26 @@ sigue usando los datos del navegador. Hacer estos pasos antes no rompe nada.
 17. Las variables entran recién en el próximo build: **Deployments** → el de
     más arriba → **⋯** → **Redeploy**. (O esperá al próximo push, que las
     toma solo.)
+
+## H. Datos de prueba y recorrido (opcional)
+
+Para los scripts que escriben en la base hace falta una cuenta admin. En
+`.env.local`, SIN el prefijo `VITE_` (así nunca llegan al sitio):
+
+```
+SUPABASE_PRUEBA_EMAIL=...
+SUPABASE_PRUEBA_CLAVE=...
+```
+
+- `npm run semilla -- subir`: carga los seis autos de muestra (ids `demo-`).
+  `npm run semilla -- borrar` los saca, con todo lo suyo. No toca nada más.
+- `npm run recorrido`: crea una unidad de prueba, le sube fotos y video, la
+  publica, la mira como visitante, la despublica, la borra y comprueba que
+  el bucket quedó limpio. También prueba que un borrador no se pueda leer
+  sin sesión. Capturas en `docs/shots/recorrido/`.
+
+Si la cuenta de prueba es aparte de la tuya, cuando termines sacala de
+`admins`: `delete from public.admins where email = '...';`
 
 ## Bueno saber
 

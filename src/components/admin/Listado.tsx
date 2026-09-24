@@ -1,7 +1,8 @@
 import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router'
 import Bevel from '../Bevel'
-import Marco, { AvisoError } from './Marco'
+import ErrorCarga from '../ErrorCarga'
+import Marco from './Marco'
 import { repo } from '../../data/repo'
 import { formatearPrecio } from '../../lib/formato'
 import { portada } from '../../types/vehiculo'
@@ -48,6 +49,7 @@ export function Listado() {
   const [busqueda, setBusqueda] = useState('')
   const [lista, setLista] = useState<Vehiculo[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [intento, setIntento] = useState(0)
 
   // Lo escrito llega a la consulta con retardo: el mock responde al instante,
   // pero Supabase va a ser un viaje de red por tecla si esto no está.
@@ -63,6 +65,7 @@ export function Listado() {
   useEffect(() => {
     let vivo = true
     ;(async () => {
+      setError(null)
       try {
         const encontrados = await repo.listar({
           // LO IMPORTANTE DE ESTA PANTALLA: sin esto el panel mostraría lo
@@ -80,9 +83,9 @@ export function Listado() {
     return () => {
       vivo = false
     }
-  }, [busqueda])
+  }, [busqueda, intento])
 
-  const cargando = lista === null
+  const cargando = lista === null && !error
   const borradores = lista?.filter((v) => !v.publicado).length ?? 0
   const buscando = busqueda !== ''
 
@@ -146,24 +149,41 @@ export function Listado() {
         <span aria-hidden="true" className="text-amber">
           \
         </span>
-        <span className="num">{cargando ? 'CARGANDO…' : contar(lista.length)}</span>
-        {!cargando && borradores > 0 && (
+        <span className="num">
+          {cargando ? 'CARGANDO…' : lista ? contar(lista.length) : 'SIN DATOS'}
+        </span>
+        {lista && borradores > 0 && (
           <span className="num text-bone/35">
             — {borradores} SIN PUBLICAR
           </span>
         )}
       </p>
 
+      {/* Con lista en pantalla, una búsqueda que falla deja la lista de antes
+          y el cartel arriba: borrar lo que se estaba mirando no ayuda en nada. */}
       {error && (
-        <div className="mt-6">
-          <AvisoError texto={error} />
-        </div>
+        <ErrorCarga
+          className="mt-6"
+          titulo="No pude traer tus unidades"
+          texto={error}
+          onReintentar={() => setIntento((n) => n + 1)}
+        />
       )}
 
       {/* ── Filas ───────────────────────────────────────────────────── */}
-      {!cargando &&
+      {cargando && (
+        <ul className="mt-6 grid grid-cols-1 gap-3" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <li key={i}>
+              <FilaEsqueleto />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {lista &&
         (lista.length > 0 ? (
-          <ul className="mt-6 grid gap-3">
+          <ul className="mt-6 grid grid-cols-1 gap-3">
             {lista.map((v) => (
               <li key={v.id}>
                 <Fila v={v} />
@@ -247,6 +267,26 @@ function Fila({ v }: { v: Vehiculo }) {
       <span aria-hidden="true" className="font-hud self-center pr-1 text-bone/30">
         \
       </span>
+    </Bevel>
+  )
+}
+
+/** La forma de una fila mientras llega el stock: misma altura, sin datos. */
+function FilaEsqueleto() {
+  return (
+    <Bevel
+      variant="outline"
+      bevel={12}
+      borderClassName="bg-graphite"
+      outerClassName="block"
+      className="flex animate-pulse items-stretch gap-4 p-3"
+    >
+      <div className="min-h-[4.5rem] w-24 shrink-0 bg-graphite/60 sm:w-32" />
+      <div className="flex flex-1 flex-col justify-center gap-2.5 py-1">
+        <div className="h-5 w-3/4 bg-graphite/60" />
+        <div className="h-3.5 w-28 bg-graphite/40" />
+        <div className="h-5 w-20 bg-graphite/30" />
+      </div>
     </Bevel>
   )
 }

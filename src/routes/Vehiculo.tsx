@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import Bevel from '../components/Bevel'
+import ErrorCarga from '../components/ErrorCarga'
 import EtiquetasVehiculo from '../components/EtiquetasVehiculo'
 import GaleriaVehiculo from '../components/GaleriaVehiculo'
 import PaginaInterna from '../components/PaginaInterna'
@@ -229,6 +230,12 @@ export function Vehiculo() {
     otras: TVehiculo[]
   }>()
 
+  // Una falla se guarda con el slug y el intento que la produjeron, por la
+  // misma razón que los datos: "falló" se deduce, no se limpia en un efecto.
+  const [intento, setIntento] = useState(0)
+  const [falla, setFalla] = useState<{ slug: string; intento: number }>()
+  const fallo = falla?.slug === slug && falla.intento === intento
+
   const listo = datos?.slug === slug
   const v = listo ? datos.v : undefined
   const otras = listo ? datos.otras : []
@@ -238,7 +245,13 @@ export function Vehiculo() {
   useEffect(() => {
     let vivo = true
     ;(async () => {
-      const encontrado = await repo.obtenerPorSlug(slug)
+      let encontrado: TVehiculo | null
+      try {
+        encontrado = await repo.obtenerPorSlug(slug)
+      } catch {
+        if (vivo) setFalla({ slug, intento })
+        return
+      }
       if (!vivo) return
 
       // UN BORRADOR SE TRATA COMO INEXISTENTE. El repo lo devuelve igual —el
@@ -253,8 +266,10 @@ export function Vehiculo() {
       // la persona vino a ver.
       setDatos({ slug, v: encontrado, otras: [] })
 
-      const resto = await repo.listar({ orden: 'recientes' })
-      if (!vivo) return
+      // Si esto falla, la ficha queda sin sugerencias y nada más: no vale un
+      // cartel de error al pie de un auto que sí cargó.
+      const resto = await repo.listar({ orden: 'recientes' }).catch(() => null)
+      if (!vivo || !resto) return
       const sugeridas = resto
         .filter((x) => x.id !== encontrado.id)
         .sort(otrasPrimero(encontrado))
@@ -264,7 +279,7 @@ export function Vehiculo() {
     return () => {
       vivo = false
     }
-  }, [slug])
+  }, [slug, intento])
 
   // El alto del documento cambia cuando llegan los datos: la galería, el video
   // y las etiquetas no existían en el primer pintado. Sin esto Lenis sigue
@@ -275,6 +290,19 @@ export function Vehiculo() {
     getLenis()?.resize()
   }, [v])
 
+  if (v === undefined && fallo) {
+    return (
+      <Esqueleto volver={volver}>
+        <ErrorCarga
+          className="mt-6"
+          titulo="No pudimos abrir esta unidad"
+          texto="Puede ser la conexión. Probá de nuevo; si sigue sin cargar, mandanos el link por WhatsApp y te pasamos los datos por ahí."
+          onReintentar={() => setIntento((n) => n + 1)}
+          conWhatsapp
+        />
+      </Esqueleto>
+    )
+  }
   if (v === undefined) return <Esqueleto volver={volver} />
   if (v === null) return <NoEncontrado />
 
@@ -474,7 +502,7 @@ export function Vehiculo() {
  * pero Supabase va a tardar lo que tarde una request, y ahí lo que evita el
  * salto es que el hueco mida parecido a lo que va a entrar.
  */
-function Esqueleto({ volver }: { volver: string }) {
+function Esqueleto({ volver, children }: { volver: string; children?: React.ReactNode }) {
   return (
     <PaginaInterna
       indice="01"
@@ -485,20 +513,28 @@ function Esqueleto({ volver }: { volver: string }) {
       titulo={
         <span
           aria-hidden="true"
-          className="block h-10 w-full max-w-lg animate-pulse bg-graphite/60"
+          className={`block h-10 w-full max-w-lg ${
+            children ? 'bg-graphite/30' : 'animate-pulse bg-graphite/60'
+          }`}
         />
       }
     >
-      <p className="font-hud mt-6 text-bone/45" aria-live="polite">
-        CARGANDO LA UNIDAD…
-      </p>
-      <div className="mt-6 animate-pulse" aria-hidden="true">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-10">
-          <div className="aspect-4/3 bg-graphite/50 lg:col-start-1 lg:row-start-1 lg:aspect-16/10" />
-          <div className="h-52 bg-graphite/40 lg:col-start-2 lg:row-start-1" />
-          <div className="h-40 bg-graphite/30 lg:col-start-1 lg:row-start-2" />
-        </div>
-      </div>
+      {/* Con una falla va el cartel en lugar de la forma de la ficha: dejar
+          los bloques grises abajo seguiría diciendo "cargando". */}
+      {children ?? (
+        <>
+          <p className="font-hud mt-6 text-bone/45" aria-live="polite">
+            CARGANDO LA UNIDAD…
+          </p>
+          <div className="mt-6 animate-pulse" aria-hidden="true">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-10">
+              <div className="aspect-4/3 bg-graphite/50 lg:col-start-1 lg:row-start-1 lg:aspect-16/10" />
+              <div className="h-52 bg-graphite/40 lg:col-start-2 lg:row-start-1" />
+              <div className="h-40 bg-graphite/30 lg:col-start-1 lg:row-start-2" />
+            </div>
+          </div>
+        </>
+      )}
     </PaginaInterna>
   )
 }

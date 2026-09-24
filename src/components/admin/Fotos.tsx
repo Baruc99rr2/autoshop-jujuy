@@ -27,6 +27,8 @@ import type { Foto } from '../../types/vehiculo'
 type Trabajo = {
   id: string
   nombre: string
+  /** El original, para poder reintentar sin volver a elegirlo. */
+  archivo: File
   etapa: 'espera' | 'achicando' | 'guardando' | 'error'
   /** Qué pasó, si falló. */
   motivo?: string
@@ -119,41 +121,50 @@ export function Fotos({ vehiculoId, fotos, onFotos, onFotoBorrada }: FotosProps)
     const trabajos: Trabajo[] = entran.map((f, i) => ({
       id: `${uid}-${Date.now()}-${i}`,
       nombre: f.name,
+      archivo: f,
       etapa: 'espera',
     }))
     setCola((prev) => [...prev.filter((t) => t.etapa === 'error'), ...trabajos])
     setSubiendo(true)
-
-    const marcar = (id: string, etapa: Trabajo['etapa'], motivo?: string) =>
-      setCola((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, etapa, motivo } : t)),
-      )
-
-    for (const [i, archivo] of entran.entries()) {
-      const t = trabajos[i]
-      try {
-        marcar(t.id, 'achicando')
-        const lista = await prepararFoto(archivo)
-        marcar(t.id, 'guardando')
-        await repo.subirFoto(vehiculoId, lista.archivo)
-        // La que salió bien se va de la cola: ya se ve en la lista de abajo, y
-        // dejarla acá sería mostrar la misma foto dos veces.
-        setCola((prev) => prev.filter((x) => x.id !== t.id))
-        await refrescar()
-      } catch (err) {
-        marcar(
-          t.id,
-          'error',
-          err instanceof ErrorArchivo || err instanceof Error
-            ? err.message
-            : 'No se pudo subir.',
-        )
-      }
-    }
-
+    for (const t of trabajos) await procesar(t)
     setSubiendo(false)
     if (entrada.current) entrada.current.value = ''
   }
+
+  const marcar = (id: string, etapa: Trabajo['etapa'], motivo?: string) =>
+    setCola((prev) => prev.map((t) => (t.id === id ? { ...t, etapa, motivo } : t)))
+
+  const procesar = async (t: Trabajo) => {
+    try {
+      marcar(t.id, 'achicando')
+      const lista = await prepararFoto(t.archivo)
+      marcar(t.id, 'guardando')
+      await repo.subirFoto(vehiculoId, lista.archivo)
+      // La que salió bien se va de la cola: ya se ve en la lista de abajo, y
+      // dejarla acá sería mostrar la misma foto dos veces.
+      setCola((prev) => prev.filter((x) => x.id !== t.id))
+    } catch (err) {
+      marcar(
+        t.id,
+        'error',
+        err instanceof ErrorArchivo || err instanceof Error ? err.message : 'No se pudo subir.',
+      )
+      return
+    }
+    // Aparte: si la foto ya se guardó y lo que falla es releer la lista, la
+    // foto no volvió a la cola como fallida. Se ve en cuanto la lista se relea.
+    await refrescar().catch(() => {})
+  }
+
+  /** Una que falló, otra vez, con el mismo archivo. */
+  const reintentar = async (t: Trabajo) => {
+    setFalla(null)
+    setSubiendo(true)
+    await procesar(t)
+    setSubiendo(false)
+  }
+
+  const descartar = (id: string) => setCola((prev) => prev.filter((t) => t.id !== id))
 
   const mover = async (desde: number, hacia: number) => {
     if (hacia < 0 || hacia >= fotos.length) return
@@ -292,6 +303,21 @@ export function Fotos({ vehiculoId, fotos, onFotos, onFotoBorrada }: FotosProps)
 
               {t.motivo && (
                 <p className="font-hud mt-2 text-flag normal-case">{t.motivo}</p>
+              )}
+
+              {t.etapa === 'error' && (
+                <div className="mt-3 flex gap-2">
+                  <BotonChico
+                    onClick={() => reintentar(t)}
+                    disabled={subiendo}
+                    className="flex-1"
+                  >
+                    PROBAR DE NUEVO
+                  </BotonChico>
+                  <BotonChico onClick={() => descartar(t.id)} disabled={subiendo}>
+                    DESCARTAR
+                  </BotonChico>
+                </div>
               )}
             </Bevel>
           ))}

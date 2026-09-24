@@ -1,4 +1,4 @@
-import { slugificar } from '../../lib/texto'
+import { plano, slugificar } from '../../lib/texto'
 import { MAX_FOTOS } from '../../types/vehiculo'
 import type { Foto, Vehiculo, Video } from '../../types/vehiculo'
 import { borrarBlobs, guardarBlob, urlDeBlob } from './blobs'
@@ -84,14 +84,6 @@ const ahora = () => new Date().toISOString()
 
 const nuevoId = (p: string) =>
   `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
-
-/** Sin acentos ni mayúsculas, para comparar texto escrito a mano. */
-function plano(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-}
 
 /** Un slug que no choque: el segundo "Corolla XEI" pasa a ser `...-2`. */
 function slugLibre(base: string, lista: Vehiculo[], exceptoId?: string): string {
