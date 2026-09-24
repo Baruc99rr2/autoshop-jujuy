@@ -312,9 +312,8 @@
    MALLA ÁMBAR (MeshOverlay)
    ───────────────────────────────────────────────────────────── */
 
-/* La malla es un <svg> y ya no dos degradados: el dibujo —diagonales, tramos
-   cortados— vive en un <pattern> y la ondulación en un filtro. Lo que queda
-   acá es la caja, el color y la linterna, que no cambiaron.
+/* La malla es un <svg> con un único <path> de rectas —grilla y diagonales—
+   armado en MeshOverlay. Acá queda la caja, el color y la linterna.
 
    `color` y no `fill`: el <pattern> dibuja con `currentColor`, así que el
    acento se define una sola vez y cualquier variante futura de tono se

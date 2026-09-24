@@ -13,8 +13,8 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 - `data/sesion.ts`: Supabase Auth (+ `es_admin()` al entrar); `useSesion()` es `undefined` mientras lee. Aviso de sesión vencida con `avisoDeSalida()`; tras el login se vuelve a la ruta pedida. El acceso falso vive solo en modo mock.
 - Todo lo que carga tiene esqueleto y `ErrorCarga` (reintentar; en el sitio público también WhatsApp). El contenido del inicio reintenta solo (`lib/contenido.ts`). Fotos y video fallidos: «PROBAR DE NUEVO» con el mismo archivo.
 - `npm run shots` compila SIEMPRE en mock a `dist-mock/`. `npm run recorrido` va contra Supabase real (49 chequeos, incluido borrador ilegible sin sesión). `npm run semilla -- subir|borrar` (ids `demo-`). Credenciales: `SUPABASE_PRUEBA_*` en `.env.local`.
-- `/admin` unidad: fotos (tope 10) y video se guardan solos; etiquetas van en el borrador. Campos a NIVEL DE MÓDULO (`admin/Campos.tsx`); toda `<ul>` en grilla lleva `grid-cols-1`; controles ≥ 44 px.
-- `/catalogo`: chips + buscador en la URL. `/vehiculo/:slug`: precio sticky, `VisorFotos`, barra fija en mobile. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`.
+- `/admin` unidad: fotos (tope 10) y video se guardan solos; etiquetas en el borrador. Campos a NIVEL DE MÓDULO (`admin/Campos.tsx`); `<ul>` en grilla con `grid-cols-1`; controles ≥ 44 px. `/catalogo`: chips + buscador en la URL. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`.
+- Malla (`MeshOverlay`): un `<path>` de rectas de borde a borde (grilla 120 + diagonales 2:1), quieta, igual en mobile. Sin filtro SVG, sin tramos cortados, sin `<pattern>`: no vuelven.
 - Pendiente visto en capturas (ya estaba en HEAD): barra fija de la ficha en 390 encimada con MENU; en el riel del inicio una card a veces pinta la foto en negro (headless).
 
 ---
