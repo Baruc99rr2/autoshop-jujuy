@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { Link, useLocation } from 'react-router'
+import Bevel from './Bevel'
+import Icono from './Icono'
 import Logo from './Logo'
 import { scrollTo } from '../lib/smooth'
 
@@ -27,8 +29,9 @@ type HeaderProps = {
 }
 
 /**
- * Header mínimo y fijo: solo el logo chico. El resto de la navegación vive en
- * la barra MENU flotante, así que acá no compite nada con el hero.
+ * Header mínimo y fijo: el logo chico y, a la derecha, el acceso al panel. El
+ * resto de la navegación vive en la barra MENU flotante, así que acá no
+ * compite nada con el hero.
  *
  * APILADO: z-55, por encima del overlay del menú (45) y del riel (50). Con el
  * menú abierto el logo queda sobre el fondo bone, así que recibe tono
@@ -71,6 +74,8 @@ const LOGO = {
 export function Header({ logoRef, tono = 'oscuro', oculto = false }: HeaderProps) {
   const { pathname } = useLocation()
   const enHome = pathname === '/'
+  // Adentro del panel el acceso no tiene sentido: ya se está ahí.
+  const enPanel = pathname.startsWith('/admin')
 
   // Se lee `window.scrollY` y no la posición de Lenis: Lenis scrollea el
   // documento de verdad, así que el número es el mismo, y con
@@ -133,6 +138,31 @@ export function Header({ logoRef, tono = 'oscuro', oculto = false }: HeaderProps
         <Link ref={logoRef} to="/" {...LOGO}>
           <Logo id="header-logo" className="h-8 w-auto md:h-10" decorative />
         </Link>
+      )}
+
+      {/* ── Acceso al panel ─────────────────────────────────────────────
+          Arriba a la derecha, que es donde se busca "mi cuenta" en cualquier
+          sitio. Es un bisel outline como los filtros y los botones
+          secundarios, y en hover se llena de ámbar con el texto en negro:
+          el mismo "activo" del resto del sitio.
+
+          Mismo alto que el enlace del logo (44 en mobile, 48 en desktop) para
+          que los dos queden centrados en la misma línea. En mobile va solo el
+          ícono —el ancho lo necesita el logo— y el nombre lo dice el
+          `aria-label`; desde `md` se lee también "PANEL". */}
+      {!enPanel && (
+        <Bevel
+          as={Link}
+          to="/admin"
+          variant="outline"
+          bevel={10}
+          aria-label="Entrar al panel de administración"
+          outerClassName="group block transition-colors duration-200 hover:bg-amber focus-visible:bg-amber"
+          className="font-hud flex min-h-11 min-w-11 items-center justify-center gap-2.5 px-2.5 text-bone transition-colors duration-200 group-hover:bg-amber group-hover:text-void group-focus-visible:bg-amber group-focus-visible:text-void md:min-h-12 md:px-4"
+        >
+          <Icono name="persona" className="h-5 w-5 shrink-0" />
+          <span className="hidden md:inline">PANEL</span>
+        </Bevel>
       )}
     </header>
   )

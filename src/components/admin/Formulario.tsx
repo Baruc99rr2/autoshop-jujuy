@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import Bevel from '../Bevel'
 import ErrorCarga from '../ErrorCarga'
-import { AreaTexto, Campo, CampoMiles, Interruptor, Opciones } from './Campos'
+import { AreaTexto, Campo, CampoMiles, Interruptor, Opciones, TituloSeccion } from './Campos'
 import Dialogo from './Dialogo'
 import Etiquetas from './Etiquetas'
 import Fotos from './Fotos'
@@ -489,6 +489,11 @@ export function Formulario({ id }: FormularioProps) {
         noValidate
         className="mt-10"
       >
+        {/* Cada tramo del formulario abre con su título en ámbar: datos,
+            fotos, video, etiquetas y publicación. Sin eso la dueña no veía
+            dónde terminaba uno y empezaba el otro. */}
+        <TituloSeccion>DATOS DE LA UNIDAD</TituloSeccion>
+
         <Campo
           id={`${uid}-titulo`}
           ref={(n) => {
@@ -501,6 +506,7 @@ export function Formulario({ id }: FormularioProps) {
           ayuda="Marca, modelo y versión, como lo diría un cliente."
           placeholder="Toyota Hilux SRX 4x4"
           maxLength={90}
+          className="mt-6"
         />
 
         <Campo
@@ -663,7 +669,7 @@ export function Formulario({ id }: FormularioProps) {
           </div>
         ) : (
           <section className="mt-10 border-t border-graphite pt-8">
-            <h2 className="font-hud text-bone/55">FOTOS, VIDEO Y ETIQUETAS</h2>
+            <TituloSeccion>FOTOS, VIDEO Y ETIQUETAS</TituloSeccion>
             <p className="font-hud mt-2 flex gap-2 text-bone/40 normal-case">
               <span aria-hidden="true" className="text-amber">
                               </span>
@@ -675,9 +681,13 @@ export function Formulario({ id }: FormularioProps) {
           </section>
         )}
 
+        <div className="mt-10 border-t border-graphite pt-8">
+          <TituloSeccion>PUBLICACIÓN</TituloSeccion>
+        </div>
+
         <Opciones
           label="ESTADO"
-          className="mt-10"
+          className="mt-6"
           valor={b.estado}
           opciones={ESTADOS}
           onCambio={(v) => set('estado', v)}
@@ -766,7 +776,7 @@ export function Formulario({ id }: FormularioProps) {
       {/* ── Lo que se hace con una unidad que ya existe ──────────────── */}
       {id && guardada && (
         <div className="mt-12 border-t border-graphite pt-8">
-          <p className="font-hud text-bone/45">ESTA UNIDAD</p>
+          <TituloSeccion>ESTA UNIDAD</TituloSeccion>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             {base.publicado ? (

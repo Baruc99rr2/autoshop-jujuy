@@ -6,16 +6,16 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
-- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin/*` (lazy) y 404; la intro corre solo si la pestaña ENTRÓ por `/`. Título y meta description por página con `useTitulo(titulo, descripcion)`.
+- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin/*` (lazy) y 404; la intro corre solo si la pestaña ENTRÓ por `/`. Título y meta description por página con `useTitulo(titulo, descripcion)`. El header lleva a la derecha el acceso al panel (ícono `persona`), oculto dentro de `/admin`.
 - Datos: `data/modo.ts` elige Supabase (`VITE_SUPABASE_URL` + clave) o el mock (`VITE_DATOS=mock`); en prod sin claves NO cae al mock. Cliente solo vía `cliente()` de `data/supabase.ts` (nunca `data/cliente.ts` directo). Errores → `repo/errores.ts`.
 - Supabase: esquema en `supabase/schema.sql`. El repo filtra `publicado` A MANO; archivos en `<vehiculo_id>/...` y se borran a mano. `data/sesion.ts`: Supabase Auth + `es_admin()`; `useSesion()` es `undefined` mientras lee.
 - Datos de prueba: ids `demo-`; `npm run semilla -- borrar` los saca de Supabase. Sus fotos son `public/img/vehiculos/car-*.webp` (borrables cuando no quede ninguna `demo-`).
 - Todo lo que carga tiene esqueleto y `ErrorCarga`. `npm run shots` compila en mock a `dist-mock/`; `npm run recorrido` va contra Supabase real. Credenciales `SUPABASE_PRUEBA_*` en `.env.local`.
 - Mueble fijo de abajo: el contenedor de MENU apila `encima` (prop `barra` de `PaginaInterna`); la ficha pone ahí su barra de WhatsApp mobile, que solo aparece si el botón del panel de precio no está libre (`useBotonLibre`): UN WhatsApp visible por vez. Escondidos van `inert`.
 - Piso táctil: todo control ≥ 44 px, sitio y panel (medido en 360/390/768/1440). Links de texto: padding + margen negativo. `html` tiene `scroll-padding-block` para que el Tab no quede bajo header/MENU. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`.
-- `/admin` listado: lista o grilla (2 col mobile), en localStorage `autoshop.panel.vista`. `/catalogo`: chips + buscador en la URL, vista en `autoshop.catalogo.vista`.
-- Íconos: `favicon.svg`/`.ico` (bandera a cuadros geométrica, negro sobre ámbar), `apple-touch-icon.png`, `icon-192/512.png` + `manifest.webmanifest`. El Flip de la intro apunta al `<svg>` del logo, no al enlace.
-- Malla quieta de rectas (sin filtro, sin `<pattern>`). Pendiente: en el riel del inicio una card a veces pinta la foto en negro (headless).
+- `/admin` listado: lista o grilla (2 col mobile), en localStorage `autoshop.panel.vista`. `/catalogo`: chips + buscador en la URL, vista en `autoshop.catalogo.vista`. Títulos de tramo del panel: `TituloSeccion` (ámbar).
+- Riel del home: activa la sección que cruza la MITAD del viewport (no la de más %). Riel de vehículos: 3 cards a tercios desde `lg`. Ficha en `lg`: la foto llena la columna (alto entre 16:10 y 2:1).
+- Íconos: `favicon.svg`/`.ico` (bandera a cuadros geométrica, negro sobre ámbar), `apple-touch-icon.png`, `icon-192/512.png` + `manifest.webmanifest`. El Flip de la intro apunta al `<svg>` del logo, no al enlace. Malla quieta de rectas (sin filtro, sin `<pattern>`). Pendiente: en el riel del inicio una card a veces pinta la foto en negro (headless).
 
 ---
 

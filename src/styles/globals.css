@@ -1087,6 +1087,15 @@
   }
 }
 
+/* En PC las tres cards entran enteras (ver `ANCHO_RIEL`): no queda nada que
+   arrastrar, y una mano de agarre sobre algo que no se mueve miente. */
+@media (min-width: 64rem) {
+  .veh-riel,
+  .veh-riel:active {
+    cursor: auto;
+  }
+}
+
 /* ── Tira "VER FICHA" ────────────────────────────────────────────────
    El barrido ámbar de izquierda a derecha, el mismo de la FAQ y de los tiles
    de post-venta. Acá no decora: ahora la card entera es un link a la ficha, y

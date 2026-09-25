@@ -126,20 +126,30 @@ export function Home() {
   // El riel muestra el índice de la sección en pantalla. IntersectionObserver
   // en vez de ScrollTrigger: es un cambio de texto, no una animación, y no
   // tiene por qué entrar en el ciclo de scrub.
+  //
+  // La sección activa es la que CRUZA LA MITAD de la pantalla, no la que
+  // tiene más porcentaje a la vista. Con el porcentaje ganaban las secciones
+  // cortas: la franja de contadores le robaba el índice al hero, y Segmentos
+  // —que mide más de tres pantallas por el pin— nunca llegaba al umbral, así
+  // que el riel arrancaba en 02 y saltaba del 02 al 04. Una franja del 1% en
+  // el medio del viewport la cruza siempre una sola sección, mida lo que mida.
   useEffect(() => {
     const nodes = secciones.map((s) => document.getElementById(s.id)).filter(
       (n): n is HTMLElement => Boolean(n),
     )
+    const cruzando = new Set<string>()
     const io = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
-        if (!visible) return
-        const match = secciones.find((s) => s.id === visible.target.id)
+        for (const e of entries) {
+          if (e.isIntersecting) cruzando.add(e.target.id)
+          else cruzando.delete(e.target.id)
+        }
+        // En el borde entre dos secciones la franja puede tocar las dos: gana
+        // la de más abajo, que es la que está entrando.
+        const match = secciones.findLast((s) => cruzando.has(s.id))
         if (match) setActiva(match)
       },
-      { threshold: [0.25, 0.6], rootMargin: '-20% 0px -20% 0px' },
+      { threshold: 0, rootMargin: '-49.5% 0px -49.5% 0px' },
     )
     nodes.forEach((n) => io.observe(n))
     return () => io.disconnect()

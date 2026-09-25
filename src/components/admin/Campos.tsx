@@ -458,6 +458,24 @@ export function Interruptor({
 // ── Bloques del formulario ────────────────────────────────────────────────
 
 /**
+ * El título de un tramo del panel, en ámbar.
+ *
+ * Las etiquetas de los campos van en hueso apagado, y con los títulos del
+ * mismo color la dueña no distinguía dónde terminaba un tramo y empezaba el
+ * otro: se leía todo como una sola lista de campos. En ámbar, con el `\` del
+ * sitio adelante, el corte se ve de un vistazo. Lo usan `Seccion` y los tramos
+ * del formulario que no son una `Seccion` (datos, publicación, esta unidad).
+ */
+export function TituloSeccion({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="font-hud flex items-center gap-2 text-amber">
+      <span aria-hidden="true">\</span>
+      <span>{children}</span>
+    </h2>
+  )
+}
+
+/**
  * Un tramo del formulario con su propio título: fotos, video, etiquetas.
  *
  * Los campos de texto no lo necesitan —la etiqueta de cada uno alcanza— pero
@@ -482,7 +500,7 @@ export function Seccion({
   return (
     <section className={`border-t border-graphite pt-8 ${className}`}>
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-hud text-bone/55">{titulo}</h2>
+        <TituloSeccion>{titulo}</TituloSeccion>
         {contador !== undefined && (
           <p className="font-hud num shrink-0 text-bone/40">{contador}</p>
         )}

@@ -241,7 +241,7 @@ function Escritorio({ fotos, titulo, onAbrir }: LayoutProps) {
 
   return (
     <div>
-      <div className="relative">
+      <div className="relative @container">
         <Bevel
           variant="outline"
           bevel={16}
@@ -252,8 +252,18 @@ function Escritorio({ fotos, titulo, onAbrir }: LayoutProps) {
              bajo. Sin el segundo, en una pantalla de 768 px de alto la foto
              sola se comía la pantalla y el precio volvía a caer abajo del
              pliegue, que es el problema que esto viene a resolver. `svh` y no
-             `vh`, como todo alto del sitio. */
-          outerClassName="block aspect-16/10 max-h-[min(30rem,50svh)]"
+             `vh`, como todo alto del sitio.
+
+             EN PC (`lg`) LA FOTO LLENA LA COLUMNA. Ahí el precio ya va a la
+             derecha, así que el techo no protegía nada: solo achicaba la foto
+             —con el `aspect-ratio` el ancho seguía al alto— y dejaba un hueco
+             negro de 300 px entre la foto y el panel del precio. Ahora el
+             ancho es siempre el de la columna y lo que se ajusta es el alto:
+             16:10 si entra, y si no lo que deja la pantalla debajo del
+             titular (los 26rem son header, titular, chips y miniaturas), con
+             piso en 2:1 para no recortar el auto de más. `cqw` es el ancho de
+             la columna: ver el `@container` de arriba. */
+          outerClassName="block aspect-16/10 max-h-[min(30rem,50svh)] lg:aspect-auto lg:h-[min(62.5cqw,max(100svh-26rem,50cqw))] lg:max-h-none"
           className="relative overflow-hidden p-0"
         >
           {fotos.map((f, k) => (

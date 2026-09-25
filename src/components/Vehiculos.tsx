@@ -16,17 +16,21 @@ const S = seccion('vehiculos')
 const CUANTAS = 3
 
 /**
- * El ancho de la card EN EL RIEL. Está elegido por el ALTO que resulta: con la
- * foto en 4:3, una card del 46% del contenedor mide 660 px de ancho y 495 solo
- * de foto, así que en un notebook de 900 px no entran la foto y el precio en la
- * misma pantalla —y el precio es el dato de la sección—. Al 40% la card entera
- * entra, y siguen viéndose dos completas más el borde de la tercera, que es lo
- * que hace que el conjunto se lea como riel y no como grilla.
+ * El ancho de la card EN EL RIEL.
+ *
+ * En mobile y tablet el riel se desliza: una card casi entera más el borde de
+ * la siguiente, que es lo que dice "hay más para el costado".
+ *
+ * EN PC ENTRAN LAS TRES, a tercios exactos del ancho del contenido: al 40%
+ * cada card medía 700 px en un monitor de 1800, la foto sola se comía la
+ * pantalla y el precio quedaba abajo del pliegue. El `2.5rem` son los dos
+ * `gap-5` entre las tres; el `%` de un ítem flex es del contenido del riel,
+ * que ya descuenta el padding del `shell`.
  *
  * En la grilla del catálogo la misma card va al 100% de su columna: ese ancho
  * lo pone `/catalogo`, no este archivo.
  */
-const ANCHO_RIEL = 'w-[85vw] shrink-0 md:w-[56%] lg:w-[40%]'
+const ANCHO_RIEL = 'w-[85vw] shrink-0 md:w-[56%] lg:w-[calc((100%-2.5rem)/3)]'
 
 /**
  * Vehículos destacados.

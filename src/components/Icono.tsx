@@ -26,6 +26,7 @@ export type NombreIcono =
   | 'izquierda'
   | 'derecha'
   | 'expandir'
+  | 'persona'
 
 const TRAZOS: Record<NombreIcono, React.ReactNode> = {
   /**
@@ -71,6 +72,15 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
   izquierda: <path d="M14.75 5 7.75 12l7 7" />,
   derecha: <path d="M9.25 5l7 7-7 7" />,
   expandir: <path d="M9.5 3.75H3.75V9.5M14.5 3.75h5.75V9.5M9.5 20.25H3.75V14.5M14.5 20.25h5.75V14.5" />,
+  // El acceso al panel, en el header. Cabeza y hombros: el gesto universal de
+  // "mi cuenta". Los hombros cierran recto abajo, sin curva de base, como el
+  // resto de la familia.
+  persona: (
+    <>
+      <circle cx="12" cy="8" r="4.25" />
+      <path d="M4.25 20.5c.6-4.1 3.8-6.75 7.75-6.75s7.15 2.65 7.75 6.75" />
+    </>
+  ),
   chat: (
     <>
       <path d="M20.5 12.4c0 4-3.8 7.2-8.5 7.2a9.9 9.9 0 0 1-3-.45L4.2 20.5l1.4-3.35A6.8 6.8 0 0 1 3.5 12.4c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2Z" />
