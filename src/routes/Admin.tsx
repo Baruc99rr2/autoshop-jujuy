@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router'
 import Contenido from '../components/admin/Contenido'
+import AvisoInactividad from '../components/admin/AvisoInactividad'
 import Formulario, { NuevaUnidad } from '../components/admin/Formulario'
 import Listado from '../components/admin/Listado'
 import Login from '../components/admin/Login'
@@ -49,7 +51,12 @@ function Protegida({ children }: { children: React.ReactNode }) {
   if (!sesion) {
     return <Navigate to="/admin/login" replace state={{ desde: donde.pathname }} />
   }
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      <AvisoInactividad />
+    </>
+  )
 }
 
 function Abriendo() {
@@ -79,6 +86,17 @@ function Editar() {
 export function Admin() {
   const sesion = useSesion()
   const donde = useLocation()
+
+  // El panel no se indexa. La barrera principal es el `X-Robots-Tag` y el
+  // `robots.txt` (ver `vercel.json`); esto cubre al buscador que ejecuta el
+  // JS de la página y no mira los encabezados.
+  useEffect(() => {
+    const meta = document.createElement('meta')
+    meta.name = 'robots'
+    meta.content = 'noindex, nofollow'
+    document.head.appendChild(meta)
+    return () => meta.remove()
+  }, [])
 
   return (
     <Routes>

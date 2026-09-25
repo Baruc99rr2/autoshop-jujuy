@@ -9,6 +9,7 @@ import BloqueServicios from './BloqueServicios'
 import Dialogo from './Dialogo'
 import Marco from './Marco'
 import { repoContenido } from '../../data/repo'
+import { marcarSinGuardar } from '../../data/sesion'
 import type {
   Contadores,
   DatosContacto,
@@ -89,6 +90,12 @@ export function Contenido() {
   const haySucios = Object.values(sucios).some(Boolean)
 
   // Mismo aviso que el formulario de una unidad al cerrar o recargar.
+  // Para el cierre por inactividad: ver `marcarSinGuardar`.
+  useEffect(() => {
+    marcarSinGuardar('contenido', haySucios)
+    return () => marcarSinGuardar('contenido', false)
+  }, [haySucios])
+
   useEffect(() => {
     if (!haySucios) return
     const alSalir = (e: BeforeUnloadEvent) => {

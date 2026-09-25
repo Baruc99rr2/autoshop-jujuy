@@ -22,6 +22,7 @@ import { seccionesOcultas, useContenido } from '../lib/contenido'
 import type { ContenidoSitio } from '../lib/contenido'
 import { prefersReducedMotion } from '../lib/motion-prefs'
 import { scrollTo } from '../lib/smooth'
+import { useMedia } from '../lib/use-media'
 
 type PropsSeccion = { s: Seccion; contenido: ContenidoSitio | null }
 type ComponenteSeccion = (p: PropsSeccion) => React.ReactElement | null
@@ -196,7 +197,31 @@ export function Home() {
   // está abierto el riel y el header tienen encima el mismo blanco que la FAQ
   // y necesitan el mismo tratamiento (decisiones 19 y 31). Es la sección
   // activa la que decide el tono el resto del tiempo.
+  //
+  // LA FRANJA ÁMBAR EN MOBILE. En desktop la franja de contadores arranca
+  // después del riel, así que el riel nunca le queda encima. En un teléfono
+  // la franja va de borde a borde y el riel (hueso sobre ámbar) desaparece
+  // contra el amarillo: mientras la franja está en pantalla, el riel pasa a
+  // negro, igual que sobre las secciones claras. Solo el riel: la malla no
+  // tiene que invertirse por una franja que ocupa un tercio de la pantalla.
+  const esMobile = useMedia('(max-width: 767px)')
+  const [franjaALaVista, setFranjaALaVista] = useState(false)
+  useEffect(() => {
+    const franja = document.getElementById('contadores')
+    if (!esMobile || !franja) return
+    // `ratio > 0` y no `isIntersecting`: con la franja justo debajo del borde
+    // inferior (el hero mide exactamente una pantalla) el navegador la da por
+    // "tocando" con área cero, y el riel se ponía negro sobre el hero.
+    const io = new IntersectionObserver(([e]) =>
+      setFranjaALaVista(e.isIntersecting && e.intersectionRatio > 0),
+      { threshold: [0, 0.01] },
+    )
+    io.observe(franja)
+    return () => io.disconnect()
+  }, [esMobile, secciones])
+
   const claro = menuAbierto || activa.tono === 'claro'
+  const rielClaro = claro || (esMobile && franjaALaVista)
 
   return (
     <>
@@ -204,7 +229,7 @@ export function Home() {
       <Rail
         index={activa.indice}
         label={activa.eyebrow}
-        tono={claro ? 'claro' : 'oscuro'}
+        tono={rielClaro ? 'claro' : 'oscuro'}
       />
       <Header
         logoRef={headerLogoRef}

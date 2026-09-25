@@ -9,6 +9,7 @@ import Fotos from './Fotos'
 import Marco, { AvisoError, Volver } from './Marco'
 import VideoUnidad from './VideoUnidad'
 import { repo } from '../../data/repo'
+import { marcarSinGuardar } from '../../data/sesion'
 import { leerMiles, separarMiles, soloDigitos } from '../../lib/formato'
 import { esProvisoria, estaVacia, slugProvisorio, TITULO_PROVISORIO } from '../../lib/provisoria'
 import { SLUG_VALIDO, slugificar } from '../../lib/texto'
@@ -301,6 +302,13 @@ export function Formulario({ id }: FormularioProps) {
    * el "cancelar") sí pasa por el diálogo de acá abajo, que es por donde se
    * sale el 99% de las veces.
    */
+  // Para el cierre por inactividad: si se cierra con esto en `true`, el
+  // login avisa que lo último no se guardó.
+  useEffect(() => {
+    marcarSinGuardar('formulario', sucio)
+    return () => marcarSinGuardar('formulario', false)
+  }, [sucio])
+
   useEffect(() => {
     if (!sucio) return
     const alSalir = (e: BeforeUnloadEvent) => {

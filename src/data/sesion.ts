@@ -165,7 +165,11 @@ function arrancar(): void {
           return
         }
         if (evento === 'SIGNED_OUT' && sesion && !saliendoAMano) {
-          aviso = 'Tu sesión se cerró. Entrá de nuevo para seguir trabajando.'
+          // La otra pestaña la cerró por inactividad: se dice eso, que es
+          // lo que pasó, y no un "se cerró" a secas.
+          aviso = cierreReciente()
+            ? avisoInactividad()
+            : 'Tu sesión se cerró. Entrá de nuevo para seguir trabajando.'
         }
         saliendoAMano = false
         poner(nueva)
@@ -258,7 +262,13 @@ export async function iniciarSesion(email: string, clave: string): Promise<Sesio
   return s
 }
 
-export async function cerrarSesion(): Promise<void> {
+/**
+ * Cierra la sesión. Con `motivo`, el login lo muestra al volver (hoy: el cierre
+ * por inactividad). Se asigna ANTES de `poner(null)`, porque el login lee el
+ * aviso al montarse y se monta apenas la sesión deja de existir.
+ */
+export async function cerrarSesion(motivo?: string): Promise<void> {
+  if (motivo) aviso = motivo
   if (!USA_SUPABASE) {
     escribirMock(null)
     poner(null)
@@ -292,6 +302,48 @@ export function sesionVencida(): void {
       saliendoAMano = false
       poner(null)
     })
+}
+
+// ── Cierre por inactividad ─────────────────────────────────────────────────
+//
+// El reloj vive en `lib/inactividad.ts`; acá queda lo que toca a la sesión:
+// qué pantallas tienen cambios sin guardar y qué dice el login después.
+
+/** Pantallas con cambios sin guardar en ESTA pestaña, por clave. */
+const sinGuardar = new Set<string>()
+
+/** Lo llaman el formulario de una unidad y «Contenido del sitio». */
+export function marcarSinGuardar(clave: string, sucio: boolean): void {
+  if (sucio) sinGuardar.add(clave)
+  else sinGuardar.delete(clave)
+}
+
+/** La marca que deja una pestaña al cerrar por inactividad, para las otras. */
+export const CLAVE_CIERRE = 'autoshop.panel.cierre'
+
+function cierreReciente(): boolean {
+  try {
+    return Date.now() - Number(localStorage.getItem(CLAVE_CIERRE) ?? 0) < 15_000
+  } catch {
+    return false
+  }
+}
+
+function avisoInactividad(): string {
+  return sinGuardar.size > 0
+    ? 'Cerramos tu sesión por inactividad: pasaron 30 minutos sin uso. Lo último que cambiaste NO se guardó. Entrá de nuevo y volvé a cargarlo.'
+    : 'Cerramos tu sesión por inactividad: pasaron 30 minutos sin uso. Entrá de nuevo para seguir trabajando.'
+}
+
+/** Cierra por inactividad y avisa a las otras pestañas del panel. */
+export async function cerrarPorInactividad(): Promise<void> {
+  if (!sesion) return
+  try {
+    localStorage.setItem(CLAVE_CIERRE, String(Date.now()))
+  } catch {
+    /* sin almacenamiento, cada pestaña cierra con su propio reloj */
+  }
+  await cerrarSesion(avisoInactividad())
 }
 
 /** Devuelve la función para darse de baja. */
