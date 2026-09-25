@@ -158,10 +158,27 @@ export function useContacto(): DatosContacto {
  */
 export function seccionesOcultas(c: ContenidoSitio | null): string[] {
   if (!c) return []
+  return ocultasPorCantidad({
+    segmentos: c.segmentos.length,
+    servicios: c.servicios.length,
+    preguntas: c.preguntas.length,
+  })
+}
+
+/**
+ * La misma regla desde las cantidades sueltas. La usa el panel, que numera
+ * sus bloques con el índice que la sección tiene en la web y lo recalcula
+ * apenas se guarda una lista (ver `Contenido.tsx`).
+ */
+export function ocultasPorCantidad(n: {
+  segmentos: number
+  servicios: number
+  preguntas: number
+}): string[] {
   const fuera: string[] = []
-  if (c.segmentos.length === 0) fuera.push('segmentos')
-  if (c.servicios.length === 0) fuera.push('postventa')
-  if (c.preguntas.length === 0) fuera.push('preguntas')
+  if (n.segmentos === 0) fuera.push('segmentos')
+  if (n.servicios === 0) fuera.push('postventa')
+  if (n.preguntas === 0) fuera.push('preguntas')
   return fuera
 }
 

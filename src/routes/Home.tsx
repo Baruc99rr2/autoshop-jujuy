@@ -39,7 +39,9 @@ type ComponenteSeccion = (p: PropsSeccion) => React.ReactElement | null
  */
 const SECCION_COMPONENTE: Record<string, ComponenteSeccion> = {
   contacto: ({ s }) => <Contacto s={s} />,
-  contadores: ({ contenido }) => <Contadores datos={contenido?.contadores ?? null} />,
+  contadores: ({ s, contenido }) => (
+    <Contadores s={s} datos={contenido?.contadores ?? null} />
+  ),
   hero: () => <Hero />,
   marcas: () => <Marcas />,
   postventa: ({ s, contenido }) =>

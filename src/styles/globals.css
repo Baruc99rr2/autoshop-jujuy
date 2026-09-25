@@ -593,10 +593,16 @@
   z-index: -1;
   height: 200%;
   pointer-events: none;
+  /* NEGRO PLENO en todo el alto del header (la mitad de arriba del velo,
+     que mide el doble) y recién debajo se desvanece. Con el degradado
+     arrancando desde arriba, a la altura del logo el negro ya estaba al
+     ~80%: en un celular los botones del hero pasaban por detrás y el ámbar
+     de VER VEHÍCULOS se leía encimado con el logo. */
   background: linear-gradient(
     to bottom,
     var(--color-void) 0%,
-    color-mix(in srgb, var(--color-void) 72%, transparent) 55%,
+    var(--color-void) 50%,
+    color-mix(in srgb, var(--color-void) 60%, transparent) 72%,
     transparent 100%
   );
   opacity: 0;

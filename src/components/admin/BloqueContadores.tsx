@@ -70,9 +70,12 @@ function preparar(uid: string, b: Borrador) {
 export function BloqueContadores({
   inicial,
   onSucio,
+  indice,
 }: {
   inicial: Contadores
   onSucio: (sucio: boolean) => void
+  /** El número de la sección en la web, de `nav.ts`. */
+  indice: string
 }) {
   const uid = useId()
   const bloque = useBloque({
@@ -93,6 +96,7 @@ export function BloqueContadores({
   return (
     <Seccion
       titulo="NÚMEROS"
+      indice={indice}
       contador="4"
       ayuda="La franja amarilla debajo de la portada. Cada cifra cuenta desde 0 hasta el número que pongas."
     >

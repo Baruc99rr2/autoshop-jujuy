@@ -466,10 +466,22 @@ export function Interruptor({
  * sitio adelante, el corte se ve de un vistazo. Lo usan `Seccion` y los tramos
  * del formulario que no son una `Seccion` (datos, publicación, esta unidad).
  */
-export function TituloSeccion({ children }: { children: ReactNode }) {
+export function TituloSeccion({
+  children,
+  indice,
+}: {
+  children: ReactNode
+  /**
+   * El número que la sección tiene EN LA WEB («02»), para los bloques de
+   * «Contenido del sitio»: así la dueña sabe qué parte del sitio está
+   * editando. Sale de `nav.ts`, el mismo que usa el riel.
+   */
+  indice?: string
+}) {
   return (
     <h2 className="font-hud flex items-center gap-2 text-amber">
       <span aria-hidden="true">\</span>
+      {indice && <span className="num">{indice}</span>}
       <span>{children}</span>
     </h2>
   )
@@ -485,12 +497,15 @@ export function TituloSeccion({ children }: { children: ReactNode }) {
  */
 export function Seccion({
   titulo,
+  indice,
   contador,
   ayuda,
   children,
   className = '',
 }: {
   titulo: string
+  /** El número de la sección en la web. Ver `TituloSeccion`. */
+  indice?: string
   /** A la derecha, en cifras: "3 / 10". */
   contador?: ReactNode
   ayuda?: ReactNode
@@ -500,7 +515,7 @@ export function Seccion({
   return (
     <section className={`border-t border-graphite pt-8 ${className}`}>
       <div className="flex items-baseline justify-between gap-4">
-        <TituloSeccion>{titulo}</TituloSeccion>
+        <TituloSeccion indice={indice}>{titulo}</TituloSeccion>
         {contador !== undefined && (
           <p className="font-hud num shrink-0 text-bone/40">{contador}</p>
         )}

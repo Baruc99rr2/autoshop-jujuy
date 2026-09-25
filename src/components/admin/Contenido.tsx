@@ -9,7 +9,9 @@ import BloqueServicios from './BloqueServicios'
 import Dialogo from './Dialogo'
 import Marco from './Marco'
 import { repoContenido } from '../../data/repo'
+import { seccionesVisibles } from '../../data/nav'
 import { marcarSinGuardar } from '../../data/sesion'
+import { ocultasPorCantidad } from '../../lib/contenido'
 import type {
   Contadores,
   DatosContacto,
@@ -89,6 +91,35 @@ export function Contenido() {
 
   const haySucios = Object.values(sucios).some(Boolean)
 
+  // ── El número de cada bloque, el mismo que en la web ───────────────────
+  // Sale de `seccionesVisibles` de `nav.ts`, que es lo que numera el riel:
+  // con cero preguntas la sección no existe en el sitio y lo que viene
+  // después se corre. Las cantidades arrancan en lo guardado y se actualizan
+  // cuando un bloque guarda, así el número cambia en el acto.
+  const [cantidades, setCantidades] = useState<{
+    segmentos: number
+    servicios: number
+    preguntas: number
+  } | null>(null)
+  const cant = cantidades ?? {
+    segmentos: datos?.segmentos.length ?? 0,
+    servicios: datos?.servicios.length ?? 0,
+    preguntas: datos?.preguntas.length ?? 0,
+  }
+  const visibles = seccionesVisibles(ocultasPorCantidad(cant))
+  /** Una sección oculta no tiene número en la web: el panel muestra un guion. */
+  const indice = (id: string) => visibles.find((s) => s.id === id)?.indice ?? '—'
+  const poner = useCallback(
+    (k: 'segmentos' | 'servicios' | 'preguntas') => (n: number) =>
+      setCantidades((prev) => ({
+        segmentos: prev?.segmentos ?? datos?.segmentos.length ?? 0,
+        servicios: prev?.servicios ?? datos?.servicios.length ?? 0,
+        preguntas: prev?.preguntas ?? datos?.preguntas.length ?? 0,
+        [k]: n,
+      })),
+    [datos],
+  )
+
   // Mismo aviso que el formulario de una unidad al cerrar o recargar.
   // Para el cierre por inactividad: ver `marcarSinGuardar`.
   useEffect(() => {
@@ -151,19 +182,34 @@ export function Contenido() {
            sigue guardando lo suyo. */
         <div className="mt-10 grid grid-cols-1 gap-14 lg:grid-cols-2 lg:items-start lg:gap-x-12">
           <div className="lg:col-start-1 lg:row-start-1">
-            <BloqueContadores inicial={datos.contadores} onSucio={onContadores} />
+            <BloqueContadores inicial={datos.contadores} onSucio={onContadores} indice={indice('contadores')} />
           </div>
           <div className="lg:col-span-2">
-            <BloqueSegmentos inicial={datos.segmentos} onSucio={onSegmentos} />
+            <BloqueSegmentos
+              inicial={datos.segmentos}
+              onSucio={onSegmentos}
+              indice={indice('segmentos')}
+              onCantidad={poner('segmentos')}
+            />
           </div>
           <div className="lg:col-span-2">
-            <BloqueServicios inicial={datos.servicios} onSucio={onServicios} />
+            <BloqueServicios
+              inicial={datos.servicios}
+              onSucio={onServicios}
+              indice={indice('postventa')}
+              onCantidad={poner('servicios')}
+            />
           </div>
           <div className="lg:col-span-2">
-            <BloquePreguntas inicial={datos.preguntas} onSucio={onPreguntas} />
+            <BloquePreguntas
+              inicial={datos.preguntas}
+              onSucio={onPreguntas}
+              indice={indice('preguntas')}
+              onCantidad={poner('preguntas')}
+            />
           </div>
           <div className="lg:col-start-2 lg:row-start-1">
-            <BloqueContacto inicial={datos.contacto} onSucio={onContacto} />
+            <BloqueContacto inicial={datos.contacto} onSucio={onContacto} indice={indice('contacto')} />
           </div>
         </div>
       )}

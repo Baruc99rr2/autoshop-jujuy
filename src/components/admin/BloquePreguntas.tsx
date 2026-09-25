@@ -44,15 +44,25 @@ function preparar(uid: string, b: FilaB[]) {
 export function BloquePreguntas({
   inicial,
   onSucio,
+  indice,
+  onCantidad,
 }: {
   inicial: Pregunta[]
   onSucio: (sucio: boolean) => void
+  /** El número de la sección en la web, de `nav.ts`. */
+  indice: string
+  /** Cuántos quedaron guardados: con cero la sección se oculta y la numeración se corre. */
+  onCantidad: (n: number) => void
 }) {
   const uid = useId()
   const bloque = useBloque({
     inicial: aBorrador(inicial),
     preparar: (b: FilaB[]) => preparar(uid, b),
-    enviar: (d: Pregunta[]) => repoContenido.guardarPreguntas(d),
+    enviar: async (d: Pregunta[]) => {
+      const guardado = await repoContenido.guardarPreguntas(d)
+      onCantidad(guardado.length)
+      return guardado
+    },
     aBorrador,
     onSucio,
   })
@@ -77,6 +87,7 @@ export function BloquePreguntas({
   return (
     <Seccion
       titulo="PREGUNTAS FRECUENTES"
+      indice={indice}
       contador={String(lista.length)}
       ayuda="La primera de la lista es la que aparece abierta. Sin preguntas, la sección no aparece en el sitio."
     >

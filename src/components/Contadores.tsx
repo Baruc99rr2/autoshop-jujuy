@@ -4,6 +4,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { prefersReducedMotion } from '../lib/motion-prefs'
 import { valorContador } from '../types/contenido'
+import type { Seccion } from '../data/nav'
 import type { Contadores as DatosContadores } from '../types/contenido'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger)
@@ -42,7 +43,14 @@ const CELDA = [
  * llegan, la franja se dibuja igual y vacía: el riel y el header la buscan por
  * id desde el primer render, y el conteo arranca recién cuando hay cifras.
  */
-export function Contadores({ datos }: { datos: DatosContadores | null }) {
+export function Contadores({
+  s,
+  datos,
+}: {
+  /** La sección tal como la numeró `seccionesVisibles`: índice y eyebrow. */
+  s: Seccion
+  datos: DatosContadores | null
+}) {
   const root = useRef<HTMLElement>(null)
 
   useGSAP(
@@ -105,6 +113,28 @@ export function Contadores({ datos }: { datos: DatosContadores | null }) {
          elemento que no cambia en toda la página. */
       style={{ marginInlineStart: 'var(--rail-w)' }}
     >
+      {/* ── Eyebrow ────────────────────────────────────────────────
+          Es la única sección sin titular, y por eso era la única cuyo
+          número no aparecía en un celular: ahí el riel es solo una línea y
+          el número de cada sección lo pone su eyebrow. Va también en
+          desktop, aunque ahí el riel ya lo dice al costado: todas las
+          demás secciones llevan eyebrow en los dos tamaños, y esta sin él
+          se leía como un adorno entre secciones y no como la 02.
+
+          Mismo molde que el de `SectionHeader`, en negro: el índice va en
+          negro pleno porque el ámbar sobre ámbar no existe. */}
+      <p
+        className="font-hud mb-10 flex items-center gap-2 text-void/60 md:mb-12"
+        style={{ paddingInline: 'var(--shell-pad)' }}
+      >
+        <span aria-hidden="true" className="md:hidden">
+          \
+        </span>
+        <span className="num text-void">{s.indice}</span>
+        <span aria-hidden="true">—</span>
+        <span>{s.eyebrow}</span>
+      </p>
+
       <dl
         className="grid grid-cols-2 gap-y-10 md:grid-cols-4 md:gap-y-0"
         /* Solo el padding del shell: el hueco del riel ya lo puso el margen,

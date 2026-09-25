@@ -116,15 +116,25 @@ function ElegirIcono({
 export function BloqueServicios({
   inicial,
   onSucio,
+  indice,
+  onCantidad,
 }: {
   inicial: Servicio[]
   onSucio: (sucio: boolean) => void
+  /** El número de la sección en la web, de `nav.ts`. */
+  indice: string
+  /** Cuántos quedaron guardados: con cero la sección se oculta y la numeración se corre. */
+  onCantidad: (n: number) => void
 }) {
   const uid = useId()
   const bloque = useBloque({
     inicial: aBorrador(inicial),
     preparar: (b: FilaB[]) => preparar(uid, b),
-    enviar: (d: Servicio[]) => repoContenido.guardarServicios(d),
+    enviar: async (d: Servicio[]) => {
+      const guardado = await repoContenido.guardarServicios(d)
+      onCantidad(guardado.length)
+      return guardado
+    },
     aBorrador,
     onSucio,
   })
@@ -149,6 +159,7 @@ export function BloqueServicios({
   return (
     <Seccion
       titulo="SERVICIOS"
+      indice={indice}
       contador={String(lista.length)}
       ayuda="Los tiles de la sección Servicios. Sin servicios, la sección no aparece en el sitio."
     >

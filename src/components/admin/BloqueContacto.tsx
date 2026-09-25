@@ -127,9 +127,12 @@ function preparar(uid: string, b: Borrador) {
 export function BloqueContacto({
   inicial,
   onSucio,
+  indice,
 }: {
   inicial: DatosContacto
   onSucio: (sucio: boolean) => void
+  /** El número de la sección en la web, de `nav.ts`. */
+  indice: string
 }) {
   const uid = useId()
   const id = campos(uid)
@@ -180,6 +183,7 @@ export function BloqueContacto({
   return (
     <Seccion
       titulo="CONTACTO"
+      indice={indice}
       ayuda="Lo usan el formulario de contacto, el botón de WhatsApp, el de cada ficha y el footer. Todos leen de acá."
     >
       <Campo

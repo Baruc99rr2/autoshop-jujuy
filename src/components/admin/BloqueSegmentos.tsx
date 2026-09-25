@@ -90,15 +90,25 @@ function preparar(uid: string, b: FilaB[]) {
 export function BloqueSegmentos({
   inicial,
   onSucio,
+  indice,
+  onCantidad,
 }: {
   inicial: SegmentoAGuardar[]
   onSucio: (sucio: boolean) => void
+  /** El número de la sección en la web, de `nav.ts`. */
+  indice: string
+  /** Cuántos quedaron guardados: con cero la sección se oculta y la numeración se corre. */
+  onCantidad: (n: number) => void
 }) {
   const uid = useId()
   const bloque = useBloque({
     inicial: aBorrador(inicial),
     preparar: (b: FilaB[]) => preparar(uid, b),
-    enviar: (d: SegmentoAGuardar[]) => repoContenido.guardarSegmentos(d),
+    enviar: async (d: SegmentoAGuardar[]) => {
+      const guardado = await repoContenido.guardarSegmentos(d)
+      onCantidad(guardado.length)
+      return guardado
+    },
     aBorrador,
     onSucio,
   })
@@ -177,6 +187,7 @@ export function BloqueSegmentos({
   return (
     <Seccion
       titulo="SEGMENTOS"
+      indice={indice}
       contador={`${cuantos} / ${MAX_SEGMENTOS}`}
       ayuda={
         <>
