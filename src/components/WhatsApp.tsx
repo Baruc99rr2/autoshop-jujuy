@@ -1,6 +1,7 @@
 import Bevel from './Bevel'
 import Icono from './Icono'
-import { FLOTANTE } from '../data/contacto'
+import { FLOTANTE_LABEL, whatsappUrl } from '../data/contacto'
+import { useContacto } from '../lib/contenido'
 import { usePieALaVista } from '../lib/pie-a-la-vista'
 
 /**
@@ -20,6 +21,7 @@ export function WhatsApp() {
   // en desktop, del enlace del estudio. El footer tiene su propio WhatsApp en
   // la columna de redes, así que no se pierde nada.
   const enElPie = usePieALaVista()
+  const { whatsapp } = useContacto()
 
   return (
     /* Quién lo muestra y quién no lo decide `PaginaInterna`: la ficha lo saca
@@ -38,10 +40,12 @@ export function WhatsApp() {
         as="a"
         variant="solid"
         bevel={12}
-        href={FLOTANTE.href}
+        href={whatsappUrl(whatsapp)}
         target="_blank"
         rel="noreferrer"
-        aria-label={FLOTANTE.aria}
+        // En mobile queda solo el ícono, así que el `aria` carga la
+        // identificación.
+        aria-label={`Escribinos por WhatsApp al ${whatsapp}`}
         className="wa-btn font-hud flex items-center gap-3 px-4 py-4 transition-transform duration-200 hover:-translate-y-0.5 md:px-5"
       >
         {/* El punto que pulsa lento.
@@ -62,7 +66,7 @@ export function WhatsApp() {
 
         {/* El texto y las barras solo en desktop: en mobile el botón es el
             ícono y nada más. */}
-        <span className="hidden md:inline">{FLOTANTE.label.toUpperCase()}</span>
+        <span className="hidden md:inline">{FLOTANTE_LABEL.toUpperCase()}</span>
         {/* El `hidden` va en un envoltorio y no en `.barras`: la clase de las
             barras ya no fija `display` propio, pero envolver además deja
             explícito que lo que se esconde es el bloque entero. */}

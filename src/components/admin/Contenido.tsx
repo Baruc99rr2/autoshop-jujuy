@@ -1,27 +1,42 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import ErrorCarga from '../ErrorCarga'
+import BloqueContacto from './BloqueContacto'
 import BloqueContadores from './BloqueContadores'
 import BloquePreguntas from './BloquePreguntas'
+import BloqueSegmentos from './BloqueSegmentos'
 import BloqueServicios from './BloqueServicios'
 import Dialogo from './Dialogo'
 import Marco from './Marco'
 import { repoContenido } from '../../data/repo'
-import type { Contadores, Pregunta, Servicio } from '../../types/contenido'
+import type {
+  Contadores,
+  DatosContacto,
+  Pregunta,
+  Segmento,
+  Servicio,
+} from '../../types/contenido'
 
 /**
- * «Contenido del sitio»: lo del inicio que no son autos.
+ * «Contenido del sitio»: lo que no son autos. Los bloques van en el orden en
+ * que aparecen en el inicio, y el contacto al final.
  *
  * VA APARTE DE LAS UNIDADES, en su propia pestaña, porque es otro trabajo:
  * las unidades se tocan todos los días y esto una vez por mes, cuando cambia
  * un precio o aparece una pregunta nueva.
  *
- * Tres bloques con su propio guardado (ver `Bloque.tsx`). La pantalla solo
+ * Cinco bloques con su propio guardado (ver `Bloque.tsx`). La pantalla solo
  * los carga y lleva la cuenta de cuáles tienen cambios, para avisar antes de
  * irse a las unidades o de cerrar la pestaña.
  */
 
-type Datos = { contadores: Contadores; servicios: Servicio[]; preguntas: Pregunta[] }
+type Datos = {
+  contadores: Contadores
+  segmentos: Segmento[]
+  servicios: Servicio[]
+  preguntas: Pregunta[]
+  contacto: DatosContacto
+}
 type Bloque = keyof Datos
 
 export function Contenido() {
@@ -30,8 +45,10 @@ export function Contenido() {
   const [falla, setFalla] = useState<string | null>(null)
   const [sucios, setSucios] = useState<Record<Bloque, boolean>>({
     contadores: false,
+    segmentos: false,
     servicios: false,
     preguntas: false,
+    contacto: false,
   })
   const [destino, setDestino] = useState<string | null>(null)
   const [intento, setIntento] = useState(0)
@@ -40,11 +57,13 @@ export function Contenido() {
     let vivo = true
     Promise.all([
       repoContenido.obtenerContadores(),
+      repoContenido.listarSegmentos(),
       repoContenido.listarServicios(),
       repoContenido.listarPreguntas(),
+      repoContenido.obtenerContacto(),
     ])
-      .then(([contadores, servicios, preguntas]) => {
-        if (vivo) setDatos({ contadores, servicios, preguntas })
+      .then(([contadores, segmentos, servicios, preguntas, contacto]) => {
+        if (vivo) setDatos({ contadores, segmentos, servicios, preguntas, contacto })
       })
       .catch((e) => {
         if (vivo) setFalla(e instanceof Error ? e.message : 'No se pudo leer el contenido.')
@@ -62,8 +81,10 @@ export function Contenido() {
     [],
   )
   const onContadores = useCallback((s: boolean) => marcar('contadores', s), [marcar])
+  const onSegmentos = useCallback((s: boolean) => marcar('segmentos', s), [marcar])
   const onServicios = useCallback((s: boolean) => marcar('servicios', s), [marcar])
   const onPreguntas = useCallback((s: boolean) => marcar('preguntas', s), [marcar])
+  const onContacto = useCallback((s: boolean) => marcar('contacto', s), [marcar])
 
   const haySucios = Object.values(sucios).some(Boolean)
 
@@ -83,7 +104,7 @@ export function Contenido() {
       indice="02"
       eyebrow="CONTENIDO"
       titulo="Contenido del sitio"
-      lead="Los números, los servicios y las preguntas del inicio. Cada bloque se guarda con su propio botón."
+      lead="Los números, los segmentos, los servicios, las preguntas y los datos de contacto. Cada bloque se guarda con su propio botón."
       ancho="formulario"
       pestania="contenido"
       antesDeIr={(to) => {
@@ -109,8 +130,10 @@ export function Contenido() {
       {datos && (
         <div className="mt-10 grid grid-cols-1 gap-14">
           <BloqueContadores inicial={datos.contadores} onSucio={onContadores} />
+          <BloqueSegmentos inicial={datos.segmentos} onSucio={onSegmentos} />
           <BloqueServicios inicial={datos.servicios} onSucio={onServicios} />
           <BloquePreguntas inicial={datos.preguntas} onSucio={onPreguntas} />
+          <BloqueContacto inicial={datos.contacto} onSucio={onContacto} />
         </div>
       )}
 
@@ -135,11 +158,11 @@ export function Contenido() {
   )
 }
 
-/** Los tres bloques, vacíos, mientras llega el contenido. */
+/** Los bloques, vacíos, mientras llega el contenido. */
 function ContenidoEsqueleto() {
   return (
     <div className="mt-10 grid animate-pulse grid-cols-1 gap-14" aria-hidden="true">
-      {[4, 3, 3].map((filas, i) => (
+      {[4, 2, 3, 3, 4].map((filas, i) => (
         <div key={i} className="border-t border-graphite pt-8">
           <div className="h-4 w-40 bg-graphite/60" />
           <div className="mt-3 h-3 w-3/4 bg-graphite/30" />

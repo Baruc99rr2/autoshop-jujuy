@@ -97,3 +97,93 @@ export interface Pregunta {
   respuesta: string
   orden: number
 }
+
+// ── Segmentos ─────────────────────────────────────────────────────────────
+
+/**
+ * La foto de un segmento.
+ *
+ * `ruta` es el camino dentro del bucket (`segmentos/...`), o `null` cuando la
+ * imagen es un archivo del sitio (`/img/segmentos/...`, las cuatro de la
+ * semilla): esas no se borran nunca desde el panel.
+ *
+ * `ancho` y `alto` son los REALES del archivo: van al `<img>` porque la
+ * sección es un pin de ScrollTrigger, y un salto de layout ahí corre el pin
+ * entero.
+ */
+export interface ImagenSegmento {
+  url: string
+  ruta: string | null
+  ancho: number
+  alto: number
+}
+
+export interface Segmento {
+  id: string
+  /** Nombre corto que muestra la lista: "Ciudad", "Ruta". */
+  titulo: string
+  /** Una línea concreta sobre para qué sirve ese tipo de auto en Jujuy. */
+  texto: string
+  /** Rótulo corto a la derecha del ítem ("4X4"). Vacío = sin rótulo. */
+  etiqueta: string
+  imagen: ImagenSegmento
+  orden: number
+}
+
+/**
+ * Lo que el panel manda al guardar: una fila puede traer una foto NUEVA
+ * (`archivo`, ya comprimida) en vez de la que tenía. El repositorio la sube,
+ * y recién ahí la fila tiene `imagen`.
+ */
+export type SegmentoAGuardar = Omit<Segmento, 'imagen'> & {
+  imagen: ImagenSegmento | null
+  archivo?: File
+}
+
+/**
+ * El carrusel apilado necesita al menos dos: con uno solo no hay nada que
+ * apilar. Con uno la sección se dibuja fija (una card, sin pin), y con cero
+ * no se dibuja.
+ */
+export const MIN_SEGMENTOS_CARRUSEL = 2
+
+/**
+ * Techo de la lista. El pin mide 0,8 pantallas por segmento: con más de seis
+ * la sección se vuelve un túnel que hay que scrollear un buen rato.
+ */
+export const MAX_SEGMENTOS = 6
+
+// ── Contacto ──────────────────────────────────────────────────────────────
+
+export interface Horario {
+  /** "Lunes a viernes" */
+  dias: string
+  /** "9:00 a 13:00 · 17:00 a 20:30" */
+  horas: string
+}
+
+/**
+ * Los datos de contacto que edita la dueña. Todo lo que muestra o enlaza un
+ * teléfono, un mail, el WhatsApp o la dirección sale de ACÁ, vía
+ * `useContacto()`: el formulario, el flotante, la ficha y el footer.
+ */
+export interface DatosContacto {
+  /** Como se muestra: "0388 423-7788". El `tel:` se arma solo. */
+  telefono: string
+  email: string
+  /**
+   * Como se muestra: "+54 9 388 465-2485". El link de `wa.me` se arma con
+   * `numeroWhatsapp()`, que lo lleva al formato internacional.
+   */
+  whatsapp: string
+  /** "Av. Éxodo 750, San Salvador de Jujuy" */
+  direccion: string
+  /**
+   * Coordenadas del salón, en grados decimales. El mapa de OpenStreetMap y
+   * el «Cómo llegar» trabajan con esto y no con el texto de la dirección:
+   * geocodificar texto necesitaría un servicio con clave.
+   */
+  lat: number
+  lng: number
+  horarios: Horario[]
+}

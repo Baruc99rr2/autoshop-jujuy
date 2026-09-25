@@ -1,69 +1,129 @@
 /**
- * Datos de la concesionaria.
+ * Lo fijo de la concesionaria y las cuentas que arman links de contacto.
  *
- * Son REALES el WhatsApp, el teléfono, los horarios y las redes. La dirección
- * y el mail todavía son de muestra: cuando lleguen los reales se reemplazan
- * acá y no hay que tocar ningún componente.
+ * TELÉFONO, MAIL, WHATSAPP, DIRECCIÓN Y HORARIOS YA NO VIVEN ACÁ: los edita
+ * la dueña desde el panel y se leen con `useContacto()` (`lib/contenido.ts`).
+ * La primera carga sale de `SEMILLA_CONTACTO` (`repo/semilla-contenido.ts`).
+ * Este archivo se queda con lo que no cambia —el nombre, la ciudad, las
+ * redes— y con las funciones que convierten un dato escrito a mano en un link
+ * que funcione.
  */
 
-/**
- * Número de WhatsApp de la concesionaria, en el formato que pide wa.me:
- * internacional, sin `+`, sin espacios ni guiones.
- *
- * ES LA ÚNICA COPIA DEL NÚMERO EN TODO EL SITIO. El formulario de contacto, el
- * botón flotante, el link del footer y el de la sección de contacto salen de
- * acá: con el número escrito en cada lugar, cambiarlo significaba encontrar
- * los cinco.
- */
-export const WHATSAPP_NUMERO = '5493884652485'
+import type { DatosContacto } from '../types/contenido'
 
-/** Link base a la conversación, sin mensaje. */
-export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMERO}`
-
-/**
- * Link a WhatsApp con un mensaje ya escrito. El texto va SIEMPRE por
- * `encodeURIComponent`: los mensajes del formulario traen saltos de línea y
- * acentos, y sin codificar el link se corta en el primer espacio.
- */
-export function whatsappCon(mensaje: string): string {
-  return `${WHATSAPP_URL}?text=${encodeURIComponent(mensaje)}`
-}
-
-export interface Contacto {
+export interface Negocio {
   nombre: string
   nombreLegal: string
-  direccion: string
   ciudad: string
   provincia: string
-  telefono: string
-  /** Formato para el href tel:, sin espacios ni guiones. */
-  telefonoHref: string
-  /** Solo para mostrar en pantalla. El link sale de WHATSAPP_URL. */
-  whatsapp: string
-  email: string
-  horarios: { dias: string; horas: string }[]
   /** Coordenadas de la plaza Belgrano, para el ticker del hero. */
   coordenadas: string
   desde: number
 }
 
-export const CONTACTO: Contacto = {
+export const NEGOCIO: Negocio = {
   nombre: 'AutoShop Jujuy',
   nombreLegal: 'Automotores AutoShop Jujuy',
-  direccion: 'Av. Éxodo 1450',
   ciudad: 'San Salvador de Jujuy',
   provincia: 'Jujuy',
-  telefono: '388 465-2485',
-  telefonoHref: '+543884652485',
-  whatsapp: '+54 9 388 465-2485',
-  email: 'ventas@autoshopjujuy.com.ar',
-  horarios: [
-    { dias: 'Lunes a viernes', horas: '9:30 a 13:30 · 17:15 a 21:30' },
-    { dias: 'Sábados', horas: '9:30 a 13:40' },
-  ],
   coordenadas: '24.1858°S 65.2995°W',
   desde: 2015,
 }
+
+// ── WhatsApp ──────────────────────────────────────────────────────────────
+
+/**
+ * El número tal como lo escribió la dueña, llevado al formato que pide
+ * wa.me: internacional, sin `+`, sin espacios ni guiones. `null` si no hay
+ * forma de sacar un celular argentino de ahí.
+ *
+ * Acepta las formas en que se escribe un celular en Argentina: con o sin
+ * +54, con o sin el 9, con el 0 de la característica y hasta con el 15 viejo
+ * ("0388 15 465-2485"). El número guardado queda como lo escribió ella; esto
+ * solo arma el link.
+ */
+export function numeroWhatsapp(texto: string): string | null {
+  let d = texto.replace(/\D/g, '')
+  if (d.startsWith('00')) d = d.slice(2)
+  if (d.startsWith('54')) d = d.slice(2)
+  if (d.startsWith('9')) d = d.slice(1)
+  if (d.startsWith('0')) d = d.slice(1)
+  // El 15 va después de la característica (2 a 4 cifras) y sobra: con él son
+  // 12 cifras en vez de 10.
+  if (d.length === 12) {
+    for (const largo of [2, 3, 4]) {
+      if (d.slice(largo, largo + 2) === '15') {
+        d = d.slice(0, largo) + d.slice(largo + 2)
+        break
+      }
+    }
+  }
+  return d.length === 10 ? `549${d}` : null
+}
+
+/**
+ * Link a la conversación, con un mensaje ya escrito si viene. El texto va
+ * SIEMPRE por `encodeURIComponent`: los mensajes del formulario traen saltos
+ * de línea y acentos, y sin codificar el link se corta en el primer espacio.
+ *
+ * Si el número no se puede leer, el link va a wa.me sin número: WhatsApp
+ * abre y deja elegir el contacto con el mensaje escrito, que es mejor que un
+ * botón muerto. El panel no deja guardar un número así.
+ */
+export function whatsappUrl(numero: string, mensaje?: string): string {
+  const n = numeroWhatsapp(numero) ?? ''
+  const base = `https://wa.me/${n}`
+  return mensaje ? `${base}?text=${encodeURIComponent(mensaje)}` : base
+}
+
+// ── Teléfono y mapa ───────────────────────────────────────────────────────
+
+/** Para el `href`: `tel:` solo con cifras y, si lo hay, el `+` del principio. */
+export function telefonoHref(telefono: string): string {
+  const t = telefono.trim()
+  return `tel:${t.startsWith('+') ? '+' : ''}${t.replace(/\D/g, '')}`
+}
+
+/** ¿Las coordenadas son un punto del planeta? */
+export function coordenadasValidas(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180 &&
+    !(lat === 0 && lng === 0)
+  )
+}
+
+/**
+ * El mapa embebido de OpenStreetMap: sin clave y sin cuenta.
+ *
+ * El embed no busca direcciones, solo recibe un recuadro y un marcador. El
+ * recuadro mide unos 1,2 × 0,9 km alrededor del salón: con eso el mapa
+ * muestra calles con nombre y todavía se reconoce la zona de la ciudad.
+ */
+export function mapaEmbedUrl(c: Pick<DatosContacto, 'lat' | 'lng'>): string {
+  const dLng = 0.006
+  const dLat = 0.004
+  const bbox = [c.lng - dLng, c.lat - dLat, c.lng + dLng, c.lat + dLat]
+    .map((n) => n.toFixed(6))
+    .join(',')
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${c.lat.toFixed(6)},${c.lng.toFixed(6)}`
+}
+
+/**
+ * «Cómo llegar»: Google Maps con la ruta desde donde esté la persona hasta el
+ * salón. Es un link común de Google (sin clave); en el celular abre la app.
+ *
+ * El destino va en coordenadas y no con el texto de la dirección: es el
+ * mismo punto que marca el mapa, y un texto como "Av. Éxodo 750" Google lo
+ * puede interpretar en otra ciudad.
+ */
+export function comoLlegarUrl(c: Pick<DatosContacto, 'lat' | 'lng'>): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`
+}
+
+// ── Redes ─────────────────────────────────────────────────────────────────
 
 export interface Red {
   label: string
@@ -72,6 +132,7 @@ export interface Red {
   usuario: string
 }
 
+/** Las redes fijas. El WhatsApp se suma donde se dibuja, desde `useContacto()`. */
 export const REDES: Red[] = [
   {
     label: 'Instagram',
@@ -85,11 +146,6 @@ export const REDES: Red[] = [
        búsqueda de Facebook con ese nombre. */
     href: 'https://www.facebook.com/search/top?q=Autoshop%20Jujuy',
     usuario: 'Autoshop Jujuy',
-  },
-  {
-    label: 'WhatsApp',
-    href: WHATSAPP_URL,
-    usuario: CONTACTO.whatsapp,
   },
 ]
 
@@ -116,13 +172,5 @@ export const PRESUPUESTOS: Opcion[] = [
   { value: 'mas-30', label: '$30M+' },
 ]
 
-/**
- * Botón flotante de WhatsApp. Vivía en `data/cta.ts` junto con la sección de
- * cierre; al sacarse esa sección se mudó acá, que es donde está el número.
- * En mobile queda solo el ícono, así que el `aria` carga la identificación.
- */
-export const FLOTANTE = {
-  label: 'Hablar con un asesor',
-  href: WHATSAPP_URL,
-  aria: `Escribinos por WhatsApp al ${CONTACTO.whatsapp}`,
-} as const
+/** Texto del botón flotante de WhatsApp. El link sale de `useContacto()`. */
+export const FLOTANTE_LABEL = 'Hablar con un asesor'

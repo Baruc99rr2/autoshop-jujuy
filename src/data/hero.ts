@@ -4,7 +4,7 @@
  * TODO ESTO ES DE MUESTRA. Cuando lleguen los materiales reales de la
  * concesionaria se reemplaza este archivo y no hay que tocar el componente.
  */
-import { CONTACTO } from './contacto'
+import { NEGOCIO } from './contacto'
 
 export interface Hero {
   /** Eyebrow corto sobre el titular. */
@@ -43,11 +43,11 @@ export const HERO: Hero = {
  * ese registro.
  */
 export const TICKER: string[] = [
-  CONTACTO.ciudad.toUpperCase(),
-  CONTACTO.coordenadas.toUpperCase(),
+  NEGOCIO.ciudad.toUpperCase(),
+  NEGOCIO.coordenadas.toUpperCase(),
   '0KM Y USADOS',
   'FINANCIACIÓN PROPIA',
-  `EST. ${CONTACTO.desde}`,
+  `EST. ${NEGOCIO.desde}`,
 ]
 
 /**

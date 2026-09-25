@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { CONTACTO } from '../data/contacto'
+import { NEGOCIO } from '../data/contacto'
 
 /**
  * El `<title>` de la pestaña.
@@ -11,7 +11,7 @@ import { CONTACTO } from '../data/contacto'
  */
 
 /** Lo que dice `index.html`. Se restaura al salir de una página con título propio. */
-export const TITULO_BASE = `${CONTACTO.nombreLegal} — 0km y usados`
+export const TITULO_BASE = `${NEGOCIO.nombreLegal} — 0km y usados`
 
 /** La descripción de `index.html`, leída una vez: es la que vale para el home. */
 const DESCRIPCION_BASE =
@@ -36,7 +36,7 @@ function ponerDescripcion(texto: string): void {
 export function useTitulo(titulo: string | null, descripcion?: string): void {
   useEffect(() => {
     if (!titulo) return
-    document.title = `${titulo} — ${CONTACTO.nombre}`
+    document.title = `${titulo} — ${NEGOCIO.nombre}`
     if (descripcion) ponerDescripcion(descripcion)
     return () => {
       document.title = TITULO_BASE

@@ -1,14 +1,30 @@
 import { useEffect, useSyncExternalStore } from 'react'
-import { repoContenido } from '../data/repo'
-import type { Contadores, Pregunta, Servicio } from '../types/contenido'
+import { repoContenido, SEMILLA_CONTACTO, SEMILLA_SEGMENTOS } from '../data/repo'
+import type {
+  Contadores,
+  DatosContacto,
+  Pregunta,
+  Segmento,
+  Servicio,
+} from '../types/contenido'
 
 /**
- * El contenido del inicio, pedido UNA vez por carga y compartido.
+ * El contenido del sitio, pedido UNA vez por carga y compartido.
  *
- * Lo leen tres lugares a la vez —el home, el menú y el footer, que tienen que
- * saber si Servicios y Preguntas existen para no ofrecer un link a una sección
- * que no está— y con Supabase serían tres viajes iguales. Acá hay uno solo:
- * el primero que lo pide dispara el pedido y el resto espera el mismo.
+ * Lo leen varios lugares a la vez —el home, el menú y el footer, que tienen
+ * que saber si una sección existe para no ofrecer un link a algo que no está,
+ * y todo botón de WhatsApp, que lee el número de acá— y con Supabase serían
+ * varios viajes iguales. Acá hay uno solo: el primero que lo pide dispara el
+ * pedido y el resto espera el mismo.
+ *
+ * CADA PARTE CAE POR SU LADO. Si falla una sola (una tabla que todavía no se
+ * creó, por ejemplo), las otras se muestran igual. Lo que falla se queda con
+ * lo último bueno, y si nunca hubo nada, con su respaldo:
+ * - contadores, servicios y preguntas: nada (la sección no se dibuja);
+ * - segmentos y contacto: la semilla. Los segmentos eran fijos hasta que
+ *   pasaron al panel y sus fotos son archivos del sitio, así que la semilla
+ *   siempre se puede dibujar; y un botón de WhatsApp con el número de
+ *   siempre sirve más que uno que no lleva a ningún lado.
  *
  * SI FALLA, REINTENTA SOLO. Mientras tanto el inicio se dibuja sin cifras,
  * sin servicios y sin preguntas —mejor que un inicio que no termina de
@@ -27,9 +43,19 @@ export interface ContenidoSitio {
   contadores: Contadores | null
   servicios: Servicio[]
   preguntas: Pregunta[]
+  segmentos: Segmento[]
+  /** Nunca falta: si no llegó, es la semilla. */
+  contacto: DatosContacto
 }
 
-const VACIO: ContenidoSitio = { contadores: null, servicios: [], preguntas: [] }
+/** Lo que queda de cada parte que nunca llegó. */
+const RESPALDO: ContenidoSitio = {
+  contadores: null,
+  servicios: [],
+  preguntas: [],
+  segmentos: SEMILLA_SEGMENTOS,
+  contacto: SEMILLA_CONTACTO,
+}
 
 /** `null` mientras llega el primer pedido. */
 let estado: ContenidoSitio | null = null
@@ -50,21 +76,31 @@ function cargar(): void {
   if (enVuelo) return
   enVuelo = true
   clearTimeout(espera)
-  Promise.all([
+  Promise.allSettled([
     repoContenido.obtenerContadores(),
     repoContenido.listarServicios(),
     repoContenido.listarPreguntas(),
+    repoContenido.listarSegmentos(),
+    repoContenido.obtenerContacto(),
   ])
-    .then(([contadores, servicios, preguntas]) => {
-      estado = { contadores, servicios, preguntas }
-      viejo = false
-      reintentos = 0
-    })
-    .catch(() => {
-      // Lo último bueno se queda; si nunca hubo nada, el inicio va vacío.
-      estado ??= VACIO
-      viejo = true
-      if (reintentos < REINTENTOS) {
+    .then(([contadores, servicios, preguntas, segmentos, contacto]) => {
+      const antes = estado ?? RESPALDO
+      const tomar = <T,>(r: PromiseSettledResult<T>, previo: T): T =>
+        r.status === 'fulfilled' ? r.value : previo
+      estado = {
+        contadores: tomar(contadores, antes.contadores),
+        servicios: tomar(servicios, antes.servicios),
+        preguntas: tomar(preguntas, antes.preguntas),
+        segmentos: tomar(segmentos, antes.segmentos),
+        contacto: tomar(contacto, antes.contacto),
+      }
+      const fallo = [contadores, servicios, preguntas, segmentos, contacto].some(
+        (r) => r.status === 'rejected',
+      )
+      viejo = fallo
+      if (!fallo) {
+        reintentos = 0
+      } else if (reintentos < REINTENTOS) {
         reintentos++
         espera = setTimeout(cargar, PAUSA_MS * reintentos)
       }
@@ -106,6 +142,15 @@ export function useContenido(): ContenidoSitio | null {
 }
 
 /**
+ * Los datos de contacto: el número de WhatsApp, el teléfono, la dirección.
+ * Mientras llegan (o si no llegan) son los de la semilla, así que un botón
+ * de WhatsApp nunca queda sin destino.
+ */
+export function useContacto(): DatosContacto {
+  return useContenido()?.contacto ?? SEMILLA_CONTACTO
+}
+
+/**
  * Los ids de sección que no se dibujan porque su lista está vacía.
  *
  * Mientras carga no se oculta nada: con el mock la respuesta es inmediata, y
@@ -114,6 +159,7 @@ export function useContenido(): ContenidoSitio | null {
 export function seccionesOcultas(c: ContenidoSitio | null): string[] {
   if (!c) return []
   const fuera: string[] = []
+  if (c.segmentos.length === 0) fuera.push('segmentos')
   if (c.servicios.length === 0) fuera.push('postventa')
   if (c.preguntas.length === 0) fuera.push('preguntas')
   return fuera

@@ -6,7 +6,16 @@ import type {
   Vehiculo,
   Video,
 } from '../../types/vehiculo'
-import type { Contadores, Pregunta, Servicio } from '../../types/contenido'
+import type {
+  Contadores,
+  DatosContacto,
+  Pregunta,
+  Segmento,
+  SegmentoAGuardar,
+  Servicio,
+} from '../../types/contenido'
+import { MAX_SEGMENTOS } from '../../types/contenido'
+import { coordenadasValidas, numeroWhatsapp } from '../contacto'
 
 /**
  * Filtros del listado.
@@ -91,7 +100,8 @@ export interface RepoVehiculos {
 }
 
 /**
- * El contenido fijo del inicio: contadores, servicios y preguntas.
+ * El contenido fijo del sitio: contadores, segmentos, servicios, preguntas
+ * y los datos de contacto.
  *
  * Cada bloque se lee y se guarda ENTERO, porque en el panel cada bloque tiene
  * su propio botón de guardar y lo que se manda es la lista como quedó: con
@@ -111,6 +121,17 @@ export interface RepoContenido {
 
   listarPreguntas(): Promise<Pregunta[]>
   guardarPreguntas(lista: Pregunta[]): Promise<Pregunta[]>
+
+  listarSegmentos(): Promise<Segmento[]>
+  /**
+   * Sube las fotos nuevas (a su carpeta propia, `segmentos/`), guarda la
+   * lista y DESPUÉS borra los archivos que dejaron de usarse. Falla si pasa
+   * de `MAX_SEGMENTOS` o si una fila se queda sin foto.
+   */
+  guardarSegmentos(lista: SegmentoAGuardar[]): Promise<Segmento[]>
+
+  obtenerContacto(): Promise<DatosContacto>
+  guardarContacto(datos: DatosContacto): Promise<DatosContacto>
 }
 
 /** Error propio del repositorio, para poder distinguirlo de un bug al mostrarlo. */
@@ -118,5 +139,31 @@ export class ErrorRepo extends Error {
   constructor(mensaje: string) {
     super(mensaje)
     this.name = 'ErrorRepo'
+  }
+}
+
+/**
+ * Las reglas de una lista de segmentos, iguales para el mock y Supabase. El
+ * panel ya las cumple; esto es para que ningún camino las saltee.
+ */
+export function revisarSegmentos(lista: SegmentoAGuardar[]): void {
+  if (lista.length > MAX_SEGMENTOS) {
+    throw new ErrorRepo(`Son ${MAX_SEGMENTOS} segmentos como máximo.`)
+  }
+  for (const s of lista) {
+    if (!s.titulo.trim()) throw new ErrorRepo('Hay un segmento sin título.')
+    if (!s.imagen && !s.archivo) {
+      throw new ErrorRepo(`Al segmento «${s.titulo.trim()}» le falta la foto.`)
+    }
+  }
+}
+
+/** Lo mínimo para que los links de contacto funcionen. */
+export function revisarContacto(d: DatosContacto): void {
+  if (!numeroWhatsapp(d.whatsapp)) {
+    throw new ErrorRepo('El número de WhatsApp no parece un celular argentino.')
+  }
+  if (!coordenadasValidas(d.lat, d.lng)) {
+    throw new ErrorRepo('La latitud o la longitud no son válidas.')
   }
 }

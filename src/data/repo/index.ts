@@ -15,7 +15,7 @@ import type { RepoContenido, RepoVehiculos } from './tipos'
 
 export const repo: RepoVehiculos = USA_SUPABASE ? repoSupabase : repoMock
 
-/** Contadores, servicios y preguntas del inicio. Misma regla que `repo`. */
+/** Contadores, segmentos, servicios, preguntas y contacto. Misma regla que `repo`. */
 export const repoContenido: RepoContenido = USA_SUPABASE ? contenidoSupabase : contenidoMock
 
 export { ErrorRepo } from './tipos'
@@ -27,3 +27,4 @@ export type {
   RepoVehiculos,
 } from './tipos'
 export { esDemo, PREFIJO_DEMO } from './semilla'
+export { SEMILLA_CONTACTO, SEMILLA_SEGMENTOS } from './semilla-contenido'

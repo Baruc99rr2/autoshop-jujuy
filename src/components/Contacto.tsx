@@ -4,12 +4,15 @@ import Icono, { type NombreIcono } from './Icono'
 import SectionHeader from './SectionHeader'
 import {
   CONSULTAS,
-  CONTACTO,
   PRESUPUESTOS,
   REDES,
-  whatsappCon,
+  telefonoHref,
+  whatsappUrl,
 } from '../data/contacto'
+import type { Red } from '../data/contacto'
 import type { Seccion } from '../data/nav'
+import { useContacto } from '../lib/contenido'
+import type { DatosContacto } from '../types/contenido'
 
 type Campos = {
   nombre: string
@@ -89,31 +92,29 @@ function mensajeWhatsApp(c: Campos): string {
   ].join('\n')
 }
 
-const DATOS: { icono: NombreIcono; label: string; valor: string; href?: string }[] =
-  [
-    {
-      icono: 'mail',
-      label: 'Mail',
-      valor: CONTACTO.email,
-      href: `mailto:${CONTACTO.email}`,
-    },
-    {
-      icono: 'telefono',
-      label: 'Teléfono',
-      valor: CONTACTO.telefono,
-      href: `tel:${CONTACTO.telefonoHref}`,
-    },
-    {
-      icono: 'ubicacion',
-      label: 'Salón',
-      valor: `${CONTACTO.direccion}, ${CONTACTO.ciudad}`,
-    },
-    {
-      icono: 'reloj',
-      label: 'Horarios',
-      valor: CONTACTO.horarios.map((h) => `${h.dias} ${h.horas}`).join(' · '),
-    },
+type Dato = { icono: NombreIcono; label: string; valor: string; href?: string }
+
+/**
+ * Los datos de la columna izquierda, desde lo que cargó la dueña. Un dato
+ * vacío no se dibuja: una fila "Teléfono" sin número es peor que ninguna.
+ */
+function datosDe(c: DatosContacto): Dato[] {
+  const lista: (Dato | null)[] = [
+    c.email ? { icono: 'mail', label: 'Mail', valor: c.email, href: `mailto:${c.email}` } : null,
+    c.telefono
+      ? { icono: 'telefono', label: 'Teléfono', valor: c.telefono, href: telefonoHref(c.telefono) }
+      : null,
+    c.direccion ? { icono: 'ubicacion', label: 'Salón', valor: c.direccion } : null,
+    c.horarios.length > 0
+      ? {
+          icono: 'reloj',
+          label: 'Horarios',
+          valor: c.horarios.map((h) => `${h.dias} ${h.horas}`).join(' · '),
+        }
+      : null,
   ]
+  return lista.filter((d): d is Dato => d !== null)
+}
 
 /**
  * Campo de texto con el label adentro de la caja biselada.
@@ -210,6 +211,11 @@ function CampoTexto({
 export function Contacto({ s: S }: { s: Seccion }) {
   const uid = useId()
   const [campos, setCampos] = useState<Campos>(VACIO)
+  const contacto = useContacto()
+  const redes: Red[] = [
+    ...REDES,
+    { label: 'WhatsApp', href: whatsappUrl(contacto.whatsapp), usuario: contacto.whatsapp },
+  ]
   const [errores, setErrores] = useState<Errores>({})
 
   const set = (k: keyof Campos, v: string) => {
@@ -234,7 +240,7 @@ export function Contacto({ s: S }: { s: Seccion }) {
     // propio: el acuse de recibo es la conversación que se abre, y una
     // pantalla de "listo" acá mentiría, porque el mensaje todavía no se mandó
     // hasta que la persona toque enviar en WhatsApp.
-    window.open(whatsappCon(mensajeWhatsApp(campos)), '_blank', 'noopener')
+    window.open(whatsappUrl(contacto.whatsapp, mensajeWhatsApp(campos)), '_blank', 'noopener')
   }
 
   const idDe = (k: keyof Campos) => `${uid}-${k}`
@@ -264,7 +270,7 @@ export function Contacto({ s: S }: { s: Seccion }) {
           />
 
           <ul className="mt-12 space-y-px">
-            {DATOS.map((d) => (
+            {datosDe(contacto).map((d) => (
               <li
                 key={d.label}
                 className="flex items-start gap-4 border-t border-graphite py-5"
@@ -299,7 +305,7 @@ export function Contacto({ s: S }: { s: Seccion }) {
               el mismo criterio que en la sección de marcas. Un ícono de
               Instagram trazado a mano se nota, y además es marca registrada. */}
           <ul className="mt-8 flex flex-wrap gap-2">
-            {REDES.map((r) => (
+            {redes.map((r) => (
               <li key={r.label}>
                 <Bevel
                   as="a"

@@ -3,14 +3,13 @@ import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import SectionHeader from './SectionHeader'
-import { SEGMENTOS } from '../data/segmentos'
-import { seccion } from '../data/nav'
+import type { Seccion } from '../data/nav'
 import { prefersReducedMotion } from '../lib/motion-prefs'
 import { useMedia } from '../lib/use-media'
+import { MIN_SEGMENTOS_CARRUSEL } from '../types/contenido'
+import type { Segmento } from '../types/contenido'
 
 gsap.registerPlugin(ScrollTrigger)
-
-const S = seccion('segmentos')
 
 /**
  * Carrusel apilado.
@@ -30,11 +29,28 @@ const S = seccion('segmentos')
  * MOBILE: sin pin. El pin en mobile pelea con la barra de URL de Safari —el
  * viewport cambia de alto mientras se scrollea y el pin salta— así que va
  * scroll horizontal con `scroll-snap-type: x mandatory` y cards de 85vw.
+ *
+ * LA LISTA LA CARGA LA DUEÑA (panel → Contenido del sitio). Con UN solo
+ * segmento no hay nada que apilar: va el mismo layout sin pin, con una card
+ * y sin el contador "01 / 01". Con cero, `Home` ni siquiera la dibuja.
+ * Mientras llega la lista (`null`) se dibuja un esqueleto del mismo alto,
+ * para que lo de abajo no salte cuando aparezca.
+ *
+ * Las fotos van con `alt=""`: ilustran el segmento cuyo nombre está escrito
+ * al lado, y un lector de pantalla no gana nada con cuatro descripciones de
+ * autos en la noche.
  */
-export function Segmentos() {
+export function Segmentos({ s: S, segmentos }: { s: Seccion; segmentos: Segmento[] | null }) {
   const root = useRef<HTMLDivElement>(null)
-  const [activo, setActivo] = useState(0)
+  const [activoCrudo, setActivo] = useState(0)
   const esMobile = useMedia('(max-width: 767px)')
+  const lista = segmentos ?? []
+  const total = lista.length
+  // Si la lista se achica con el panel abierto en otra pestaña, el índice
+  // viejo podría quedar afuera.
+  const activo = Math.min(activoCrudo, Math.max(0, total - 1))
+  // El pin se vuelve a armar si cambian las fotos o su orden.
+  const firma = lista.map((x) => `${x.id}:${x.imagen.url}`).join('|')
 
   // El pin se cae en dos casos, y los dos van al MISMO layout de riel.
   //
@@ -48,7 +64,9 @@ export function Segmentos() {
   // El piso de calidad dice que con reduced-motion los cambios de estado
   // siguen siendo visibles, solo instantáneos. Un riel con las cuatro cards
   // cumple eso: está todo, y se llega scrolleando sin que nada se anime.
-  const sinPin = esMobile || prefersReducedMotion()
+  //
+  // Y un tercero: con menos de dos segmentos no hay carrusel posible.
+  const sinPin = esMobile || prefersReducedMotion() || total < MIN_SEGMENTOS_CARRUSEL
 
   useGSAP(
     () => {
@@ -147,8 +165,24 @@ export function Segmentos() {
 
       return () => st.kill()
     },
-    { scope: root, dependencies: [sinPin] },
+    { scope: root, dependencies: [sinPin, firma], revertOnUpdate: true },
   )
+
+  // ── CARGANDO ──────────────────────────────────────────────────────
+  if (segmentos === null) {
+    return (
+      <section id={S.id} className="border-b border-graphite/60 py-20" aria-busy="true">
+        <div className="shell">
+          <SectionHeader index={S.indice} eyebrow={S.eyebrow} title={S.titulo} />
+          <div
+            aria-hidden="true"
+            className="bevel mt-10 aspect-4/5 w-[85vw] animate-pulse bg-graphite/35 md:aspect-auto md:h-[60svh] md:w-full"
+            style={{ '--bevel': '16px' } as React.CSSProperties}
+          />
+        </div>
+      </section>
+    )
+  }
 
   // ── SIN PIN: mobile, o desktop con reduced-motion ─────────────────
   if (sinPin) {
@@ -159,16 +193,16 @@ export function Segmentos() {
         </div>
 
         <div className="seg-riel mt-10 flex gap-4 overflow-x-auto pb-4">
-          {SEGMENTOS.map((s, i) => (
+          {lista.map((s, i) => (
             <article
-              key={s.nombre}
+              key={s.id}
               className="seg-card w-[85vw] shrink-0 md:w-[46%] lg:w-[38%]"
             >
               <img
-                src={s.imagen}
-                alt={s.alt}
-                width={s.ancho}
-                height={s.alto}
+                src={s.imagen.url}
+                alt=""
+                width={s.imagen.ancho}
+                height={s.imagen.alto}
                 loading="lazy"
                 decoding="async"
                 // 4:5 en mobile, donde la card es angosta y el vertical
@@ -179,13 +213,17 @@ export function Segmentos() {
                 style={{ '--bevel': '16px' } as React.CSSProperties}
               />
               <div className="mt-4 flex items-baseline justify-between gap-4">
-                <h3 className="font-display text-h2 text-bone">{s.nombre}</h3>
-                <span className="font-hud num text-amber">
-                  {String(i + 1).padStart(2, '0')} /{' '}
-                  {String(SEGMENTOS.length).padStart(2, '0')}
-                </span>
+                <h3 className="font-display text-h2 text-bone">{s.titulo}</h3>
+                {total > 1 ? (
+                  <span className="font-hud num text-amber">
+                    {String(i + 1).padStart(2, '0')} /{' '}
+                    {String(total).padStart(2, '0')}
+                  </span>
+                ) : (
+                  s.etiqueta && <span className="font-hud text-amber">{s.etiqueta}</span>
+                )}
               </div>
-              <p className="mt-2 text-bone/65">{s.copy}</p>
+              <p className="mt-2 text-bone/65">{s.texto}</p>
             </article>
           ))}
         </div>
@@ -202,16 +240,16 @@ export function Segmentos() {
           <SectionHeader index={S.indice} eyebrow={S.eyebrow} title={S.titulo} />
 
           <ul className="mt-10 border-t border-graphite">
-            {SEGMENTOS.map((s, i) => (
-              <li key={s.nombre} className="border-b border-graphite">
+            {lista.map((s, i) => (
+              <li key={s.id} className="border-b border-graphite">
                 <div
                   className="seg-item flex items-center justify-between gap-4 px-4 py-4"
                   data-activo={i === activo}
                 >
                   <span className="font-display text-h2 leading-none">
-                    {s.nombre}
+                    {s.titulo}
                   </span>
-                  <span className="font-hud shrink-0">{s.etiqueta}</span>
+                  {s.etiqueta && <span className="font-hud shrink-0">{s.etiqueta}</span>}
                 </div>
               </li>
             ))}
@@ -222,9 +260,9 @@ export function Segmentos() {
           <div className="mt-8 flex items-start gap-6">
             <span className="seg-contador font-hud num shrink-0 text-amber">
               {String(activo + 1).padStart(2, '0')} /{' '}
-              {String(SEGMENTOS.length).padStart(2, '0')}
+              {String(total).padStart(2, '0')}
             </span>
-            <p className="max-w-[46ch] text-bone/65">{SEGMENTOS[activo].copy}</p>
+            <p className="max-w-[46ch] text-bone/65">{lista[activo].texto}</p>
           </div>
         </div>
 
@@ -238,13 +276,13 @@ export function Segmentos() {
           className="bevel relative aspect-4/5 max-h-[76svh] flex-1 overflow-hidden"
           style={{ '--bevel': '20px' } as React.CSSProperties}
         >
-          {SEGMENTOS.map((s) => (
+          {lista.map((s) => (
             <img
-              key={s.nombre}
-              src={s.imagen}
-              alt={s.alt}
-              width={s.ancho}
-              height={s.alto}
+              key={s.id}
+              src={s.imagen.url}
+              alt=""
+              width={s.imagen.ancho}
+              height={s.imagen.alto}
               // Las cuatro van lazy aunque estén apiladas: el navegador las
               // pide cuando la caja se acerca al viewport, o sea antes de que
               // arranque el pin, y no en la carga inicial de la página.

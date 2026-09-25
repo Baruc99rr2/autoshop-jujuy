@@ -1487,3 +1487,16 @@
 .dialogo::backdrop {
   background: rgb(0 0 0 / 0.82);
 }
+
+/* ── Mapa del footer ──────────────────────────────────────────────────────
+   El embed de OpenStreetMap es un rectángulo blanco con calles de colores;
+   sobre el negro del footer era lo único que se veía. Se invierte (el fondo
+   pasa a gris casi negro y las etiquetas negras a claras), el hue-rotate
+   devuelve cada color a su tono —el agua sigue azul, las avenidas siguen
+   cálidas— y el saturate las apaga para que no compitan con el ámbar.
+   Invertir al 90 % y no al 100 % deja el fondo en gris y no en negro puro:
+   las calles, que quedan oscuras, se siguen distinguiendo del fondo por su
+   borde claro. No se anima: es un filtro fijo. */
+.mapa-oscuro {
+  filter: invert(0.9) hue-rotate(180deg) saturate(0.55) brightness(0.95) contrast(0.95);
+}

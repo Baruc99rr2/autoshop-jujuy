@@ -8,7 +8,8 @@ import VehiculoCard, {
   VehiculoCardEsqueleto,
 } from '../components/VehiculoCard'
 import { FILTROS } from '../data/catalogo'
-import { WHATSAPP_URL } from '../data/contacto'
+import { whatsappUrl } from '../data/contacto'
+import { useContacto } from '../lib/contenido'
 import { repo } from '../data/repo'
 import { useTitulo } from '../lib/titulo'
 import { recordarCatalogo } from '../lib/ultimo-catalogo'
@@ -426,6 +427,7 @@ function Vacio({
   onLimpiar: () => void
 }) {
   const etiqueta = FILTROS.find((f) => f.id === condicion)?.label.toLowerCase()
+  const { whatsapp } = useContacto()
 
   return (
     <Bevel
@@ -459,7 +461,7 @@ function Vacio({
       <div className="mt-8 flex flex-wrap gap-3">
         <Bevel
           as="a"
-          href={WHATSAPP_URL}
+          href={whatsappUrl(whatsapp)}
           target="_blank"
           rel="noopener noreferrer"
           variant="solid"

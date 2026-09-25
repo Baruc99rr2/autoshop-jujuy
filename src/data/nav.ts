@@ -122,6 +122,13 @@ export const MENU: ItemMenu[] = [
   { label: 'Contacto', href: '#contacto' },
 ]
 
+/**
+ * El href del ítem de WhatsApp del footer. El número lo edita la dueña y se
+ * lee en runtime con `useContacto()`, así que acá no puede ir el link: el
+ * footer cambia esta marca por él al dibujar.
+ */
+export const HREF_WHATSAPP = 'whatsapp:'
+
 /** Columnas del footer. El orden de los ítems ES el escalonado. */
 export interface ColumnaFooter {
   titulo: string
@@ -150,7 +157,11 @@ export const FOOTER: ColumnaFooter[] = [
   {
     titulo: 'REDES',
     // Salen de `REDES`: con los links escritos acá también, cambiar una red
-    // era acordarse de tocarla en dos archivos.
-    items: REDES.map((r) => ({ label: r.label, href: r.href, externo: true })),
+    // era acordarse de tocarla en dos archivos. El WhatsApp va aparte porque
+    // su número se lee en runtime (ver `HREF_WHATSAPP`).
+    items: [
+      ...REDES.map((r) => ({ label: r.label, href: r.href, externo: true })),
+      { label: 'WhatsApp', href: HREF_WHATSAPP, externo: true },
+    ],
   },
 ]

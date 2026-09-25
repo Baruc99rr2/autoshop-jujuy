@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import Bevel from './Bevel'
-import { WHATSAPP_URL } from '../data/contacto'
+import { whatsappUrl } from '../data/contacto'
+import { useContacto } from '../lib/contenido'
 
 /**
  * Lo que se ve cuando algo no cargó.
@@ -34,6 +35,7 @@ export function ErrorCarga({
   children?: ReactNode
 }) {
   const [probando, setProbando] = useState(false)
+  const { whatsapp } = useContacto()
 
   const reintentar = async () => {
     setProbando(true)
@@ -87,7 +89,7 @@ export function ErrorCarga({
         {conWhatsapp && (
           <Bevel
             as="a"
-            href={WHATSAPP_URL}
+            href={whatsappUrl(whatsapp)}
             target="_blank"
             rel="noopener noreferrer"
             variant="outline"

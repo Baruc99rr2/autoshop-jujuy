@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
 import Bevel from '../components/Bevel'
 import PaginaInterna from '../components/PaginaInterna'
-import { WHATSAPP_URL } from '../data/contacto'
+import { whatsappUrl } from '../data/contacto'
+import { useContacto } from '../lib/contenido'
 
 /**
  * 404 propio.
@@ -21,6 +22,7 @@ import { WHATSAPP_URL } from '../data/contacto'
  * preguntar por la unidad que ya no está.
  */
 export function NoEncontrado() {
+  const { whatsapp } = useContacto()
   return (
     <PaginaInterna
       indice="00"
@@ -42,7 +44,7 @@ export function NoEncontrado() {
 
         <Bevel
           as="a"
-          href={WHATSAPP_URL}
+          href={whatsappUrl(whatsapp)}
           target="_blank"
           rel="noopener noreferrer"
           variant="outline"

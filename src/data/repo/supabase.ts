@@ -129,7 +129,7 @@ function aFila(d: CambiosVehiculo): Record<string, unknown> {
 const uuid = () => crypto.randomUUID()
 
 /** Extensión según el tipo, para que el archivo se sirva con el nombre justo. */
-function extension(archivo: Blob): string {
+export function extension(archivo: Blob): string {
   const t = archivo.type
   if (t === 'image/webp') return 'webp'
   if (t === 'image/jpeg') return 'jpg'
@@ -144,7 +144,7 @@ function extension(archivo: Blob): string {
  * Mide la imagen. Las dimensiones NO se pueden inventar: van al `<img>` para
  * reservar la caja, y un ancho equivocado es un salto de layout.
  */
-function medir(archivo: Blob): Promise<{ ancho: number; alto: number }> {
+export function medir(archivo: Blob): Promise<{ ancho: number; alto: number }> {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(archivo)
     const img = new Image()
@@ -183,7 +183,7 @@ async function slugLibre(sb: SupabaseClient, base: string, exceptoId?: string): 
   return slug
 }
 
-async function subir(sb: SupabaseClient, ruta: string, archivo: Blob): Promise<string> {
+export async function subir(sb: SupabaseClient, ruta: string, archivo: Blob): Promise<string> {
   const { error } = await sb.storage.from(BUCKET).upload(ruta, archivo, {
     contentType: archivo.type,
     // El nombre es único y nunca se reescribe: el navegador lo puede guardar
@@ -201,7 +201,7 @@ async function subir(sb: SupabaseClient, ruta: string, archivo: Blob): Promise<s
  * pudo borrar queda en la carpeta de la unidad y se va cuando se borre la
  * unidad entera.
  */
-async function borrarArchivos(sb: SupabaseClient, rutas: (string | null | undefined)[]): Promise<void> {
+export async function borrarArchivos(sb: SupabaseClient, rutas: (string | null | undefined)[]): Promise<void> {
   const limpias = [...new Set(rutas.filter((r): r is string => Boolean(r)))]
   if (limpias.length === 0) return
   const { error } = await sb.storage.from(BUCKET).remove(limpias)

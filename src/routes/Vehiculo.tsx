@@ -7,8 +7,9 @@ import GaleriaVehiculo from '../components/GaleriaVehiculo'
 import PaginaInterna from '../components/PaginaInterna'
 import VehiculoCard from '../components/VehiculoCard'
 import VideoVehiculo from '../components/VideoVehiculo'
-import { whatsappCon } from '../data/contacto'
+import { whatsappUrl } from '../data/contacto'
 import { repo } from '../data/repo'
+import { useContacto } from '../lib/contenido'
 import { useFitText } from '../lib/fit-text'
 import {
   CONDICION_LABEL,
@@ -256,6 +257,7 @@ function Volver({ a }: { a: string }) {
 
 export function Vehiculo() {
   const { slug = '' } = useParams()
+  const { whatsapp } = useContacto()
 
   // El destino de la vuelta se decide UNA VEZ, al montar: si se leyera en cada
   // render, bastaría con que algo más escribiera en `sessionStorage` para que
@@ -357,7 +359,7 @@ export function Vehiculo() {
   if (v === undefined) return <Esqueleto volver={volver} />
   if (v === null) return <NoEncontrado />
 
-  const wa = whatsappCon(mensaje(v))
+  const wa = whatsappUrl(whatsapp, mensaje(v))
 
   /* ── Barra fija de mobile ─────────────────────────────────────────
      Va apilada ARRIBA de la barra MENU, en su mismo contenedor fijo (ver
