@@ -153,7 +153,7 @@ export function BloqueServicios({
       ayuda="Los tiles de la sección Servicios. Sin servicios, la sección no aparece en el sitio."
     >
       {lista.length > 0 && (
-        <ul className="mt-5 grid grid-cols-1 gap-3">
+        <ul className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
           {lista.map((s, i) => {
             const id = ids(uid, s.id)
             return (

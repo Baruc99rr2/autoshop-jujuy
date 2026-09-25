@@ -31,8 +31,9 @@ type MarcoProps = {
   children?: ReactNode
   /**
    * Ancho máximo del contenido. El listado respira hasta 64rem porque es una
-   * grilla; el formulario se queda en 46rem, que es lo que se lee de un
-   * renglón sin perder el hilo entre la etiqueta y el campo.
+   * grilla; el formulario se queda en 46rem en una columna, que es lo que se
+   * lee de un renglón sin perder el hilo entre la etiqueta y el campo, y se
+   * abre a 80rem desde `lg`, donde va en dos columnas de ese mismo ancho.
    */
   ancho?: 'formulario' | 'listado'
   /**
@@ -56,7 +57,10 @@ const PESTANIAS: readonly { id: Pestania; label: string; to: string }[] = [
 ]
 
 const ANCHO = {
-  formulario: 'max-w-[46rem]',
+  // Desde `lg` el formulario y el contenido del sitio se reparten en dos
+  // columnas, y ahí sí usan el ancho: con 46rem en un monitor de 1440 el
+  // panel era una tira angosta en el medio de la pantalla.
+  formulario: 'max-w-[46rem] lg:max-w-[80rem]',
   listado: 'max-w-[64rem]',
 } as const
 

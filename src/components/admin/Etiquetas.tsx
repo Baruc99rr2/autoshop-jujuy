@@ -313,7 +313,7 @@ export function Etiquetas({ etiquetas, fotos, onCambio }: EtiquetasProps) {
           toques caían al lado del botón. `grid-cols-1` es `minmax(0, 1fr)`, que
           no se pasa del ancho disponible. */}
       {etiquetas.length > 0 && (
-        <ul className="mt-5 grid grid-cols-1 gap-3">
+        <ul className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
           {etiquetas.map((e, i) => (
             <FilaEtiqueta
               key={e.id}

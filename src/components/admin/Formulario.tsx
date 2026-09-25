@@ -10,6 +10,7 @@ import Marco, { AvisoError, Volver } from './Marco'
 import VideoUnidad from './VideoUnidad'
 import { repo } from '../../data/repo'
 import { leerMiles, separarMiles, soloDigitos } from '../../lib/formato'
+import { esProvisoria, estaVacia, slugProvisorio, TITULO_PROVISORIO } from '../../lib/provisoria'
 import { SLUG_VALIDO, slugificar } from '../../lib/texto'
 import { scrollTo } from '../../lib/smooth'
 import type {
@@ -81,8 +82,12 @@ const VACIO: Borrador = {
 }
 
 function desdeVehiculo(v: Vehiculo): Borrador {
+  // Una provisoria abre con el título y la dirección VACÍOS: el título de
+  // relleno no es algo que ella escribió, y dejarlo en el campo la obligaría
+  // a borrarlo antes de empezar. La dirección vacía vuelve a seguir al título.
+  const provisoria = esProvisoria(v)
   return {
-    titulo: v.titulo,
+    titulo: provisoria ? '' : v.titulo,
     descripcion: v.descripcion,
     condicion: v.condicion,
     precio: v.precio === null ? '' : separarMiles(String(v.precio)),
@@ -91,7 +96,7 @@ function desdeVehiculo(v: Vehiculo): Borrador {
     estado: v.estado,
     publicado: v.publicado,
     destacado: v.destacado,
-    slug: v.slug,
+    slug: provisoria ? '' : v.slug,
     // Ordenadas acá y no al dibujar: la lista del panel ES el orden, así que
     // subir una y guardar tiene que mandar lo que se ve, no lo que vino.
     etiquetas: [...v.etiquetas].sort((a, b) => a.orden - b.orden),
@@ -217,6 +222,7 @@ export function Formulario({ id }: FormularioProps) {
           setBase(d)
           setB(d)
           setGuardada(v)
+          setSlugTocado(!esProvisoria(v))
         }
       } catch (err) {
         if (vivo) setFallaCarga(err instanceof Error ? err.message : 'No se pudo abrir la unidad.')
@@ -305,9 +311,59 @@ export function Formulario({ id }: FormularioProps) {
     return () => window.removeEventListener('beforeunload', alSalir)
   }, [sucio])
 
+  // ── La provisoria vacía se borra sola ───────────────────────────────────
+  //
+  // Al tocar «Nueva unidad» la unidad ya existe (ver `NuevaUnidad`). Si la
+  // dueña sale sin haber cargado nada, esa unidad vacía no tiene que quedar
+  // en el listado: se borra al salir. Con una foto o el video ya subidos NO
+  // se borra, aunque no haya guardado: eso es trabajo hecho, y queda como
+  // borrador incompleto para retomarlo.
+  //
+  // Dos caminos. La salida de adentro del formulario (volver, el diálogo)
+  // espera al borrado antes de ir al listado, para que no aparezca un
+  // instante. Cualquier otra salida dentro del sitio (el logo, cerrar sesión)
+  // pasa por el desmontaje. Cerrar la pestaña no pasa por ninguno de los dos,
+  // y ahí la unidad queda en el listado marcada como incompleta.
+
+  // En refs porque los lee el desmontaje, que ve el último render y no el
+  // del efecto que lo agendó.
+  const vaciaRef = useRef(false)
+  const sucioRef = useRef(false)
+  useEffect(() => {
+    vaciaRef.current = Boolean(guardada && estaVacia(guardada))
+    sucioRef.current = sucio
+  })
+  /** Ya se resolvió por el camino de adentro: el desmontaje no repite. */
+  const resuelta = useRef(false)
+  const pendiente = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    if (!id) return
+    // StrictMode desmonta y vuelve a montar en desarrollo: el borrado se
+    // agenda para el próximo tick y el re-montaje lo cancela. Un desmontaje
+    // de verdad no vuelve, y el borrado sale.
+    clearTimeout(pendiente.current)
+    return () => {
+      pendiente.current = setTimeout(() => {
+        if (resuelta.current || !vaciaRef.current || sucioRef.current) return
+        repo.eliminar(id).catch(() => {})
+      }, 0)
+    }
+  }, [id])
+
+  const irAlListado = async () => {
+    if (id && vaciaRef.current) {
+      resuelta.current = true
+      // Si el borrado falla, la unidad queda como borrador incompleto en el
+      // listado, que es exactamente lo que pasa al cerrar la pestaña.
+      await repo.eliminar(id).catch(() => {})
+    }
+    navegar('/admin')
+  }
+
   const salir = () => {
     if (sucio) setDialogo('salir')
-    else navegar('/admin')
+    else irAlListado()
   }
 
   // ── Guardar ─────────────────────────────────────────────────────────────
@@ -467,16 +523,19 @@ export function Formulario({ id }: FormularioProps) {
   }
 
   const esUsado = b.condicion === 'usado'
+  const provisoria = Boolean(guardada && esProvisoria(guardada))
 
   return (
     <Marco
       indice="01"
       eyebrow="PANEL"
-      titulo={id ? 'Editar unidad' : 'Nueva unidad'}
+      titulo={id && !provisoria ? 'Editar unidad' : 'Nueva unidad'}
       lead={
-        id
-          ? 'Los cambios se ven en el sitio apenas guardás.'
-          : 'Con el título alcanza para empezar. Podés dejarla en borrador y publicarla cuando tengas las fotos.'
+        provisoria
+          ? 'Empezá por donde quieras: las fotos y el video ya se pueden subir. Queda como borrador hasta que vos la publiques.'
+          : id
+            ? 'Los cambios se ven en el sitio apenas guardás.'
+            : 'Con el título alcanza para empezar. Podés dejarla en borrador y publicarla cuando tengas las fotos.'
       }
       ancho="formulario"
       arriba={<Volver onVolver={salir} />}
@@ -489,9 +548,26 @@ export function Formulario({ id }: FormularioProps) {
         noValidate
         className="mt-10"
       >
+        {/* ── Los tramos, en grilla desde `lg` ─────────────────────────
+            En mobile es una columna, en este orden: datos, fotos, video,
+            etiquetas, publicación. En PC la columna sola obligaba a bajar
+            cuatro pantallas en un monitor de 1440, así que se reparten:
+
+              DATOS        │ FOTOS
+              PUBLICACIÓN  │ VIDEO
+              ETIQUETAS (a lo ancho)
+
+            Fotos y video van juntos a la derecha porque son lo que se carga
+            primero y lo que más mide; las etiquetas van a lo ancho porque
+            son una lista de fichas que en media columna quedaba apretada, y
+            a lo ancho se reparten de a dos. El orden del DOM no cambia: la
+            ubicación la dan `col-start` y `row-start`. */}
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-12 lg:gap-y-12">
         {/* Cada tramo del formulario abre con su título en ámbar: datos,
             fotos, video, etiquetas y publicación. Sin eso la dueña no veía
-            dónde terminaba uno y empezaba el otro. */}
+            dónde terminaba uno y empezaba el otro. La raya de arriba solo en
+            PC, para quedar a la par de la de FOTOS en la otra columna. */}
+        <div className="lg:col-start-1 lg:row-start-1 lg:border-t lg:border-graphite lg:pt-8">
         <TituloSeccion>DATOS DE LA UNIDAD</TituloSeccion>
 
         <Campo
@@ -641,12 +717,14 @@ export function Formulario({ id }: FormularioProps) {
           ayuda="Dos o tres frases. El detalle fino se cierra por WhatsApp."
           className="mt-8"
         />
+        </div>
 
         {/* ── Fotos, video y etiquetas ──────────────────────────────────
             Solo con la unidad creada: una foto se sube CONTRA un id, y las
             etiquetas eligen su fondo entre fotos que todavía no existen. */}
         {id && guardada ? (
-          <div className="mt-10 grid grid-cols-1 gap-10">
+          <>
+          <div className="mt-10 grid grid-cols-1 gap-10 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
             <Fotos
               vehiculoId={guardada.id}
               fotos={guardada.fotos}
@@ -660,15 +738,18 @@ export function Formulario({ id }: FormularioProps) {
               onVideo={ponerVideo}
               hayFotos={guardada.fotos.length > 0}
             />
+          </div>
 
+          <div className="mt-10 lg:col-span-2 lg:row-start-3 lg:mt-0">
             <Etiquetas
               etiquetas={b.etiquetas}
               fotos={guardada.fotos}
               onCambio={(etiquetas) => set('etiquetas', etiquetas)}
             />
           </div>
+          </>
         ) : (
-          <section className="mt-10 border-t border-graphite pt-8">
+          <section className="mt-10 border-t border-graphite pt-8 lg:col-start-2 lg:row-start-1 lg:mt-0">
             <TituloSeccion>FOTOS, VIDEO Y ETIQUETAS</TituloSeccion>
             <p className="font-hud mt-2 flex gap-2 text-bone/40 normal-case">
               <span aria-hidden="true" className="text-amber">
@@ -681,7 +762,8 @@ export function Formulario({ id }: FormularioProps) {
           </section>
         )}
 
-        <div className="mt-10 border-t border-graphite pt-8">
+        <div className="mt-10 lg:col-start-1 lg:row-start-2 lg:mt-0">
+        <div className="border-t border-graphite pt-8">
           <TituloSeccion>PUBLICACIÓN</TituloSeccion>
         </div>
 
@@ -726,10 +808,12 @@ export function Formulario({ id }: FormularioProps) {
             </span>
             <span>
               Esta unidad todavía no tiene fotos: en el catálogo va a salir con
-              el cartel «Sin fotos todavía». Cargalas más arriba, en FOTOS.
+              el cartel «Sin fotos todavía». Cargalas en el bloque FOTOS.
             </span>
           </p>
         )}
+        </div>
+        </div>
 
         {falla && (
           <div className="mt-8">
@@ -753,7 +837,7 @@ export function Formulario({ id }: FormularioProps) {
                 ocupado ? 'opacity-60' : ''
               }`}
             >
-              <span>{ocupado ? 'GUARDANDO…' : id ? 'GUARDAR CAMBIOS' : 'CREAR UNIDAD'}</span>
+              <span>{ocupado ? 'GUARDANDO…' : provisoria ? 'GUARDAR UNIDAD' : id ? 'GUARDAR CAMBIOS' : 'CREAR UNIDAD'}</span>
               <span aria-hidden="true">\</span>
             </Bevel>
 
@@ -819,7 +903,7 @@ export function Formulario({ id }: FormularioProps) {
         confirmar="Salir sin guardar"
         onConfirmar={() => {
           setDialogo(null)
-          navegar('/admin')
+          irAlListado()
         }}
         cancelar="Seguir editando"
         onCancelar={() => setDialogo(null)}
@@ -892,6 +976,73 @@ function FormularioEsqueleto() {
       ))}
       <div className="h-40 bg-graphite/25" />
     </div>
+  )
+}
+
+/**
+ * «Nueva unidad»: crea la unidad EN EL ACTO y abre su formulario de edición.
+ *
+ * Antes el formulario de alta no tenía fotos: una foto se sube contra el id de
+ * una unidad, y sin guardar primero no había id. La dueña quiere empezar por
+ * las fotos, así que la unidad nace acá, antes de que escriba nada, como
+ * borrador y con título provisorio (ver `lib/provisoria.ts`). Nada de esto la
+ * publica: `publicado` va en `false` y solo ella lo cambia.
+ *
+ * El pedido vive en un ref y no se repite: StrictMode corre el efecto dos
+ * veces en desarrollo, y dos pedidos serían dos unidades.
+ */
+export function NuevaUnidad() {
+  const navegar = useNavigate()
+  const pedido = useRef<Promise<Vehiculo> | null>(null)
+  const [falla, setFalla] = useState<string | null>(null)
+  const [intento, setIntento] = useState(0)
+
+  useEffect(() => {
+    let vivo = true
+    pedido.current ??= repo.crear({
+      titulo: TITULO_PROVISORIO,
+      slug: slugProvisorio(),
+      condicion: 'usado',
+      publicado: false,
+      destacado: false,
+    })
+    pedido.current
+      .then((v) => {
+        // `replace`: el atrás del navegador no tiene que volver acá, que
+        // crearía otra unidad.
+        if (vivo) navegar(`/admin/editar/${v.id}`, { replace: true })
+      })
+      .catch((err) => {
+        pedido.current = null
+        if (vivo) setFalla(err instanceof Error ? err.message : 'No se pudo empezar la unidad.')
+      })
+    return () => {
+      vivo = false
+    }
+  }, [navegar, intento])
+
+  return (
+    <Marco
+      indice="01"
+      eyebrow="PANEL"
+      titulo="Nueva unidad"
+      ancho="formulario"
+      arriba={<Volver onVolver={() => navegar('/admin')} />}
+    >
+      {falla ? (
+        <ErrorCarga
+          className="mt-8"
+          titulo="No pude empezar la unidad"
+          texto={falla}
+          onReintentar={() => {
+            setFalla(null)
+            setIntento((n) => n + 1)
+          }}
+        />
+      ) : (
+        <FormularioEsqueleto />
+      )}
+    </Marco>
   )
 }
 

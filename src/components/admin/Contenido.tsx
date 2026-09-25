@@ -128,12 +128,36 @@ export function Contenido() {
       {!datos && !falla && <ContenidoEsqueleto />}
 
       {datos && (
-        <div className="mt-10 grid grid-cols-1 gap-14">
-          <BloqueContadores inicial={datos.contadores} onSucio={onContadores} />
-          <BloqueSegmentos inicial={datos.segmentos} onSucio={onSegmentos} />
-          <BloqueServicios inicial={datos.servicios} onSucio={onServicios} />
-          <BloquePreguntas inicial={datos.preguntas} onSucio={onPreguntas} />
-          <BloqueContacto inicial={datos.contacto} onSucio={onContacto} />
+        /* ── Los bloques, en grilla desde `lg` ───────────────────────
+           En mobile, una columna en este orden. En PC:
+
+             NÚMEROS   │ CONTACTO
+             SEGMENTOS (a lo ancho)
+             SERVICIOS (a lo ancho)
+             PREGUNTAS (a lo ancho)
+
+           Números y contacto son formularios cortos de campos sueltos y se
+           entienden en media pantalla; contacto sube a la par de números
+           con `row-start` para no dejar un hueco al lado. Los otros tres son
+           LISTAS: en media columna cada ficha quedaba angosta y larga, así
+           que van a lo ancho y sus fichas se reparten de a dos. Cada bloque
+           sigue guardando lo suyo. */
+        <div className="mt-10 grid grid-cols-1 gap-14 lg:grid-cols-2 lg:items-start lg:gap-x-12">
+          <div className="lg:col-start-1 lg:row-start-1">
+            <BloqueContadores inicial={datos.contadores} onSucio={onContadores} />
+          </div>
+          <div className="lg:col-span-2">
+            <BloqueSegmentos inicial={datos.segmentos} onSucio={onSegmentos} />
+          </div>
+          <div className="lg:col-span-2">
+            <BloqueServicios inicial={datos.servicios} onSucio={onServicios} />
+          </div>
+          <div className="lg:col-span-2">
+            <BloquePreguntas inicial={datos.preguntas} onSucio={onPreguntas} />
+          </div>
+          <div className="lg:col-start-2 lg:row-start-1">
+            <BloqueContacto inicial={datos.contacto} onSucio={onContacto} />
+          </div>
         </div>
       )}
 
@@ -161,7 +185,7 @@ export function Contenido() {
 /** Los bloques, vacíos, mientras llega el contenido. */
 function ContenidoEsqueleto() {
   return (
-    <div className="mt-10 grid animate-pulse grid-cols-1 gap-14" aria-hidden="true">
+    <div className="mt-10 grid animate-pulse grid-cols-1 gap-14 lg:grid-cols-2 lg:gap-x-12" aria-hidden="true">
       {[4, 2, 3, 3, 4].map((filas, i) => (
         <div key={i} className="border-t border-graphite pt-8">
           <div className="h-4 w-40 bg-graphite/60" />

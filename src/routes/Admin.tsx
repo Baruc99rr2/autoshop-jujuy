@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router'
 import Contenido from '../components/admin/Contenido'
-import Formulario from '../components/admin/Formulario'
+import Formulario, { NuevaUnidad } from '../components/admin/Formulario'
 import Listado from '../components/admin/Listado'
 import Login from '../components/admin/Login'
 import Marco from '../components/admin/Marco'
@@ -111,7 +111,7 @@ export function Admin() {
         path="nuevo"
         element={
           <Protegida>
-            <Formulario />
+            <NuevaUnidad />
           </Protegida>
         }
       />

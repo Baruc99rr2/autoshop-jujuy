@@ -5,6 +5,7 @@ import ErrorCarga from '../ErrorCarga'
 import Icono from '../Icono'
 import Marco from './Marco'
 import { repo } from '../../data/repo'
+import { esProvisoria } from '../../lib/provisoria'
 import { formatearPrecio } from '../../lib/formato'
 import { portada } from '../../types/vehiculo'
 import type { Vehiculo } from '../../types/vehiculo'
@@ -26,6 +27,11 @@ import type { Vehiculo } from '../../types/vehiculo'
 /** Los avisos de una fila, en orden de importancia. */
 function insignias(v: Vehiculo): { texto: string; clase: string }[] {
   const lista: { texto: string; clase: string }[] = []
+  // Primero de todo: una unidad empezada con «Nueva» que nunca se guardó con
+  // su título. Pasa cuando se cierra la pestaña a mitad de carga, y es la que
+  // hay que retomar o borrar. Hueso sobre negro: se tiene que ver, pero no es
+  // un error ni un estado de stock.
+  if (esProvisoria(v)) lista.push({ texto: 'INCOMPLETA', clase: 'bg-bone text-void' })
   if (!v.publicado) lista.push({ texto: 'BORRADOR', clase: 'bg-graphite text-bone/75' })
   if (v.estado !== 'disponible') {
     lista.push({
