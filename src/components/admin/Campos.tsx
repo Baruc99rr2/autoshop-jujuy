@@ -369,7 +369,7 @@ export function Opciones<T extends string>({
                   ? 'flex-1'
                   : 'flex-1 transition-colors duration-200 hover:bg-amber'
               }
-              className={`font-hud flex items-center justify-center px-4 text-center ${ALTO}`}
+              className={`font-hud flex min-w-[2.75rem] items-center justify-center px-4 text-center ${ALTO}`}
             >
               {o.label.toUpperCase()}
             </Bevel>
@@ -531,7 +531,7 @@ export function BotonChico({
       outerClassName={`${className} ${
         disabled ? 'opacity-35' : 'transition-colors duration-200 hover:bg-amber'
       }`}
-      className={`font-hud flex min-h-[2.75rem] items-center justify-center px-3 ${
+      className={`font-hud flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center px-3 ${
         tono === 'peligro' ? 'text-flag' : 'text-bone'
       }`}
     >

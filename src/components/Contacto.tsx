@@ -279,9 +279,11 @@ export function Contacto({ s: S }: { s: Seccion }) {
                 <div className="min-w-0">
                   <p className="font-hud text-bone/40">{d.label}</p>
                   {d.href ? (
+                    /* 44 px de alto al tacto sin mover el texto: el padding
+                       vertical lo devuelven los márgenes negativos. */
                     <a
                       href={d.href}
-                      className="mt-1 block break-words text-bone transition-colors hover:text-amber"
+                      className="-mt-1.5 -mb-2.5 block py-2.5 break-words text-bone transition-colors hover:text-amber"
                     >
                       {d.valor}
                     </a>
@@ -305,7 +307,7 @@ export function Contacto({ s: S }: { s: Seccion }) {
                   bevel={9}
                   borderClassName="bg-graphite"
                   outerClassName="block transition-colors hover:bg-amber"
-                  className="font-hud px-3.5 py-2.5 text-bone/75"
+                  className="font-hud flex min-h-11 items-center px-3.5 text-bone/75"
                   href={r.href}
                   target="_blank"
                   rel="noreferrer noopener"
@@ -420,7 +422,7 @@ export function Contacto({ s: S }: { s: Seccion }) {
                       bevel={10}
                       borderClassName="bg-graphite"
                       outerClassName="block"
-                      className={`font-hud px-4 py-2.5 transition-colors ${
+                      className={`font-hud flex min-h-11 items-center px-4 transition-colors ${
                         activo ? '' : 'text-bone/70 hover:text-amber'
                       }`}
                       type="button"

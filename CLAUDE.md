@@ -6,16 +6,16 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 
 > Este bloque lo actualiza Claude Code al terminar cada parte. Reemplazalo entero, no agregues: máximo 10 líneas.
 
-- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin/*` (lazy: login, listado, nuevo, editar/:id, contenido) y 404; la intro corre solo si la pestaña ENTRÓ por `/`.
-- Datos: `data/modo.ts` elige Supabase (con `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` o `_PUBLISHABLE_KEY`) o el mock (`VITE_DATOS=mock`). En prod sin claves NO cae al mock. `repo/supabase*.ts` implementan la misma interfaz; el mock sigue en `repo/mock*.ts`.
-- El cliente se pide con `cliente()` de `data/supabase.ts` (import dinámico, 55 KB gz aparte): nunca importar `data/cliente.ts` directo. Errores → `repo/errores.ts` (`ErrorRepo` en castellano; JWT vencido llama `sesionVencida()`).
-- Supabase: esquema en `supabase/schema.sql`. El repo filtra `publicado` A MANO (la RLS muestra borradores al admin); archivos en `<vehiculo_id>/...` del bucket y se borran a mano (carpeta entera al borrar la unidad). Contadores: solo UPDATE.
-- `data/sesion.ts`: Supabase Auth (+ `es_admin()` al entrar); `useSesion()` es `undefined` mientras lee. Aviso de sesión vencida con `avisoDeSalida()`; tras el login se vuelve a la ruta pedida. El acceso falso vive solo en modo mock.
-- Todo lo que carga tiene esqueleto y `ErrorCarga` (reintentar; en el sitio público también WhatsApp). El contenido del inicio reintenta solo (`lib/contenido.ts`). Fotos y video fallidos: «PROBAR DE NUEVO» con el mismo archivo.
-- `npm run shots` compila SIEMPRE en mock a `dist-mock/`. `npm run recorrido` va contra Supabase real (49 chequeos, incluido borrador ilegible sin sesión). `npm run semilla -- subir|borrar` (ids `demo-`). Credenciales: `SUPABASE_PRUEBA_*` en `.env.local`.
-- `/admin` unidad: fotos (tope 10) y video se guardan solos; etiquetas en el borrador. Campos a NIVEL DE MÓDULO (`admin/Campos.tsx`); `<ul>` en grilla con `grid-cols-1`; controles ≥ 44 px. `/catalogo`: chips + buscador en la URL. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`.
-- Malla (`MeshOverlay`): un `<path>` de rectas de borde a borde (grilla 120 + diagonales 2:1), quieta, igual en mobile. Sin filtro SVG, sin tramos cortados, sin `<pattern>`: no vuelven.
-- Pendiente visto en capturas (ya estaba en HEAD): barra fija de la ficha en 390 encimada con MENU; en el riel del inicio una card a veces pinta la foto en negro (headless).
+- Rutas: `/`, `/catalogo`, `/vehiculo/:slug`, `/admin/*` (lazy) y 404; la intro corre solo si la pestaña ENTRÓ por `/`. Título y meta description por página con `useTitulo(titulo, descripcion)`.
+- Datos: `data/modo.ts` elige Supabase (`VITE_SUPABASE_URL` + clave) o el mock (`VITE_DATOS=mock`); en prod sin claves NO cae al mock. Cliente solo vía `cliente()` de `data/supabase.ts` (nunca `data/cliente.ts` directo). Errores → `repo/errores.ts`.
+- Supabase: esquema en `supabase/schema.sql`. El repo filtra `publicado` A MANO; archivos en `<vehiculo_id>/...` y se borran a mano. `data/sesion.ts`: Supabase Auth + `es_admin()`; `useSesion()` es `undefined` mientras lee.
+- Datos de prueba: ids `demo-`; `npm run semilla -- borrar` los saca de Supabase. Sus fotos son `public/img/vehiculos/car-*.webp` (borrables cuando no quede ninguna `demo-`).
+- Todo lo que carga tiene esqueleto y `ErrorCarga`. `npm run shots` compila en mock a `dist-mock/`; `npm run recorrido` va contra Supabase real. Credenciales `SUPABASE_PRUEBA_*` en `.env.local`.
+- Mueble fijo de abajo: el contenedor de MENU apila `encima` (prop `barra` de `PaginaInterna`); la ficha pone ahí su barra de WhatsApp mobile, que solo aparece si el botón del panel de precio no está libre (`useBotonLibre`): UN WhatsApp visible por vez. Escondidos van `inert`.
+- Piso táctil: todo control ≥ 44 px, sitio y panel (medido en 360/390/768/1440). Links de texto: padding + margen negativo. `html` tiene `scroll-padding-block` para que el Tab no quede bajo header/MENU. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`.
+- `/admin` listado: lista o grilla (2 col mobile), en localStorage `autoshop.panel.vista`. `/catalogo`: chips + buscador en la URL, vista en `autoshop.catalogo.vista`.
+- Íconos: `favicon.svg`/`.ico` (bandera a cuadros geométrica, negro sobre ámbar), `apple-touch-icon.png`, `icon-192/512.png` + `manifest.webmanifest`. El Flip de la intro apunta al `<svg>` del logo, no al enlace.
+- Malla quieta de rectas (sin filtro, sin `<pattern>`). Pendiente: en el riel del inicio una card a veces pinta la foto en negro (headless).
 
 ---
 

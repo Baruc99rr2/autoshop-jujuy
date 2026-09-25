@@ -36,6 +36,11 @@ type PaginaInternaProps = {
    * botón propio y lo muestran siempre.
    */
   flotante?: 'siempre' | 'nunca'
+  /**
+   * Una barra fija propia de la página, apilada arriba de la barra MENU (ver
+   * `encima` en `Menu`). La usa la ficha para su WhatsApp de mobile.
+   */
+  barra?: ReactNode
 }
 
 /**
@@ -60,6 +65,7 @@ export function PaginaInterna({
   arriba,
   children,
   flotante = 'siempre',
+  barra,
 }: PaginaInternaProps) {
   const [menuAbierto, setMenuAbierto] = useState(false)
 
@@ -77,6 +83,7 @@ export function PaginaInterna({
         abierto={menuAbierto}
         onAbrir={() => setMenuAbierto(true)}
         onCerrar={() => setMenuAbierto(false)}
+        encima={barra}
       />
 
       {/* `min-h-svh` y no `vh`: la barra del navegador de WhatsApp cambia el

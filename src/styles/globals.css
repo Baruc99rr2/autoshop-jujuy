@@ -122,6 +122,11 @@
   html {
     background: var(--color-void);
     -webkit-text-size-adjust: 100%;
+    /* Lo que tapa el mueble fijo: el header arriba y, abajo, la barra MENU
+       (con la barra de WhatsApp de la ficha encima, en mobile) o la barra de
+       guardar del panel. Sin esto, un Tab deja el elemento enfocado JUSTO
+       debajo de uno de ellos: el navegador lo trae al borde y no más. */
+    scroll-padding-block: 5.5rem 9rem;
   }
 
   /* Lenis maneja el scroll; el smooth nativo pelea con ScrollTrigger. */
@@ -393,7 +398,12 @@
 
 .stagger-link {
   position: relative;
-  display: inline-block;
+  /* 44 px de alto: es el mínimo táctil. Los ítems van pegados (sin
+     `space-y`), así que la lista mide casi lo mismo que cuando eran de 26 px
+     con aire entre medio. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
   color: color-mix(in srgb, var(--color-bone) 78%, transparent);
   transition:
     transform 0.25s cubic-bezier(0.65, 0, 0.35, 1),

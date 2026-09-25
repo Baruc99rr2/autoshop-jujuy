@@ -40,7 +40,7 @@ ffmpeg -i public\video\hero-original.mp4 -t 7 -vf "scale=720:-2,fps=30" `
 
 # Poster — un frame de los primeros segundos
 ffmpeg -i public\video\hero-original.mp4 -ss 2 -frames:v 1 -vf "scale=1080:-2" `
-  -q:v 3 public\img\hero-poster.jpg
+  -c:v libwebp -quality 80 public\img\hero-poster.webp
 ```
 
 Objetivo: desktop < 3 MB, mobile < 1,5 MB. Verificá con `dir public\video`.
@@ -129,7 +129,7 @@ Después borrá los `.jpg` originales de `public/`. Ninguna imagen arriba de 250
 ```
 public/
 ├─ video/  hero-desktop.mp4 · hero-mobile.mp4 · cta.mp4
-└─ img/    hero-poster.jpg
+└─ img/    hero-poster.webp
    ├─ vehiculos/  car-1.webp · car-2.webp · car-3.webp
    └─ segmentos/  segmento-1.webp … segmento-4.webp
 ```

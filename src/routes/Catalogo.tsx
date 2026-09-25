@@ -10,6 +10,7 @@ import VehiculoCard, {
 import { FILTROS } from '../data/catalogo'
 import { WHATSAPP_URL } from '../data/contacto'
 import { repo } from '../data/repo'
+import { useTitulo } from '../lib/titulo'
 import { recordarCatalogo } from '../lib/ultimo-catalogo'
 import type { Condicion, Vehiculo } from '../types/vehiculo'
 
@@ -104,6 +105,11 @@ function contar(n: number): string {
 export function Catalogo() {
   const [params, setParams] = useSearchParams()
   const uid = useId()
+
+  useTitulo(
+    'Catálogo de 0km y usados',
+    'Todo el stock de AutoShop Jujuy: autos 0km y usados en San Salvador de Jujuy, con fotos y precio. Consultá cada unidad por WhatsApp.',
+  )
 
   const condicion = leerCondicion(params.get('condicion'))
   const q = params.get('q') ?? ''
@@ -262,7 +268,7 @@ export function Catalogo() {
                     ? undefined
                     : 'block transition-colors duration-200 hover:bg-amber'
                 }
-                className="font-hud px-5 py-2.5"
+                className="font-hud flex min-h-11 items-center px-5"
               >
                 {f.label.toUpperCase()}
               </Bevel>
@@ -293,7 +299,7 @@ export function Catalogo() {
                       ? undefined
                       : 'block transition-colors duration-200 hover:bg-amber'
                   }
-                  className="p-2.5"
+                  className="p-3"
                 >
                   <Icono name={VISTAS[v].icono} className="h-5 w-5" />
                   <span className="sr-only">{VISTAS[v].label}</span>

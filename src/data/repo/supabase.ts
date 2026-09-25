@@ -564,7 +564,7 @@ export const repoSupabase: RepoVehiculos = {
 
       // Sin póster propio se usa la portada: el video va con
       // `preload="none"`, así que sin una imagen quedaría un rectángulo negro.
-      let posterUrl = '/img/hero-poster.jpg'
+      let posterUrl = '/img/hero-poster.webp'
       let posterRuta: string | null = null
       try {
         if (poster) {

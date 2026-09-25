@@ -17,7 +17,6 @@ import {
   formatearKm,
   formatearPrecio,
 } from '../lib/formato'
-import { usePieALaVista } from '../lib/pie-a-la-vista'
 import { getLenis } from '../lib/smooth'
 import { useTitulo } from '../lib/titulo'
 import { linkAlCatalogo } from '../lib/ultimo-catalogo'
@@ -157,6 +156,19 @@ function mensaje(v: TVehiculo): string {
 }
 
 /**
+ * La meta description de la ficha: qué auto es, año, kilómetros y precio, que
+ * es lo que un buscador muestra debajo del título.
+ */
+function descripcionDe(v: TVehiculo): string {
+  const datos = [
+    v.anio === null ? null : formatearAnio(v.anio),
+    v.km === null ? null : `${formatearKm(v.km)} km`,
+    formatearPrecio(v.precio),
+  ].filter(Boolean)
+  return `${v.titulo} ${CONDICION_LABEL[v.condicion].toLowerCase()} en AutoShop Jujuy: ${datos.join(' · ')}. Consultalo por WhatsApp.`
+}
+
+/**
  * El orden de "otros vehículos": misma condición primero y los vendidos al
  * fondo. Quien está mirando un 0km es mucho más probable que quiera otro 0km,
  * y ofrecerle primero algo que ya se vendió es ofrecerle nada.
@@ -168,6 +180,44 @@ function otrasPrimero(actual: TVehiculo) {
   const peso = (v: TVehiculo) =>
     (v.condicion === actual.condicion ? 0 : 2) + (v.estado === 'vendido' ? 1 : 0)
   return (a: TVehiculo, b: TVehiculo) => peso(a) - peso(b)
+}
+
+/**
+ * Si el botón de WhatsApp del panel de precio está LIBRE en pantalla: entero,
+ * debajo del header y arriba del mueble fijo de abajo (barra MENU y, encima,
+ * la barra de WhatsApp de mobile).
+ *
+ * Decide cuál de los dos WhatsApp de la ficha se ve, porque tiene que verse
+ * UNO SOLO a la vez: con los dos en pantalla —el del panel y el de la barra
+ * fija— no se entiende cuál es el bueno. Libre, se ve el del panel y la barra
+ * se va; tapado o fuera de pantalla, entra la barra y el del panel se apaga,
+ * para que no asome a medias por los costados de MENU.
+ *
+ * Solo importa de `lg` para abajo: arriba de eso el panel es `sticky`, la
+ * barra no existe y el botón se ve siempre.
+ */
+function useBotonLibre(ref: React.RefObject<HTMLElement | null>, activo: boolean): boolean {
+  const [libre, setLibre] = useState(true)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!activo || !el) return
+    // Los márgenes van en rem y se pasan a px al montar: si el teléfono tiene
+    // la letra agrandada, el header y el mueble de abajo crecen con ella.
+    // 5rem es el header con aire; 9rem, MENU más la barra apilada encima.
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+    const io = new IntersectionObserver(
+      ([e]) => setLibre(e.isIntersecting && e.intersectionRatio > 0.98),
+      {
+        rootMargin: `-${5 * rem}px 0px -${9 * rem}px 0px`,
+        threshold: [0, 0.99, 1],
+      },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ref, activo])
+
+  return libre
 }
 
 /**
@@ -193,7 +243,9 @@ function Volver({ a }: { a: string }) {
          arranca tres píxeles adentro y rompe la alineación izquierda con el
          eyebrow y el titular, que es la única alineación del sitio. */
       surfaceClassName="bg-transparent text-bone/60 hover:bg-graphite hover:text-amber focus-visible:bg-graphite focus-visible:text-amber"
-      className="font-hud -ml-3 mb-5 inline-flex items-center gap-2 px-3 py-2 transition-colors duration-200"
+      /* 44 px de alto para el dedo. El `-mt-1.5`/`mb-3.5` compensa lo que
+         creció, así el texto queda donde estaba cuando medía 32. */
+      className="font-hud -mt-1.5 -ml-3 mb-3.5 inline-flex min-h-11 items-center gap-2 px-3 transition-colors duration-200"
     >
       <span aria-hidden="true">←</span>
       VOLVER AL CATÁLOGO
@@ -208,11 +260,6 @@ export function Vehiculo() {
   // render, bastaría con que algo más escribiera en `sessionStorage` para que
   // el enlace cambiara de destino abajo del dedo.
   const [volver] = useState(linkAlCatalogo)
-
-  // La barra fija de mobile es mueble flotante como la barra MENU, así que se
-  // aparta igual al llegar al footer: si no, tapa el © y la firma con dos
-  // biseles a todo el ancho, que es peor que lo que tapaba el flotante.
-  const enElPie = usePieALaVista()
 
   // El resultado se guarda JUNTO CON el slug que lo trajo, igual que en el
   // catálogo: "todavía no sé" se DEDUCE comparando ese slug con el de la URL.
@@ -240,7 +287,10 @@ export function Vehiculo() {
   const v = listo ? datos.v : undefined
   const otras = listo ? datos.otras : []
 
-  useTitulo(v ? v.titulo : null)
+  useTitulo(v ? v.titulo : null, v ? descripcionDe(v) : undefined)
+
+  const botonPanel = useRef<HTMLAnchorElement>(null)
+  const panelLibre = useBotonLibre(botonPanel, !!v)
 
   useEffect(() => {
     let vivo = true
@@ -308,6 +358,55 @@ export function Vehiculo() {
 
   const wa = whatsappCon(mensaje(v))
 
+  /* ── Barra fija de mobile ─────────────────────────────────────────
+     Va apilada ARRIBA de la barra MENU, en su mismo contenedor fijo (ver
+     `encima` en `Menu`): así no se enciman ni con la letra agrandada, y se
+     van juntas al abrir el menú o al llegar al footer. Son biseles sueltos
+     sobre el contenido, sin panel de fondo, porque ese es el mueble flotante
+     de este sitio.
+
+     LLEVA LAS DOS SALIDAS: escribir y volver al catálogo. El enlace de arriba
+     se pierde apenas se scrollea, y en un teléfono la ficha es larga: sin
+     esto, volver al stock es subir toda la página.
+
+     Aparece solo cuando el botón del panel de precio NO está libre en
+     pantalla (`useBotonLibre`): un WhatsApp por vez. Escondida va `inert`,
+     para que el Tab no caiga en un botón invisible. */
+  const barra = (
+    <div
+      inert={panelLibre}
+      className={`flex gap-2 self-stretch px-4 transition-[opacity,transform] duration-300 lg:hidden ${
+        panelLibre ? 'translate-y-4 opacity-0' : 'pointer-events-auto opacity-100'
+      }`}
+    >
+      <Bevel
+        as={Link}
+        to={volver}
+        variant="outline"
+        bevel={12}
+        borderClassName="bg-graphite"
+        outerClassName="block w-12 shrink-0"
+        className="font-hud flex items-center justify-center py-4 text-bone"
+        aria-label="Volver al catálogo"
+      >
+        <span aria-hidden="true">←</span>
+      </Bevel>
+
+      <Bevel
+        as="a"
+        href={wa}
+        target="_blank"
+        rel="noopener noreferrer"
+        variant="solid"
+        bevel={12}
+        className="font-hud flex flex-1 items-center justify-between gap-3 px-5 py-4"
+      >
+        <span>CONSULTAR POR WHATSAPP</span>
+        <span aria-hidden="true">\</span>
+      </Bevel>
+    </div>
+  )
+
   return (
     <PaginaInterna
       indice="01"
@@ -319,6 +418,7 @@ export function Vehiculo() {
          quedaba junto al botón del panel de precio y en mobile junto al de la
          barra fija, dos biseles ámbar pidiendo lo mismo. */
       flotante="nunca"
+      barra={barra}
     >
       {/* ── El bloque de arriba ──────────────────────────────────────
           Tres piezas y no dos columnas de contenido corrido, porque el orden
@@ -357,14 +457,20 @@ export function Vehiculo() {
             <span className="font-hud block text-bone/40">PRECIO</span>
             <Precio valor={v.precio} />
 
+            {/* Mientras la barra fija de mobile está a la vista, este se apaga:
+                un WhatsApp por vez. Solo se apaga, sigue en el orden de Tab: al
+                enfocarlo el navegador lo trae a la zona libre y vuelve. */}
             <Bevel
               as="a"
+              ref={botonPanel}
               href={wa}
               target="_blank"
               rel="noopener noreferrer"
               variant="solid"
               bevel={12}
-              className="font-hud mt-5 flex items-center justify-between gap-3 px-5 py-4"
+              className={`font-hud mt-5 flex items-center justify-between gap-3 px-5 py-4 transition-opacity duration-300 ${
+                panelLibre ? '' : 'max-lg:opacity-0'
+              }`}
             >
               <span>CONSULTAR POR WHATSAPP</span>
               <span aria-hidden="true">\</span>
@@ -429,64 +535,14 @@ export function Vehiculo() {
             to={volver}
             variant="outline"
             bevel={12}
-            outerClassName="mt-8 inline-block transition-colors duration-200 hover:bg-amber"
-            className="font-hud px-5 py-3 text-bone"
+            outerClassName="mt-8 inline-flex min-h-11 transition-colors duration-200 hover:bg-amber"
+            className="font-hud flex items-center px-5 py-3 text-bone"
           >
             VER TODO EL CATÁLOGO
           </Bevel>
         </section>
       )}
 
-      {/* ── Barra fija de mobile ─────────────────────────────────────────
-          Va POR ENCIMA de la barra MENU, no pegada al borde inferior: MENU es
-          fija en `bottom-6` y una barra a `bottom-0` la taparía. Y son biseles
-          sueltos sobre el contenido, sin panel de fondo, porque ese es el
-          mueble flotante de este sitio.
-
-          LLEVA LAS DOS SALIDAS: escribir y volver al catálogo. El enlace de
-          arriba se pierde apenas se scrollea, y en un teléfono la ficha es
-          larga —galería, texto, video, etiquetas y tres unidades más—: sin
-          esto, volver al stock es subir toda la página.
-
-          `bottom-[5.5rem]` sale de la cuenta y no del ojo: MENU arranca a 24px
-          del borde y mide unos 50px de alto, así que su techo queda en 74px.
-          Los 88px dejan 14px de aire.
-
-          Y va en z-40, NO en z-60 como el resto del mueble flotante: el overlay
-          del menú vive en z-45 y con la barra por encima quedaría un bisel
-          ámbar flotando sobre el panel bone con el menú abierto. A z-40 el
-          panel la tapa, que es lo que corresponde. */}
-      <div
-        className={`fixed inset-x-4 bottom-[5.5rem] z-40 flex gap-2 transition-[opacity,transform] duration-300 lg:hidden ${
-          enElPie ? 'pointer-events-none translate-y-4 opacity-0' : 'opacity-100'
-        }`}
-      >
-        <Bevel
-          as={Link}
-          to={volver}
-          variant="outline"
-          bevel={12}
-          borderClassName="bg-graphite"
-          outerClassName="block shrink-0"
-          className="font-hud flex items-center px-4 py-4 text-bone"
-          aria-label="Volver al catálogo"
-        >
-          <span aria-hidden="true">←</span>
-        </Bevel>
-
-        <Bevel
-          as="a"
-          href={wa}
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="solid"
-          bevel={12}
-          className="font-hud flex flex-1 items-center justify-between gap-3 px-5 py-4"
-        >
-          <span>CONSULTAR POR WHATSAPP</span>
-          <span aria-hidden="true">\</span>
-        </Bevel>
-      </div>
       {/* El hueco que reserva la barra fija. Sin esto tapa el final del
           contenido cuando la página está scrolleada hasta abajo. */}
       <div aria-hidden="true" className="h-24 lg:hidden" />

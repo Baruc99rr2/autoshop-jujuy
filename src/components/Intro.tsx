@@ -83,8 +83,13 @@ export function Intro({ headerLogoRef, onDone }: IntroProps) {
           // Flip.fit mide el logo del header en el momento en que se construye
           // el tween y lleva al volador hasta ahí con transform + scale. Nada
           // de coordenadas hardcodeadas, y nada de animar width/height.
+          //
+          // El destino es el <svg> y no el enlace que lo envuelve: el enlace
+          // lleva padding para medir 44 px de alto al tacto, y encajar el
+          // volador en esa caja lo estiraría.
           flip: (dur) => {
-            const target = headerLogoRef.current
+            const link = headerLogoRef.current
+            const target = link?.querySelector('svg') ?? link
             if (!target || !flyer.current) return null
             return Flip.fit(flyer.current, target, {
               duration: dur,

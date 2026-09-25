@@ -59,7 +59,7 @@ export const TICKER: string[] = [
 export const VIDEO_HERO = {
   desktop: '/video/hero-desktop.mp4',
   mobile: '/video/hero-mobile.mp4',
-  poster: '/img/hero-poster.jpg',
+  poster: '/img/hero-poster.webp',
   /** Duración real del recorte, en segundos. La usa la atenuación del corte. */
   duracion: 7,
 } as const

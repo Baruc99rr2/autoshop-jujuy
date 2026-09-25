@@ -64,7 +64,7 @@ export function Footer() {
               {col.titulo}
             </h3>
 
-            <ul className="mt-6 space-y-1.5">
+            <ul className="mt-3">
               {col.items
                 .filter((item) => !apuntaAOculta(item.href, ocultas))
                 .map((item, i) => (
@@ -118,7 +118,9 @@ export function Footer() {
               href="https://skytechnorth.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline-offset-4 transition-colors duration-200 hover:text-amber hover:underline focus-visible:text-amber focus-visible:underline"
+              /* Alto táctil de 44 px sin agrandar la línea: el padding lo
+                 devuelven los márgenes negativos. */
+              className="-my-3.5 inline-block py-3.5 underline-offset-4 transition-colors duration-200 hover:text-amber hover:underline focus-visible:text-amber focus-visible:underline"
             >
               SkyTechNorth
             </a>

@@ -26,7 +26,10 @@ export function WhatsApp() {
        entero porque ya tiene su propio botón de WhatsApp, arriba en el panel
        de precio y abajo en la barra fija de mobile. Acá adentro la única
        variante es apartarse del pie. */
+    /* Apartado va `inert`: invisible pero tabulable dejaba el foco en un botón
+       que no se ve. */
     <div
+      inert={enElPie}
       className={`fixed right-4 bottom-24 z-60 transition-[opacity,transform] duration-300 md:right-6 md:bottom-6 ${
         enElPie ? 'pointer-events-none translate-y-4 opacity-0' : 'opacity-100'
       }`}

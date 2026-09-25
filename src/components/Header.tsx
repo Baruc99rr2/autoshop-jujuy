@@ -60,8 +60,11 @@ const VELO_DESDE = 24
  */
 const LOGO = {
   'aria-label': 'Automotores AutoShop Jujuy — volver al inicio',
+  // El padding lleva el enlace a 44 px de alto al tacto (32 + 12 en mobile,
+  // 40 + 8 en desktop). El header le descuenta lo mismo a su propio padding,
+  // así que el logo queda exactamente donde estaba.
   className:
-    'bevel block transition-opacity duration-200 hover:opacity-70 focus-visible:opacity-70',
+    'bevel block py-1.5 transition-opacity duration-200 hover:opacity-70 focus-visible:opacity-70 md:py-1',
   style: { '--bevel': '6px' } as CSSProperties,
 }
 
@@ -88,7 +91,7 @@ export function Header({ logoRef, tono = 'oscuro', oculto = false }: HeaderProps
          el foco en un enlace que no se ve, que es justo lo que la trampa de
          foco del menú viene a evitar. */
       inert={oculto}
-      className={`header-adapt fixed top-0 right-0 left-0 z-55 flex items-center justify-between py-4 shell transition-[opacity,transform] duration-300 ${
+      className={`header-adapt fixed top-0 right-0 left-0 z-55 flex items-center justify-between py-2.5 shell md:py-3 transition-[opacity,transform] duration-300 ${
         oculto ? 'pointer-events-none -translate-y-3 opacity-0' : 'opacity-100'
       }`}
     >

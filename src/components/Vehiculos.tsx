@@ -176,7 +176,7 @@ export function Vehiculos() {
                     ? undefined
                     : 'block transition-colors duration-200 hover:bg-amber'
                 }
-                className="font-hud px-5 py-2.5"
+                className="font-hud flex min-h-11 items-center px-5"
               >
                 {f.label.toUpperCase()}
               </Bevel>
@@ -232,8 +232,8 @@ export function Vehiculos() {
           variant="outline"
           bevel={12}
           to="/catalogo"
-          outerClassName="inline-block transition-colors duration-200 hover:bg-amber"
-          className="font-hud px-5 py-3 text-bone"
+          outerClassName="inline-flex min-h-11 transition-colors duration-200 hover:bg-amber"
+          className="font-hud flex items-center px-5 py-3 text-bone"
         >
           VER CATÁLOGO COMPLETO
         </Bevel>

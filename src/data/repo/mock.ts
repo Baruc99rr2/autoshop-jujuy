@@ -387,7 +387,7 @@ export const repoMock: RepoVehiculos = {
     // así que sin una imagen quedaría un rectángulo negro.
     const posterUrl = poster
       ? await guardarArchivo('poster', poster)
-      : (v.fotos[0]?.url ?? '/img/hero-poster.jpg')
+      : (v.fotos[0]?.url ?? '/img/hero-poster.webp')
 
     const video: Video = { url, posterUrl, pesoBytes: archivo.size }
     v.video = video
