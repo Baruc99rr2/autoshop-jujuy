@@ -137,10 +137,6 @@ export async function auditarReducedMotion(browser, BASE, shot) {
       segmentosVisibles: [...document.querySelectorAll('#segmentos img')].filter(
         (n) => n.getBoundingClientRect().width > 0,
       ).length,
-      // El calado del CTA no depende de animación, así que sigue.
-      ctaBlend: document.querySelector('.cta-mascara')
-        ? getComputedStyle(document.querySelector('.cta-mascara')).mixBlendMode
-        : null,
     }
   })
   console.log('[shots] reduced-motion contenido:', JSON.stringify(contenido))
@@ -298,4 +294,109 @@ export async function auditarTeclado(browser, BASE, shot, nuevaPagina, esperarFi
   // Una captura con el foco puesto en un botón biselado, para mirar el anillo.
   await shot(page, 'audit/teclado-foco')
   await ctx.close()
+}
+
+/**
+ * Pase de LA BARRA DEL NAVEGADOR.
+ *
+ * Reproduce lo que hace el navegador interno de WhatsApp en Android: la barra
+ * superior se contrae y se expande al scrollear, y en cada movimiento cambia
+ * SOLO el alto del viewport. Si algo del sitio recalcula layout ahí, la página
+ * entera se empuja hacia abajo y vuelve.
+ *
+ * El pase va con `hasTouch`, que es la condición que mira
+ * `ScrollTrigger.config({ ignoreMobileResize: true })` para saber si tiene que
+ * ignorar el resize: sin táctil, ScrollTrigger refresca igual y la prueba no
+ * mide lo que pasa en un teléfono.
+ *
+ * Se mide, en tres puntos distintos de la página:
+ *   - cuánto se movió la POSICIÓN DE SCROLL,
+ *   - cuánto cambió el ALTO DEL DOCUMENTO,
+ *   - cuánto se movió un elemento de referencia respecto del documento.
+ *
+ * Los tres tienen que quedar en cero. El alto del documento es el más
+ * revelador: si cambia, es que un pin-spacer se recalculó.
+ */
+export async function auditarBarraDelNavegador(browser, BASE, esperarFinDeIntro) {
+  const ALTO_NORMAL = 844
+  const ALTO_CONTRAIDO = 780 // ~64 px de barra, lo que mide la de WhatsApp
+
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: ALTO_NORMAL },
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+  })
+  const page = await ctx.newPage()
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem('intro-seen', '1')
+    } catch {
+      /* storage bloqueado */
+    }
+  })
+  await page.goto(BASE, { waitUntil: 'load' })
+  await esperarFinDeIntro(page)
+  await page.waitForTimeout(800)
+
+  // Tres paradas: antes del carrusel pinneado, dentro de él, y después.
+  const paradas = ['contadores', 'segmentos', 'contacto']
+  const resultados = []
+
+  for (const id of paradas) {
+    await page.evaluate((s) => {
+      document.getElementById(s)?.scrollIntoView({ behavior: 'instant', block: 'start' })
+    }, id)
+    await page.waitForTimeout(900)
+
+    const leer = (s) => {
+      const el = document.getElementById(s)
+      const st = window.__segST
+      return {
+        scrollY: Math.round(window.scrollY),
+        altoDoc: document.documentElement.scrollHeight,
+        // Posición del elemento en el DOCUMENTO, no en el viewport: la del
+        // viewport cambia legítimamente al cambiar el alto de la ventana.
+        topEnDoc: Math.round(el.getBoundingClientRect().top + window.scrollY),
+        // El largo del pin del carrusel: es lo que ScrollTrigger recalcula si
+        // refresca, y lo que hace crecer o encoger el documento entero.
+        largoPin: st ? Math.round(st.end - st.start) : null,
+      }
+    }
+    const antes = await page.evaluate(leer, id)
+
+    // La barra se contrae…
+    await page.setViewportSize({ width: 390, height: ALTO_CONTRAIDO })
+    await page.waitForTimeout(700)
+    // …y se vuelve a desplegar.
+    await page.setViewportSize({ width: 390, height: ALTO_NORMAL })
+    await page.waitForTimeout(700)
+
+    const despues = await page.evaluate(leer, id)
+
+    resultados.push({
+      en: id,
+      scrollY: despues.scrollY - antes.scrollY,
+      altoDoc: despues.altoDoc - antes.altoDoc,
+      topEnDoc: despues.topEnDoc - antes.topEnDoc,
+      largoPin:
+        antes.largoPin === null ? null : despues.largoPin - antes.largoPin,
+    })
+  }
+
+  const quieto = resultados.every(
+    (r) =>
+      r.scrollY === 0 &&
+      r.altoDoc === 0 &&
+      r.topEnDoc === 0 &&
+      (r.largoPin === null || r.largoPin === 0),
+  )
+  console.log(
+    '[shots] barra del navegador:',
+    quieto ? 'la página no se mueve ✓' : '✗ LA PÁGINA SE MUEVE',
+    JSON.stringify(resultados),
+  )
+
+  await ctx.close()
+  return quieto
 }

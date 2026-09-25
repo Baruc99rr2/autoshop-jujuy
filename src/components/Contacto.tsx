@@ -2,15 +2,17 @@ import { useId, useState, type FormEvent } from 'react'
 import Bevel from './Bevel'
 import Icono, { type NombreIcono } from './Icono'
 import SectionHeader from './SectionHeader'
-import { CONSULTAS, CONTACTO, PRESUPUESTOS, REDES } from '../data/contacto'
-import { seccion } from '../data/nav'
-
-/**
- * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
- * sección nueva se corren todos los números, y con el índice a mano el riel
- * diría una cosa y el encabezado de la sección otra.
- */
-const S = seccion('contacto')
+import {
+  CONSULTAS,
+  PRESUPUESTOS,
+  REDES,
+  telefonoHref,
+  whatsappUrl,
+} from '../data/contacto'
+import type { Red } from '../data/contacto'
+import type { Seccion } from '../data/nav'
+import { useContacto } from '../lib/contenido'
+import type { DatosContacto } from '../types/contenido'
 
 type Campos = {
   nombre: string
@@ -69,31 +71,50 @@ function validar(c: Campos): Errores {
   return e
 }
 
-const DATOS: { icono: NombreIcono; label: string; valor: string; href?: string }[] =
-  [
-    {
-      icono: 'mail',
-      label: 'Mail',
-      valor: CONTACTO.email,
-      href: `mailto:${CONTACTO.email}`,
-    },
-    {
-      icono: 'telefono',
-      label: 'Teléfono',
-      valor: CONTACTO.telefono,
-      href: `tel:${CONTACTO.telefonoHref}`,
-    },
-    {
-      icono: 'ubicacion',
-      label: 'Salón',
-      valor: `${CONTACTO.direccion}, ${CONTACTO.ciudad}`,
-    },
-    {
-      icono: 'reloj',
-      label: 'Horarios',
-      valor: CONTACTO.horarios.map((h) => `${h.dias} ${h.horas}`).join(' · '),
-    },
+/**
+ * Arma el texto que se abre en WhatsApp.
+ *
+ * Va en líneas sueltas y con etiquetas: del lado de la dueña el mensaje llega
+ * como texto plano en el celular, y un párrafo corrido con los cinco datos
+ * mezclados es ilegible. El presupuesto es opcional, así que la línea aparece
+ * solo si la eligieron: un "Presupuesto: —" es ruido.
+ */
+function mensajeWhatsApp(c: Campos): string {
+  const consulta =
+    CONSULTAS.find((o) => o.value === c.consulta)?.label ?? c.consulta
+  const presupuesto = PRESUPUESTOS.find((o) => o.value === c.presupuesto)?.label
+
+  return [
+    `Hola, soy ${c.nombre.trim()}.`,
+    `Necesito: ${consulta}`,
+    ...(presupuesto ? [`Presupuesto: ${presupuesto}`] : []),
+    `Mensaje: ${c.mensaje.trim()}`,
+  ].join('\n')
+}
+
+type Dato = { icono: NombreIcono; label: string; valor: string; href?: string }
+
+/**
+ * Los datos de la columna izquierda, desde lo que cargó la dueña. Un dato
+ * vacío no se dibuja: una fila "Teléfono" sin número es peor que ninguna.
+ */
+function datosDe(c: DatosContacto): Dato[] {
+  const lista: (Dato | null)[] = [
+    c.email ? { icono: 'mail', label: 'Mail', valor: c.email, href: `mailto:${c.email}` } : null,
+    c.telefono
+      ? { icono: 'telefono', label: 'Teléfono', valor: c.telefono, href: telefonoHref(c.telefono) }
+      : null,
+    c.direccion ? { icono: 'ubicacion', label: 'Salón', valor: c.direccion } : null,
+    c.horarios.length > 0
+      ? {
+          icono: 'reloj',
+          label: 'Horarios',
+          valor: c.horarios.map((h) => `${h.dias} ${h.horas}`).join(' · '),
+        }
+      : null,
   ]
+  return lista.filter((d): d is Dato => d !== null)
+}
 
 /**
  * Campo de texto con el label adentro de la caja biselada.
@@ -183,12 +204,19 @@ function CampoTexto({
   )
 }
 
-
-export function Contacto() {
+/**
+ * Índice y eyebrow llegan de `Home`: si Servicios o Preguntas quedan vacías y
+ * no se dibujan, el número de Contacto se corre con el del riel.
+ */
+export function Contacto({ s: S }: { s: Seccion }) {
   const uid = useId()
   const [campos, setCampos] = useState<Campos>(VACIO)
+  const contacto = useContacto()
+  const redes: Red[] = [
+    ...REDES,
+    { label: 'WhatsApp', href: whatsappUrl(contacto.whatsapp), usuario: contacto.whatsapp },
+  ]
   const [errores, setErrores] = useState<Errores>({})
-  const [enviado, setEnviado] = useState(false)
 
   const set = (k: keyof Campos, v: string) => {
     setCampos((c) => ({ ...c, [k]: v }))
@@ -208,7 +236,11 @@ export function Contacto() {
       document.getElementById(`${uid}-${primero}`)?.focus()
       return
     }
-    setEnviado(true)
+    // Se abre WhatsApp con el mensaje ya escrito. No hay estado de éxito
+    // propio: el acuse de recibo es la conversación que se abre, y una
+    // pantalla de "listo" acá mentiría, porque el mensaje todavía no se mandó
+    // hasta que la persona toque enviar en WhatsApp.
+    window.open(whatsappUrl(contacto.whatsapp, mensajeWhatsApp(campos)), '_blank', 'noopener')
   }
 
   const idDe = (k: keyof Campos) => `${uid}-${k}`
@@ -238,7 +270,7 @@ export function Contacto() {
           />
 
           <ul className="mt-12 space-y-px">
-            {DATOS.map((d) => (
+            {datosDe(contacto).map((d) => (
               <li
                 key={d.label}
                 className="flex items-start gap-4 border-t border-graphite py-5"
@@ -253,9 +285,11 @@ export function Contacto() {
                 <div className="min-w-0">
                   <p className="font-hud text-bone/40">{d.label}</p>
                   {d.href ? (
+                    /* 44 px de alto al tacto sin mover el texto: el padding
+                       vertical lo devuelven los márgenes negativos. */
                     <a
                       href={d.href}
-                      className="mt-1 block break-words text-bone transition-colors hover:text-amber"
+                      className="-mt-1.5 -mb-2.5 block py-2.5 break-words text-bone transition-colors hover:text-amber"
                     >
                       {d.valor}
                     </a>
@@ -271,7 +305,7 @@ export function Contacto() {
               el mismo criterio que en la sección de marcas. Un ícono de
               Instagram trazado a mano se nota, y además es marca registrada. */}
           <ul className="mt-8 flex flex-wrap gap-2">
-            {REDES.map((r) => (
+            {redes.map((r) => (
               <li key={r.label}>
                 <Bevel
                   as="a"
@@ -279,7 +313,7 @@ export function Contacto() {
                   bevel={9}
                   borderClassName="bg-graphite"
                   outerClassName="block transition-colors hover:bg-amber"
-                  className="font-hud px-3.5 py-2.5 text-bone/75"
+                  className="font-hud flex min-h-11 items-center px-3.5 text-bone/75"
                   href={r.href}
                   target="_blank"
                   rel="noreferrer noopener"
@@ -294,183 +328,147 @@ export function Contacto() {
 
         {/* ── Derecha: formulario ───────────────────────────────────────── */}
         <div>
-          {enviado ? (
-            <Bevel
-              variant="outline"
-              bevel={16}
-              className="p-8 md:p-10"
-              role="status"
-            >
-              <p className="font-hud text-amber">CONSULTA REGISTRADA</p>
-              <h3 className="font-display-xl mt-4 text-h2 text-bone">
-                Listo, {campos.nombre.split(' ')[0]}
-              </h3>
-              <p className="mt-4 max-w-[52ch] text-bone/70">
-                En el sitio real esta consulta ya estaría en la casilla de
-                ventas y te contestaríamos hoy mismo.
-              </p>
-              <p className="font-hud mt-6 text-bone/40">
-                Este es un sitio de demostración: no se envió ni se guardó
-                ningún dato.
-              </p>
+          <form onSubmit={enviar} noValidate className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CampoTexto
+                id={idDe('nombre')}
+                idError={idError('nombre')}
+                label="Nombre y apellido"
+                value={campos.nombre}
+                error={errores.nombre}
+                onChange={(v) => set('nombre', v)}
+                autoComplete="name"
+              />
+              <CampoTexto
+                id={idDe('email')}
+                idError={idError('email')}
+                label="Mail"
+                value={campos.email}
+                error={errores.email}
+                onChange={(v) => set('email', v)}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+              />
+            </div>
 
+            <CampoTexto
+              id={idDe('telefono')}
+              idError={idError('telefono')}
+              label="Teléfono"
+              value={campos.telefono}
+              error={errores.telefono}
+              onChange={(v) => set('telefono', v)}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+            />
+
+            {/* El select va con el mismo tratamiento que los inputs. */}
+            <div>
               <Bevel
-                as="button"
                 variant="outline"
-                bevel={10}
-                outerClassName="mt-8 inline-block"
-                className="font-hud px-5 py-3 text-bone transition-colors hover:text-amber"
-                type="button"
-                onClick={() => {
-                  setCampos(VACIO)
-                  setEnviado(false)
-                }}
+                bevel={12}
+                borderClassName={errores.consulta ? 'bg-flag' : 'bg-graphite'}
+                outerClassName={`block transition-colors duration-200 ${
+                  errores.consulta ? '' : 'focus-within:bg-amber'
+                }`}
+                className="px-4 pt-3 pb-3.5"
               >
-                Cargar otra consulta
-              </Bevel>
-            </Bevel>
-          ) : (
-            <form onSubmit={enviar} noValidate className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CampoTexto
-                  id={idDe('nombre')}
-                  idError={idError('nombre')}
-                  label="Nombre y apellido"
-                  value={campos.nombre}
-                  error={errores.nombre}
-                  onChange={(v) => set('nombre', v)}
-                  autoComplete="name"
-                />
-                <CampoTexto
-                  id={idDe('email')}
-                  idError={idError('email')}
-                  label="Mail"
-                  value={campos.email}
-                  error={errores.email}
-                  onChange={(v) => set('email', v)}
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                />
-              </div>
-
-              <CampoTexto
-                id={idDe('telefono')}
-                idError={idError('telefono')}
-                label="Teléfono"
-                value={campos.telefono}
-                error={errores.telefono}
-                onChange={(v) => set('telefono', v)}
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-              />
-
-              {/* El select va con el mismo tratamiento que los inputs. */}
-              <div>
-                <Bevel
-                  variant="outline"
-                  bevel={12}
-                  borderClassName={errores.consulta ? 'bg-flag' : 'bg-graphite'}
-                  outerClassName={`block transition-colors duration-200 ${
-                    errores.consulta ? '' : 'focus-within:bg-amber'
-                  }`}
-                  className="px-4 pt-3 pb-3.5"
+                <label
+                  htmlFor={idDe('consulta')}
+                  className="font-hud mb-1.5 block text-bone/45"
                 >
-                  <label
-                    htmlFor={idDe('consulta')}
-                    className="font-hud mb-1.5 block text-bone/45"
-                  >
-                    ¿Qué necesitás?
-                  </label>
-                  <select
-                    id={idDe('consulta')}
-                    name="consulta"
-                    value={campos.consulta}
-                    aria-invalid={errores.consulta ? true : undefined}
-                    aria-describedby={
-                      errores.consulta ? idError('consulta') : undefined
-                    }
-                    onChange={(e) => set('consulta', e.target.value)}
-                    className="w-full appearance-none bg-transparent text-base text-bone outline-none"
-                  >
-                    <option value="" className="bg-asphalt">
-                      Elegí una opción
+                  ¿Qué necesitás?
+                </label>
+                <select
+                  id={idDe('consulta')}
+                  name="consulta"
+                  value={campos.consulta}
+                  aria-invalid={errores.consulta ? true : undefined}
+                  aria-describedby={
+                    errores.consulta ? idError('consulta') : undefined
+                  }
+                  onChange={(e) => set('consulta', e.target.value)}
+                  className="w-full appearance-none bg-transparent text-base text-bone outline-none"
+                >
+                  <option value="" className="bg-asphalt">
+                    Elegí una opción
+                  </option>
+                  {CONSULTAS.map((o) => (
+                    <option key={o.value} value={o.value} className="bg-asphalt">
+                      {o.label}
                     </option>
-                    {CONSULTAS.map((o) => (
-                      <option key={o.value} value={o.value} className="bg-asphalt">
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </Bevel>
-                {errores.consulta && (
-                  <p id={idError('consulta')} className="font-hud mt-2 text-flag">
-                    <span aria-hidden="true" className="mr-2">
-                                          </span>
-                    {errores.consulta}
-                  </p>
-                )}
-              </div>
-
-              {/* Presupuesto: chips, no un select. Son tres opciones y verlas
-                  todas de una es más rápido que abrir una lista. */}
-              <fieldset>
-                <legend className="font-hud mb-3 text-bone/45">
-                  Presupuesto
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {PRESUPUESTOS.map((o) => {
-                    const activo = campos.presupuesto === o.value
-                    return (
-                      <Bevel
-                        key={o.value}
-                        as="button"
-                        variant={activo ? 'solid' : 'outline'}
-                        bevel={10}
-                        borderClassName="bg-graphite"
-                        outerClassName="block"
-                        className={`font-hud px-4 py-2.5 transition-colors ${
-                          activo ? '' : 'text-bone/70 hover:text-amber'
-                        }`}
-                        type="button"
-                        aria-pressed={activo}
-                        onClick={() =>
-                          set('presupuesto', activo ? '' : o.value)
-                        }
-                      >
-                        {o.label}
-                      </Bevel>
-                    )
-                  })}
-                </div>
-              </fieldset>
-
-              <CampoTexto
-                id={idDe('mensaje')}
-                idError={idError('mensaje')}
-                label="Mensaje"
-                value={campos.mensaje}
-                error={errores.mensaje}
-                onChange={(v) => set('mensaje', v)}
-                textarea
-              />
-
-              <Bevel
-                as="button"
-                variant="solid"
-                bevel={14}
-                className="font-hud w-full px-6 py-4.5 text-center transition-opacity hover:opacity-90"
-                type="submit"
-              >
-                Enviar consulta
+                  ))}
+                </select>
               </Bevel>
+              {errores.consulta && (
+                <p id={idError('consulta')} className="font-hud mt-2 text-flag">
+                  <span aria-hidden="true" className="mr-2">
+                                        </span>
+                  {errores.consulta}
+                </p>
+              )}
+            </div>
 
-              <p className="font-hud text-bone/35">
-                Sitio de demostración: el formulario valida pero no envía nada.
-              </p>
-            </form>
-          )}
+            {/* Presupuesto: chips, no un select. Son tres opciones y verlas
+                todas de una es más rápido que abrir una lista. */}
+            <fieldset>
+              <legend className="font-hud mb-3 text-bone/45">
+                Presupuesto
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {PRESUPUESTOS.map((o) => {
+                  const activo = campos.presupuesto === o.value
+                  return (
+                    <Bevel
+                      key={o.value}
+                      as="button"
+                      variant={activo ? 'solid' : 'outline'}
+                      bevel={10}
+                      borderClassName="bg-graphite"
+                      outerClassName="block"
+                      className={`font-hud flex min-h-11 items-center px-4 transition-colors ${
+                        activo ? '' : 'text-bone/70 hover:text-amber'
+                      }`}
+                      type="button"
+                      aria-pressed={activo}
+                      onClick={() =>
+                        set('presupuesto', activo ? '' : o.value)
+                      }
+                    >
+                      {o.label}
+                    </Bevel>
+                  )
+                })}
+              </div>
+            </fieldset>
+
+            <CampoTexto
+              id={idDe('mensaje')}
+              idError={idError('mensaje')}
+              label="Mensaje"
+              value={campos.mensaje}
+              error={errores.mensaje}
+              onChange={(v) => set('mensaje', v)}
+              textarea
+            />
+
+            <Bevel
+              as="button"
+              variant="solid"
+              bevel={14}
+              className="font-hud w-full px-6 py-4.5 text-center transition-opacity hover:opacity-90"
+              type="submit"
+            >
+              Enviar por WhatsApp
+            </Bevel>
+
+            <p className="font-hud text-bone/35">
+              Se abre WhatsApp con el mensaje ya escrito. Lo revisás y lo
+              mandás vos.
+            </p>
+          </form>
         </div>
       </div>
     </section>

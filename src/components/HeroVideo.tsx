@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { VIDEO_HERO } from '../data/hero'
 
+/**
+ * Dónde se para el recorte cuando el video vertical cubre una caja apaisada.
+ *
+ * En PC el 9:16 se escala al ancho de la pantalla y se ve apenas una franja
+ * de un tercio del alto: centrada, esa franja es el poste y el cielo. El auto
+ * está al 58% del alto del cuadro, así que el recorte se baja hasta ahí. En
+ * mobile el cuadro y la pantalla tienen casi la misma forma y el recorte es
+ * de los costados, así que el alto no importa y queda centrado.
+ */
+const ENCUADRE = 'md:object-[50%_58%]'
+
 /** Cuánto antes del final empieza la atenuación del corte del loop, en segundos. */
 const ATENUACION_S = 0.45
 
@@ -14,18 +25,19 @@ type HeroVideoProps = {
    *   55% más viñeta radial, como pide CLAUDE.md. El clip tiene un farol
    *   encendido y reflejos en el asfalto mojado, y con un overlay flojo la
    *   bajada se cruza con ellos y deja de leerse.
-   * - `suave` — desktop, el video vive en su panel y NO tiene texto encima.
-   *   Ahí el overlay solo tiene que asentar el clip en la paleta del sitio;
-   *   taparlo al 55% desperdiciaría la única imagen en movimiento del hero.
+   * - `lateral` — desktop, video a sangre recortado a horizontal, con el
+   *   titular encima a la IZQUIERDA. Oscurece fuerte de ese lado, donde va el
+   *   texto, y deja respirar el auto a la derecha; arriba y abajo cierra
+   *   contra el ticker y la barra MENU.
    */
-  overlay?: 'fuerte' | 'suave'
+  overlay?: 'fuerte' | 'lateral'
 }
 
-const OVERLAY: Record<'fuerte' | 'suave', string> = {
+const OVERLAY: Record<'fuerte' | 'lateral', string> = {
   fuerte:
     'linear-gradient(to bottom, rgb(0 0 0 / .62), rgb(0 0 0 / .55) 45%, rgb(0 0 0 / .82)), radial-gradient(ellipse 110% 70% at 50% 45%, transparent 20%, rgb(0 0 0 / .6) 100%)',
-  suave:
-    'linear-gradient(to bottom, rgb(0 0 0 / .25), rgb(0 0 0 / .05) 45%, rgb(0 0 0 / .55)), radial-gradient(ellipse 120% 80% at 50% 45%, transparent 35%, rgb(0 0 0 / .45) 100%)',
+  lateral:
+    'linear-gradient(to right, rgb(0 0 0 / .88), rgb(0 0 0 / .66) 40%, rgb(0 0 0 / .22) 75%, rgb(0 0 0 / .3)), linear-gradient(to bottom, rgb(0 0 0 / .45), transparent 28%, transparent 68%, rgb(0 0 0 / .85))',
 }
 
 /**
@@ -48,7 +60,7 @@ const OVERLAY: Record<'fuerte' | 'suave', string> = {
  * opacidad a 0,25 y vuelve a 1 al reiniciar. Con el overlay oscuro encima se
  * lee como un faro que pasa, no como un glitch.
  */
-export function HeroVideo({ className = '', overlay = 'suave' }: HeroVideoProps) {
+export function HeroVideo({ className = '', overlay = 'fuerte' }: HeroVideoProps) {
   const video = useRef<HTMLVideoElement>(null)
   const [src, setSrc] = useState<string | null>(null)
 
@@ -98,8 +110,7 @@ export function HeroVideo({ className = '', overlay = 'suave' }: HeroVideoProps)
   }, [src])
 
   // El contenedor exterior NO lleva `relative`: la caja y la posición las
-  // decide quien lo usa —`absolute inset-0` en mobile, `aspect-9/16 h-[…]` en
-  // el panel de desktop— y dos utilidades de `position` en el mismo atributo
+  // decide quien lo usa —hoy `absolute inset-0` en los dos layouts— y dos utilidades de `position` en el mismo atributo
   // las resuelve el orden en que Tailwind emite las reglas, no el orden en que
   // uno las escribe. Con `relative` acá, el `absolute` de mobile perdía y el
   // video quedaba de altura 0. El contexto de apilamiento va en el hijo.
@@ -119,7 +130,7 @@ export function HeroVideo({ className = '', overlay = 'suave' }: HeroVideoProps)
         // LCP de la página. Lazy acá retrasaría justamente la métrica que hay
         // que cuidar. `fetchPriority` alto lo pone delante del resto.
         fetchPriority="high"
-        className="absolute inset-0 h-full w-full object-cover"
+        className={`absolute inset-0 h-full w-full object-cover ${ENCUADRE}`}
       />
 
       {src && (
@@ -134,7 +145,7 @@ export function HeroVideo({ className = '', overlay = 'suave' }: HeroVideoProps)
           poster={VIDEO_HERO.poster}
           width={1080}
           height={1920}
-          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${ENCUADRE}`}
         />
       )}
 

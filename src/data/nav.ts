@@ -1,3 +1,5 @@
+import { REDES } from './contacto'
+
 /**
  * Índice de secciones del home. Es la fuente única del orden, los ids de ancla
  * y la numeración del riel: si se agrega o se reordena una sección, se toca
@@ -34,30 +36,34 @@ export const SECCIONES: Seccion[] = [
     indice: '02',
     id: 'contadores',
     eyebrow: 'NÚMEROS',
-    titulo: 'Nueve años entregando autos',
+    /* El titular NO dice desde cuándo: el año de apertura lo edita la dueña
+       en el panel y el contador lo calcula de ahí. Un año escrito acá
+       contradiría a la cifra que tiene debajo el día que lo corrija. */
+    titulo: 'Entregando autos en Jujuy',
     fondo: 'ambar',
   },
   { indice: '03', id: 'segmentos', eyebrow: 'SEGMENTOS', titulo: 'Qué estás buscando' },
   { indice: '04', id: 'vehiculos', eyebrow: 'VEHÍCULOS', titulo: 'Unidades disponibles hoy' },
-  { indice: '05', id: 'plan', eyebrow: 'FIAT PLAN', titulo: 'Entrá con cuota fija' },
-  { indice: '06', id: 'cotizador', eyebrow: 'COTIZADOR', titulo: 'Cotizá tu usado' },
-  { indice: '07', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
+  { indice: '05', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
   {
-    indice: '08',
+    indice: '06',
+    /* El id se quedó en `postventa` a propósito aunque la sección pase a
+       llamarse SERVICIOS: es el ancla de `#postventa`, no un nombre visible, y
+       renombrarlo rompería cualquier link ya compartido sin que nadie vea la
+       diferencia. Lo que el visitante lee sale del eyebrow. */
     id: 'postventa',
-    eyebrow: 'POST-VENTA',
+    eyebrow: 'SERVICIOS',
     titulo: 'No termina cuando te llevás el auto',
   },
   {
-    indice: '09',
+    indice: '07',
     id: 'preguntas',
     eyebrow: 'PREGUNTAS',
     titulo: 'Lo que todos preguntan',
     tono: 'claro',
     fondo: 'claro',
   },
-  { indice: '10', id: 'cta', eyebrow: 'TEST DRIVE', titulo: 'Vení a probarlo' },
-  { indice: '11', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
+  { indice: '08', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
 ]
 
 /**
@@ -77,21 +83,51 @@ export function seccion(id: string): Seccion {
   return s
 }
 
-/** Ítems del menú desplegado (fase 3). */
+/**
+ * Las secciones que efectivamente se dibujan, renumeradas.
+ *
+ * Servicios y Preguntas dependen de lo que cargue la dueña, y con la lista
+ * vacía no aparecen. Si se sacaran sin renumerar, el riel saltaría del 05 al
+ * 07 y cualquiera que mire la numeración creería que falta algo.
+ */
+export function seccionesVisibles(ocultas: readonly string[]): Seccion[] {
+  return SECCIONES.filter((s) => !ocultas.includes(s.id)).map((s, i) => ({
+    ...s,
+    indice: String(i + 1).padStart(2, '0'),
+  }))
+}
+
+/**
+ * Ítems del menú desplegado.
+ *
+ * Un href que empieza con `#` es una SECCIÓN del home y uno que empieza con
+ * `/` es una RUTA. Los dos pasan por `useIrA()` (`src/lib/ir-a.ts`), que sabe
+ * que un `#` estando en otra página significa "ir al home y después bajar".
+ */
 export interface ItemMenu {
   label: string
   href: string
 }
 
 export const MENU: ItemMenu[] = [
-  { label: 'Vehículos', href: '#vehiculos' },
-  { label: 'Usados', href: '#vehiculos' },
-  { label: 'Fiat Plan', href: '#plan' },
-  { label: 'Cotizar usado', href: '#cotizador' },
-  { label: 'Test drive', href: '#cta' },
+  /* El primer ítem lleva al INICIO de la página, no a la sección de
+     vehículos: es el único del menú que sirve para salir de donde sea y
+     empezar de nuevo, y desde una ficha "Vehículos" llevaba a media página
+     del home sin que nada explicara por qué. Estando ya en `/`, `useIrA` lo
+     resuelve subiendo con scroll suave. */
+  { label: 'Menú principal', href: '/' },
+  { label: 'Catálogo', href: '/catalogo' },
   { label: 'Nosotros', href: '#contadores' },
+  { label: 'Servicios', href: '#postventa' },
   { label: 'Contacto', href: '#contacto' },
 ]
+
+/**
+ * El href del ítem de WhatsApp del footer. El número lo edita la dueña y se
+ * lee en runtime con `useContacto()`, así que acá no puede ir el link: el
+ * footer cambia esta marca por él al dibujar.
+ */
+export const HREF_WHATSAPP = 'whatsapp:'
 
 /** Columnas del footer. El orden de los ítems ES el escalonado. */
 export interface ColumnaFooter {
@@ -104,37 +140,28 @@ export const FOOTER: ColumnaFooter[] = [
     titulo: 'CONTENIDO',
     items: [
       { label: 'Vehículos', href: '#vehiculos' },
+      { label: 'Catálogo', href: '/catalogo' },
       { label: 'Segmentos', href: '#segmentos' },
-      { label: 'Fiat Plan', href: '#plan' },
-      { label: 'Cotizar usado', href: '#cotizador' },
       { label: 'Marcas', href: '#marcas' },
-      { label: 'Post-venta', href: '#postventa' },
-      { label: 'Test drive', href: '#cta' },
+      { label: 'Servicios', href: '#postventa' },
     ],
   },
   {
     titulo: 'UTILIDAD',
     items: [
+      { label: 'Nosotros', href: '#contadores' },
       { label: 'Contacto', href: '#contacto' },
       { label: 'Preguntas frecuentes', href: '#preguntas' },
-      { label: 'Política de privacidad', href: '#contacto' },
-      { label: 'Términos y condiciones', href: '#contacto' },
     ],
   },
   {
     titulo: 'REDES',
+    // Salen de `REDES`: con los links escritos acá también, cambiar una red
+    // era acordarse de tocarla en dos archivos. El WhatsApp va aparte porque
+    // su número se lee en runtime (ver `HREF_WHATSAPP`).
     items: [
-      {
-        label: 'Instagram',
-        href: 'https://instagram.com/autoshopjujuy',
-        externo: true,
-      },
-      {
-        label: 'Facebook',
-        href: 'https://facebook.com/autoshopjujuy',
-        externo: true,
-      },
-      { label: 'WhatsApp', href: 'https://wa.me/5493884152233', externo: true },
+      ...REDES.map((r) => ({ label: r.label, href: r.href, externo: true })),
+      { label: 'WhatsApp', href: HREF_WHATSAPP, externo: true },
     ],
   },
 ]

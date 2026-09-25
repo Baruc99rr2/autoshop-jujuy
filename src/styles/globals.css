@@ -18,6 +18,12 @@
 
   --text-hero: clamp(3rem, 11vw, 10rem);
   --text-h1: clamp(2.25rem, 6.5vw, 5rem);
+  /* El titular de una página de CONTENIDO, no de portada: la ficha de un auto.
+     Es --text-h1 con techo, así que en mobile mide exactamente lo mismo y en
+     desktop se queda en 52 px en vez de irse a 80. A 80 px el nombre del auto
+     ocupaba dos renglones y empujaba la galería y el precio fuera de la
+     primera pantalla, que es justo lo que la ficha tiene que mostrar. */
+  --text-h1-ficha: min(var(--text-h1), 3.25rem);
   --text-h2: clamp(1.75rem, 4vw, 3rem);
   --text-body: clamp(1rem, 1.1vw, 1.125rem);
   --text-hud: 0.8125rem;
@@ -116,6 +122,11 @@
   html {
     background: var(--color-void);
     -webkit-text-size-adjust: 100%;
+    /* Lo que tapa el mueble fijo: el header arriba y, abajo, la barra MENU
+       (con la barra de WhatsApp de la ficha encima, en mobile) o la barra de
+       guardar del panel. Sin esto, un Tab deja el elemento enfocado JUSTO
+       debajo de uno de ellos: el navegador lo trae al borde y no más. */
+    scroll-padding-block: 5.5rem 9rem;
   }
 
   /* Lenis maneja el scroll; el smooth nativo pelea con ScrollTrigger. */
@@ -306,15 +317,20 @@
    MALLA ÁMBAR (MeshOverlay)
    ───────────────────────────────────────────────────────────── */
 
+/* La malla es un <svg> con un único <path> de rectas —grilla y diagonales—
+   armado en MeshOverlay. Acá queda la caja, el color y la linterna.
+
+   `color` y no `fill`: el <pattern> dibuja con `currentColor`, así que el
+   acento se define una sola vez y cualquier variante futura de tono se
+   resuelve cambiando esta línea. */
 .mesh {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 40;
-  background-image:
-    linear-gradient(to right, var(--color-amber) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-amber) 1px, transparent 1px);
-  background-size: 56px 56px;
+  color: var(--color-amber);
   opacity: var(--mesh-opacity, 0.28);
   mask-image: var(
     --mesh-mask,
@@ -382,7 +398,12 @@
 
 .stagger-link {
   position: relative;
-  display: inline-block;
+  /* 44 px de alto: es el mínimo táctil. Los ítems van pegados (sin
+     `space-y`), así que la lista mide casi lo mismo que cuando eran de 26 px
+     con aire entre medio. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
   color: color-mix(in srgb, var(--color-bone) 78%, transparent);
   transition:
     transform 0.25s cubic-bezier(0.65, 0, 0.35, 1),
@@ -557,6 +578,47 @@
    el blanco alcanza para recuperar el logo entero sin tocar los paths.
    ───────────────────────────────────────────────────────────── */
 
+/* ── El velo del header ──────────────────────────────────────────────
+   Un degradado negro corto, de arriba hacia abajo, que aparece recién cuando
+   la página se movió. Va degradado y no sólido con desenfoque: `backdrop-filter`
+   sobre una barra fija que cubre todo el ancho es de lo más caro que se le
+   puede pedir a un teléfono en cada frame de scroll, y acá el problema es de
+   legibilidad, no de profundidad.
+
+   Mide el doble del header para que el corte de abajo caiga en transparente y
+   no se vea el borde de una barra. */
+.header-velo {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: -1;
+  height: 200%;
+  pointer-events: none;
+  /* NEGRO PLENO en todo el alto del header (la mitad de arriba del velo,
+     que mide el doble) y recién debajo se desvanece. Con el degradado
+     arrancando desde arriba, a la altura del logo el negro ya estaba al
+     ~80%: en un celular los botones del hero pasaban por detrás y el ámbar
+     de VER VEHÍCULOS se leía encimado con el logo. */
+  background: linear-gradient(
+    to bottom,
+    var(--color-void) 0%,
+    var(--color-void) 50%,
+    color-mix(in srgb, var(--color-void) 60%, transparent) 72%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.header-velo[data-on='true'] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-velo {
+    transition: none;
+  }
+}
+
 .header-adapt[data-tono='claro'] {
   --logo-white: var(--color-void);
 }
@@ -644,162 +706,6 @@
 .marca:hover::after,
 .marca[data-encendida='true']::after {
   animation: marca-der 90ms ease-out 1;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   SLIDER DEL SIMULADOR
-   `<input type="range">` real, estilizado. Con el input nativo vienen gratis
-   las flechas del teclado, Home/End, el rol correcto y el valor anunciado por
-   el lector de pantalla; un div con eventos de mouse no tiene nada de eso.
-
-   La parte llena es ámbar y encima corren barras /// diagonales. Las tres
-   capas van en un solo `background`: las barras y el ámbar recortados a
-   `--fill` (el porcentaje, que escribe React), y el graphite al 100% como
-   fondo. Lo único que se anima es `background-position` de la capa de barras.
-   ───────────────────────────────────────────────────────────── */
-
-.slider {
-  --alto-pista: 10px;
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 28px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.slider:focus {
-  outline: none;
-}
-
-@keyframes slider-barras {
-  to {
-    background-position:
-      12px center,
-      left center,
-      left center;
-  }
-}
-
-/* La pista se define dos veces porque un selector con un pseudo-elemento
-   desconocido invalida TODA la regla: Chromium descarta la que lleva
-   ::-moz-range-track y Firefox la que lleva ::-webkit-slider-runnable-track.
-   No se pueden agrupar con coma. */
-.slider::-webkit-slider-runnable-track {
-  height: var(--alto-pista);
-  background-image:
-    repeating-linear-gradient(
-      115deg,
-      rgb(0 0 0 / 0.32) 0 2px,
-      transparent 2px 12px
-    ),
-    linear-gradient(var(--color-amber), var(--color-amber)),
-    linear-gradient(var(--color-graphite), var(--color-graphite));
-  background-size:
-    var(--fill, 0%) 100%,
-    var(--fill, 0%) 100%,
-    100% 100%;
-  background-repeat: no-repeat;
-  background-position:
-    left center,
-    left center,
-    left center;
-  animation: slider-barras 0.9s linear infinite;
-}
-
-.slider::-moz-range-track {
-  height: var(--alto-pista);
-  background-image:
-    repeating-linear-gradient(
-      115deg,
-      rgb(0 0 0 / 0.32) 0 2px,
-      transparent 2px 12px
-    ),
-    linear-gradient(var(--color-amber), var(--color-amber)),
-    linear-gradient(var(--color-graphite), var(--color-graphite));
-  background-size:
-    var(--fill, 0%) 100%,
-    var(--fill, 0%) 100%,
-    100% 100%;
-  background-repeat: no-repeat;
-  background-position:
-    left center,
-    left center,
-    left center;
-  animation: slider-barras 0.9s linear infinite;
-}
-
-/* El pulgar lleva el mismo bisel que todo el resto del sitio. */
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 28px;
-  margin-top: calc((var(--alto-pista) - 28px) / 2);
-  background: var(--color-bone);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  transition: background-color 0.15s ease;
-}
-
-.slider::-moz-range-thumb {
-  width: 16px;
-  height: 28px;
-  border: 0;
-  background: var(--color-bone);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  transition: background-color 0.15s ease;
-}
-
-.slider:hover::-webkit-slider-thumb,
-.slider:focus-visible::-webkit-slider-thumb {
-  background: var(--color-amber);
-}
-
-.slider:hover::-moz-range-thumb,
-.slider:focus-visible::-moz-range-thumb {
-  background: var(--color-amber);
-}
-
-/* El foco de teclado tiene que verse: el pulgar es lo único que se mueve, así
-   que el anillo va sobre el input entero. */
-.slider:focus-visible {
-  outline: 2px solid var(--color-amber);
-  outline-offset: 6px;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   ESCANEO DEL COTIZADOR
-   Una banda ámbar con núcleo de filamento que recorre la card de arriba abajo
-   dos veces en 1,2 s. El elemento ocupa toda la card, así que desplazarlo un
-   100% de sí mismo lo saca por completo: es un barrido con puro transform.
-   ───────────────────────────────────────────────────────────── */
-
-@keyframes escanear {
-  from {
-    transform: translateY(-100%);
-  }
-  to {
-    transform: translateY(100%);
-  }
-}
-
-.escaneo {
-  /* Las paradas van en px alrededor del 50%, no en porcentajes. Con
-     porcentajes el ancho de la banda escala con el alto de la card: en una
-     card baja el degradado se come toda la caja y se lee como un lavado ámbar
-     en vez de como una línea que la recorre. Así el núcleo mide siempre 6px y
-     el halo 80, sea cual sea el alto. */
-  background: linear-gradient(
-    to bottom,
-    transparent 0,
-    rgb(253 185 22 / 0.1) calc(50% - 40px),
-    rgb(253 185 22 / 0.55) calc(50% - 3px),
-    var(--color-filament) 50%,
-    rgb(253 185 22 / 0.55) calc(50% + 3px),
-    rgb(253 185 22 / 0.1) calc(50% + 40px),
-    transparent 100%
-  );
-  animation: escanear 0.6s cubic-bezier(0.45, 0, 0.55, 1) 2 both;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -1041,36 +947,26 @@
    corrida con la medición `hero titular`.
    ───────────────────────────────────────────────────────────── */
 
+/* El clamp está CALCULADO contra la línea más larga del titular, no elegido a
+   ojo, y hay que recalcularlo cada vez que el titular cambia.
+
+   CÓMO SE MIDE. No sirve medir el ancho de la línea ya pintada con un Range:
+   si la línea SE PARTIÓ, el rectángulo que devuelve es la unión de los dos
+   renglones y sale más ANGOSTO que el texto, así que un titular partido se
+   informa como si entrara sobrado. Hay que medir el ancho NATURAL: una copia
+   de la línea con `white-space: nowrap`, fuera de flujo, y comparar contra la
+   caja. Con la medición mala, "La ruta que te / lleva a cumplir / tu sueño"
+   parecía entrar con aire en los siete anchos y en realidad se partía en los
+   siete.
+
+   Con "Tu próximo / auto, en / Jujuy" la línea más larga eran 10 caracteres y
+   entraba con `clamp(2.25rem, 6.1vw, 6.5rem)`. El titular nuevo llega a 12
+   ("que te lleva") y estos valores le dejan entre 10% y 25% de aire, medido a
+   360, 390, 414, 768, 900, 1024, 1180, 1280, 1366, 1440, 1600 y 1920. */
 .hero-titulo {
-  font-size: clamp(2.25rem, 6.1vw, 6.5rem);
+  font-size: clamp(1.95rem, 5vw, 6.25rem);
   line-height: 0.92;
   letter-spacing: -0.03em;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   PANEL DEL VIDEO DEL HERO (desktop)
-
-   El tamaño sale de la ALTURA y el ancho lo deriva `aspect-ratio`. Al revés
-   —ancho del contenedor, alto por aspecto— el alto depende de un ancho que a
-   su vez depende del contenido, y el panel colapsa a cero.
-
-   La altura tiene DOS topes y se toma el menor:
-   - `vw` acota el ANCHO del panel, para que en md no se coma la columna del
-     titular. Sin este tope, en una tablet alta (768×1366) el panel pedía 300+
-     px de ancho contra los ~200 que quedaban libres.
-   - `svh` acota el ALTO, para que en un notebook de pantalla baja el panel no
-     empuje el hero más allá del viewport y choque con la barra MENU.
-   ───────────────────────────────────────────────────────────── */
-
-.hero-panel {
-  aspect-ratio: 9 / 16;
-  height: min(38vw, 52svh);
-}
-
-@media (min-width: 1024px) {
-  .hero-panel {
-    height: min(46vw, 66svh);
-  }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -1171,141 +1067,97 @@
   }
 }
 
-/* ── El recorte de detalle del hover ─────────────────────────────────
-   Una segunda copia de la MISMA imagen, ampliada hacia un punto elegido a mano
-   por unidad, que se revela con un barrido de izquierda a derecha. No hay
-   archivos nuevos: un recorte al 230% de una foto de 1600px sigue teniendo
-   resolución de sobra para una caja de ~600.
+/* En PC las tres cards entran enteras (ver `ANCHO_RIEL`): no queda nada que
+   arrastrar, y una mano de agarre sobre algo que no se mueve miente. */
+@media (min-width: 64rem) {
+  .veh-riel,
+  .veh-riel:active {
+    cursor: auto;
+  }
+}
 
-   Solo con puntero fino. En táctil no hay hover, y dejarlo atado a `:active`
-   haría que la foto saltara al tocar la card para arrastrar el riel. */
-.veh-detalle,
-.veh-detalle-label {
-  opacity: 0;
-  clip-path: inset(0 100% 0 0);
+/* ── Tira "VER FICHA" ────────────────────────────────────────────────
+   El barrido ámbar de izquierda a derecha, el mismo de la FAQ y de los tiles
+   de post-venta. Acá no decora: ahora la card entera es un link a la ficha, y
+   esto es lo que lo avisa.
+
+   Reemplazó al recorte de detalle en hover (una segunda copia de la foto,
+   ampliada hacia un punto elegido a mano por unidad). Ese recorte se fue con
+   el modelo viejo: el punto vivía en los datos escritos a mano y el modelo
+   nuevo lo carga la dueña desde el panel, donde no hay forma de pedirle que
+   elija coordenadas de zoom por foto. Un zoom genérico caía en el cielo o en
+   el asfalto la mitad de las veces.
+
+   Responde a `:focus-within` además de a `:hover`: el link es la card entera,
+   así que quien llega con Tab tiene que ver lo mismo. */
+.veh-ficha {
+  isolation: isolate;
+  position: relative;
+  margin-top: auto;
+  color: var(--color-bone);
+  transition: color 0.3s ease;
+}
+
+.veh-ficha::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.veh-card:hover .veh-ficha::before,
+.veh-card:focus-within .veh-ficha::before {
+  transform: scaleX(1);
+}
+
+.veh-card:hover .veh-ficha,
+.veh-card:focus-within .veh-ficha {
+  color: var(--color-void);
+  transition-delay: 0.12s;
+}
+
+/* La foto acompaña con un acercamiento corto. Es transform, nada más. */
+.veh-foto {
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .veh-detalle {
-    opacity: 1;
-    transform: scale(var(--zoom));
-    transition: clip-path 0.4s cubic-bezier(0.65, 0, 0.35, 1);
-  }
-
-  .veh-detalle-label {
-    opacity: 1;
-    transition: clip-path 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.08s;
-  }
-
-  .veh-card:hover .veh-detalle,
-  .veh-card:focus-within .veh-detalle,
-  .veh-card:hover .veh-detalle-label,
-  .veh-card:focus-within .veh-detalle-label {
-    clip-path: inset(0 0 0 0);
+  .veh-card:hover .veh-foto,
+  .veh-card:focus-within .veh-foto {
+    transform: scale(1.06);
   }
 }
 
-/* Con reduced-motion el recorte sigue existiendo, pero aparece de una: el
-   contenido es el mismo, lo que se saca es el barrido. */
+/* ── Segunda foto en hover ───────────────────────────────────────────
+   Las unidades que tienen una segunda foto cambian a ella en hover, con el
+   mismo barrido izquierda→derecha de la FAQ y de la tira "VER FICHA". Acá el
+   barrido se dibuja con `clip-path` y no con `scaleX`: una imagen escalada en
+   X se deforma, y lo que tiene que moverse es el borde del recorte, no la
+   foto.
+
+   El estado abierto/cerrado lo pone React en el `style` del elemento y no una
+   regla `:hover`, porque la foto no existe en el DOM hasta el primer hover
+   —así no se descarga en la carga inicial— y un elemento que nace ya en su
+   estado final no transiciona: aparecería de un corte. */
+.veh-foto-swap {
+  transition: clip-path 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Con reduced-motion el estado sigue existiendo; lo que se saca es el
+   movimiento. */
 @media (prefers-reduced-motion: reduce) {
-  .veh-detalle,
-  .veh-detalle-label {
+  .veh-ficha::before,
+  .veh-foto,
+  .veh-foto-swap {
     transition: none;
   }
-}
-
-/* ─────────────────────────────────────────────────────────────
-   CTA — EL VIDEO ADENTRO DE LAS LETRAS
-
-   `background-clip: text` NO sirve acá: un `background` de CSS no puede ser un
-   `<video>`, así que recortaría un fondo vacío. De las dos técnicas que sí
-   funcionan —máscara SVG con <text>, o modo de fusión— va la segunda: un panel
-   NEGRO con el titular en BLANCO, multiplicado contra el video que tiene
-   debajo. Multiplicar por 0 da negro (el panel tapa) y por 1 deja pasar el
-   video (las letras quedan caladas).
-
-   La ventaja sobre el SVG es que sigue siendo texto real: hereda el eje `wdth`
-   de Archivo —la firma tipográfica del sitio—, se selecciona, lo lee un lector
-   de pantalla y se reflowea solo. Un `<text>` de SVG habría que dimensionarlo
-   a mano en cada breakpoint.
-
-   `isolation: isolate` en la caja es obligatorio: sin un contexto de fusión
-   propio, el `multiply` se mezclaría contra el fondo negro de la PÁGINA en vez
-   de contra el video, y el resultado sería un rectángulo negro liso.
-   ───────────────────────────────────────────────────────────── */
-
-.cta-mascara {
-  background: var(--color-void);
-  mix-blend-mode: multiply;
-  color: #ffffff;
-}
-
-/* Blanco puro y no --color-bone: en un multiply, cada punto porcentual que le
-   falte al blanco oscurece el video que pasa por la letra. #FEFDF8 dejaría el
-   calado a un 99,6% en el rojo y a un 97% en el azul, o sea con una dominante
-   cálida sobre un clip que es azul y blanco. */
-
-/* El navegador que no soporte mix-blend-mode se queda con un titular blanco
-   sobre negro, que es legible y no parece roto. */
-@supports not (mix-blend-mode: multiply) {
-  .cta-mascara {
-    mix-blend-mode: normal;
-    background: transparent;
-    color: var(--color-bone);
-  }
-}
-
-/* ── Botón flotante de WhatsApp ────────────────────────────────────── */
-
-@keyframes wa-pulso {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.25;
-    transform: scale(0.72);
-  }
-}
-
-.wa-pulso {
-  animation: wa-pulso 2.4s ease-in-out infinite;
-}
-
-/* EL ENCUADRE DEL VIDEO EN MOBILE.
-   La franja clara del clip —cielo y cumbres nevadas— está en el tercio
-   superior del cuadro. En desktop la caja es ancha y el titular cae encima de
-   esa franja. En mobile la caja es angosta y alta: `object-cover` muestra el
-   alto completo y recorta los costados, así que la franja clara queda arriba
-   del todo y el titular, centrado, cae sobre el valle oscuro — tres líneas de
-   gris plano sin nada de video adentro.
-
-   La solución es acercarse a las cumbres. Y el punto importa: el primer
-   intento usó `transform-origin: 50% 26%`, que centra el recorte en el CIELO
-   —una superficie casi uniforme— y dejó las letras de un blanco plano, o sea
-   el mismo problema con otro color. Lo que hay que encuadrar es la franja de
-   cumbres nevadas y la línea del cerro, que es donde el clip tiene dibujo.
-
-   El valor final NO salió de la cuenta sino de MEDIRLO. La cuenta decía que
-   con `origin: 50% 0` el centro de la caja cae en el 29% del alto del video,
-   o sea las cumbres — y la medición del arnés informó un rango de luminancia
-   de 45 sobre 255 dentro de las letras, que es cielo liso. Barriendo el
-   origen y leyendo el número:
-
-     origin 45%  →  rango 219  (min 27, max 246)   ← elegido
-     origin 65%  →  rango  87
-     origin 80%  →  rango  86
-
-   El 45% encuadra el río trenzado con el agua reflejando contra la grava
-   oscura, que es la parte del clip con más contraste, y deja las letras de
-   mobile con el mismo rango que las de desktop (213). Con 1280 px de origen y
-   una columna de ~330, el 1.7× sigue usando 460 px reales de ancho: sobra
-   resolución. */
-@media (max-width: 767px) {
-  .cta-caja video {
-    transform: scale(1.7);
-    transform-origin: 50% 45%;
+  .veh-card:hover .veh-foto,
+  .veh-card:focus-within .veh-foto {
+    transform: none;
   }
 }
 
@@ -1322,4 +1174,335 @@
 .wa-btn:hover .barras > i:nth-child(3),
 .wa-btn:focus-visible .barras > i:nth-child(3) {
   transition-delay: 0.1s;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — GALERÍA
+
+   Dos layouts distintos, uno por dispositivo (ver GaleriaVehiculo.tsx). Lo que
+   comparten es el gesto: el borde del recorte se mueve de izquierda a derecha,
+   el mismo barrido de la FAQ y de la card.
+   ───────────────────────────────────────────────────────────── */
+
+/* Mobile: la tira que se desliza con el dedo. `mandatory` y no `proximity`,
+   igual que los otros rieles del sitio: con las fotos al 100% del ancho,
+   proximity deja media foto a la vista si el gesto fue corto. */
+.gal-tira {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.gal-tira::-webkit-scrollbar {
+  display: none;
+}
+
+.gal-slide {
+  scroll-snap-align: center;
+}
+
+/* La tira de miniaturas de escritorio. Scrollea en vez de envolverse —con
+   diez fotos una grilla que envuelve suma una segunda fila y empuja el precio
+   fuera de pantalla— y va SIN scroll-snap: son blancos de 80 px que se eligen
+   con un click, no una tira que se recorre con el dedo. Lo único que se le
+   saca es la barra, que sobre el fondo negro se ve como un error. */
+.gal-miniaturas {
+  scrollbar-width: none;
+}
+
+.gal-miniaturas::-webkit-scrollbar {
+  display: none;
+}
+
+/* Desktop: las fotos van apiladas y el clip-path decide cuál se ve. Se anima
+   clip-path y nada más — ni opacity ni un montaje y desmontaje, que entraría
+   de un corte porque un elemento recién montado no transiciona desde su valor
+   inicial. */
+.gal-foto {
+  transition: clip-path 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — EL BLOQUE DE VIDEO
+
+   En reposo es una foto dentro del bisel de siempre. Con la intención —hover
+   en escritorio, primer toque en un teléfono— la caja se comprime, la foto se
+   funde con el video, el bisel se abre a una figura con las cuatro esquinas
+   cortadas y aparecen las marcas de encuadre. Se lee como un visor de cámara
+   que enfoca.
+
+   ── LAS DOS FORMAS TIENEN OCHO VÉRTICES ──────────────────────────────
+   Y ESO NO ES NEGOCIABLE: `clip-path` interpola punto por punto, así que dos
+   polígonos con distinta cantidad de vértices no se transicionan, saltan de
+   uno al otro de un corte.
+
+   El bisel de reposo corta DOS esquinas, así que sobran dos vértices. En vez
+   de dibujarlo con seis, se dibuja con ocho poniendo un punto DUPLICADO sobre
+   cada esquina sin cortar. Al pasar al estado activo esos pares se separan y
+   el corte "nace" de la esquina, que es justo el movimiento que se busca:
+
+     reposo   (b,0) (100,0) (100,0)   (100,100-b) (100-b,100) (0,100) (0,100)   (0,b)
+     activo   (c,0) (100-c,0) (100,c) (100,100-c) (100-c,100) (c,100) (0,100-c) (0,c)
+
+   `--b` es el bisel y `--c` el corte del visor; la capa interior los lleva 1px
+   más chicos para que el borde quede paralelo, igual que en `Bevel`.
+   ───────────────────────────────────────────────────────────── */
+
+.vv-forma {
+  clip-path: polygon(
+    var(--b) 0,
+    100% 0,
+    100% 0,
+    100% calc(100% - var(--b)),
+    calc(100% - var(--b)) 100%,
+    0 100%,
+    0 100%,
+    0 var(--b)
+  );
+  transition: clip-path 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.vv[data-activo='true'] .vv-forma {
+  clip-path: polygon(
+    var(--c) 0,
+    calc(100% - var(--c)) 0,
+    100% var(--c),
+    100% calc(100% - var(--c)),
+    calc(100% - var(--c)) 100%,
+    var(--c) 100%,
+    0 calc(100% - var(--c)),
+    0 var(--c)
+  );
+}
+
+/* La compresión. Va en la caja y NO en el marco, que es lo que deja las
+   marcas de encuadre afuera: la foto se retira y el visor se queda donde
+   estaba, que es lo que hace leer el gesto como "esto se está enfocando" y no
+   como "esto se achicó". */
+.vv-caja {
+  display: block;
+  width: 100%;
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.vv[data-activo='true'] .vv-caja {
+  transform: scale(0.96);
+}
+
+/* ── Las marcas de encuadre ──────────────────────────────────────────
+   Cuatro escuadras en las esquinas del marco. Son dos bordes de un cuadrado
+   vacío, no un SVG: a 20px, dos líneas de 1px es todo lo que hay que dibujar.
+   Entran con un retardo corto para que la caja ya se esté comprimiendo cuando
+   aparecen, y no las dos cosas a la vez. */
+.vv-marca {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 0 solid var(--color-amber);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.3s ease 0.1s,
+    transform 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.1s;
+  pointer-events: none;
+}
+
+.vv[data-activo='true'] .vv-marca {
+  opacity: 0.9;
+  transform: scale(1);
+}
+
+.vv-marca-ai {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.vv-marca-ad {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.vv-marca-bi {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.vv-marca-bd {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* El cruce entre la foto y el video. Solo `opacity`: las dos capas están
+   apiladas y ocupan lo mismo, así que no hay nada que mover. */
+.vv-capa {
+  transition: opacity 0.45s ease;
+}
+
+/* ── Sin animación ───────────────────────────────────────────────────
+   Se va la compresión, se va el cambio de forma y se van las marcas. Queda el
+   cambio de foto a video, que no es decoración: es el contenido. */
+@media (prefers-reduced-motion: reduce) {
+  .vv-caja,
+  .vv-forma,
+  .vv-capa,
+  .vv-marca {
+    transition: none;
+  }
+  .vv[data-activo='true'] .vv-caja {
+    transform: none;
+  }
+  .vv[data-activo='true'] .vv-forma {
+    clip-path: polygon(
+      var(--b) 0,
+      100% 0,
+      100% 0,
+      100% calc(100% - var(--b)),
+      calc(100% - var(--b)) 100%,
+      0 100%,
+      0 100%,
+      0 var(--b)
+    );
+  }
+  .vv-marca {
+    display: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — ETIQUETAS
+
+   El mismo barrido de los tiles de post-venta, con una capa más: la foto de
+   fondo. El apilado va con z-index negativos sobre un `isolation: isolate`,
+   así el orden es foto → velo → barrido → contenido, y todo queda por encima
+   del fondo asphalt que trae el bisel.
+
+   El estado lo tiene el contenedor exterior (`.etq-host`, que es el <li>),
+   porque el `clip-path` del bisel vive en el hijo: por eso los selectores son
+   descendentes y no `.etq:hover`. `data-activo` es el tap, que en un teléfono
+   es lo único que hay — ver el comentario de EtiquetasVehiculo.tsx.
+   ───────────────────────────────────────────────────────────── */
+
+.etq {
+  isolation: isolate;
+  position: relative;
+  color: var(--color-bone);
+  transition: color 0.3s ease;
+}
+
+.etq-foto {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* El velo. Sin él un texto bone sobre la foto de un auto claro desaparece; el
+   degradado deja más limpia la parte de arriba, que es donde se ve el auto. */
+.etq-velo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(
+    to top,
+    rgb(0 0 0 / 0.9),
+    rgb(0 0 0 / 0.72) 45%,
+    rgb(0 0 0 / 0.45)
+  );
+}
+
+.etq-barrido {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.etq-host:hover .etq-barrido,
+.etq-host:focus-within .etq-barrido,
+.etq-host[data-activo='true'] .etq-barrido {
+  transform: scaleX(1);
+}
+
+/* El texto pasa a negro con la demora justa para que el barrido lo alcance.
+   Al salir no hay demora: el color vuelve enseguida. */
+.etq-host:hover .etq,
+.etq-host:focus-within .etq,
+.etq-host[data-activo='true'] .etq {
+  color: var(--color-void);
+  transition-delay: 0.12s;
+}
+
+/* El acercamiento de la foto. Corto: es el fondo, no el sujeto. */
+.etq-host:hover .etq-foto,
+.etq-host:focus-within .etq-foto,
+.etq-host[data-activo='true'] .etq-foto {
+  transform: scale(1.06);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FICHA DE VEHÍCULO — VIDEO
+   El póster se aclara un poco al pasar por encima: es lo que dice que el
+   bloque entero es el botón, no solo el bisel del medio.
+   ───────────────────────────────────────────────────────────── */
+
+.video-poster {
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .video-play:hover .video-poster {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gal-foto,
+  .etq-foto,
+  .etq-barrido,
+  .video-poster {
+    transition: none;
+  }
+  .etq-host:hover .etq-foto,
+  .etq-host:focus-within .etq-foto,
+  .etq-host[data-activo='true'] .etq-foto,
+  .video-play:hover .video-poster {
+    transform: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL — DIÁLOGO
+   El `<dialog>` nativo trae su propia capa superior, así que su fondo NO se
+   puede pintar con un div: se pinta con `::backdrop`, que es el único
+   pseudo-elemento que vive en esa capa. Negro casi opaco y nada más: lo que
+   hay detrás es el formulario que se está por perder o la unidad que se está
+   por borrar, y no tiene que competir con la pregunta.
+   ───────────────────────────────────────────────────────────── */
+
+.dialogo::backdrop {
+  background: rgb(0 0 0 / 0.82);
+}
+
+/* ── Mapa del footer ──────────────────────────────────────────────────────
+   El embed de OpenStreetMap es un rectángulo blanco con calles de colores;
+   sobre el negro del footer era lo único que se veía. Se invierte (el fondo
+   pasa a gris casi negro y las etiquetas negras a claras), el hue-rotate
+   devuelve cada color a su tono —el agua sigue azul, las avenidas siguen
+   cálidas— y el saturate las apaga para que no compitan con el ámbar.
+   Invertir al 90 % y no al 100 % deja el fondo en gris y no en negro puro:
+   las calles, que quedan oscuras, se siguen distinguiendo del fondo por su
+   borde claro. No se anima: es un filtro fijo. */
+.mapa-oscuro {
+  filter: invert(0.9) hue-rotate(180deg) saturate(0.55) brightness(0.95) contrast(0.95);
 }

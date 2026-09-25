@@ -1,6 +1,8 @@
 import Bevel from './Bevel'
 import Icono from './Icono'
-import { FLOTANTE } from '../data/cta'
+import { FLOTANTE_LABEL, whatsappUrl } from '../data/contacto'
+import { useContacto } from '../lib/contenido'
+import { usePieALaVista } from '../lib/pie-a-la-vista'
 
 /**
  * Botón flotante de WhatsApp, abajo a la derecha.
@@ -15,16 +17,35 @@ import { FLOTANTE } from '../data/cta'
  * texto de desktop identifica igual de bien.
  */
 export function WhatsApp() {
+  // Al llegar al footer se aparta: abajo a la derecha quedaba encima del © y,
+  // en desktop, del enlace del estudio. El footer tiene su propio WhatsApp en
+  // la columna de redes, así que no se pierde nada.
+  const enElPie = usePieALaVista()
+  const { whatsapp } = useContacto()
+
   return (
-    <div className="fixed right-4 bottom-24 z-60 md:right-6 md:bottom-6">
+    /* Quién lo muestra y quién no lo decide `PaginaInterna`: la ficha lo saca
+       entero porque ya tiene su propio botón de WhatsApp, arriba en el panel
+       de precio y abajo en la barra fija de mobile. Acá adentro la única
+       variante es apartarse del pie. */
+    /* Apartado va `inert`: invisible pero tabulable dejaba el foco en un botón
+       que no se ve. */
+    <div
+      inert={enElPie}
+      className={`fixed right-4 bottom-24 z-60 transition-[opacity,transform] duration-300 md:right-6 md:bottom-6 ${
+        enElPie ? 'pointer-events-none translate-y-4 opacity-0' : 'opacity-100'
+      }`}
+    >
       <Bevel
         as="a"
         variant="solid"
         bevel={12}
-        href={FLOTANTE.href}
+        href={whatsappUrl(whatsapp)}
         target="_blank"
         rel="noreferrer"
-        aria-label={FLOTANTE.aria}
+        // En mobile queda solo el ícono, así que el `aria` carga la
+        // identificación.
+        aria-label={`Escribinos por WhatsApp al ${whatsapp}`}
         className="wa-btn font-hud flex items-center gap-3 px-4 py-4 transition-transform duration-200 hover:-translate-y-0.5 md:px-5"
       >
         {/* El punto que pulsa lento.
@@ -45,7 +66,7 @@ export function WhatsApp() {
 
         {/* El texto y las barras solo en desktop: en mobile el botón es el
             ícono y nada más. */}
-        <span className="hidden md:inline">{FLOTANTE.label.toUpperCase()}</span>
+        <span className="hidden md:inline">{FLOTANTE_LABEL.toUpperCase()}</span>
         {/* El `hidden` va en un envoltorio y no en `.barras`: la clase de las
             barras ya no fija `display` propio, pero envolver además deja
             explícito que lo que se esconde es el bloque entero. */}

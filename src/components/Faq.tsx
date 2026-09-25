@@ -1,14 +1,7 @@
 import { useId, useState } from 'react'
 import SectionHeader from './SectionHeader'
-import { FAQ } from '../data/faq'
-import { seccion } from '../data/nav'
-
-/**
- * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
- * sección nueva se corren todos los números, y con el índice a mano el riel
- * diría una cosa y el encabezado de la sección otra.
- */
-const S = seccion('preguntas')
+import type { Seccion } from '../data/nav'
+import type { Pregunta } from '../types/contenido'
 
 /**
  * Preguntas frecuentes con el barrido izquierda→derecha.
@@ -17,11 +10,15 @@ const S = seccion('preguntas')
  * (la otra es el menú) y funciona como respiro entre tanto negro.
  *
  * Una sola abierta a la vez. El estado guarda el id, no el índice, así que
- * reordenar `FAQ` no cambia cuál está abierta.
+ * reordenar las preguntas no cambia cuál está abierta.
+ *
+ * Las preguntas las edita la dueña en el panel. Con cero, `Home` no dibuja la
+ * sección; por eso acá se puede dar por hecho que hay al menos una. Índice y
+ * eyebrow llegan de `Home` por el mismo motivo que en `Servicios`.
  */
 
-export function Faq() {
-  const [abierta, setAbierta] = useState<string | null>(FAQ[0].id)
+export function Faq({ s: S, preguntas }: { s: Seccion; preguntas: Pregunta[] }) {
+  const [abierta, setAbierta] = useState<string | null>(preguntas[0]?.id ?? null)
   const uid = useId()
 
   return (
@@ -48,7 +45,7 @@ export function Faq() {
         />
 
         <ul className="lg:pt-2">
-          {FAQ.map((item) => {
+          {preguntas.map((item) => {
             const open = abierta === item.id
             const btnId = `${uid}-b-${item.id}`
             const panelId = `${uid}-p-${item.id}`

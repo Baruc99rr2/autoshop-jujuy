@@ -1,216 +1,169 @@
-import { useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { Link } from 'react-router'
 import Bevel from './Bevel'
+import ErrorCarga from './ErrorCarga'
 import SectionHeader from './SectionHeader'
+import VehiculoCard, { VehiculoCardEsqueleto } from './VehiculoCard'
+import { FILTROS } from '../data/catalogo'
 import { seccion } from '../data/nav'
-import { scrollTo } from '../lib/smooth'
-import {
-  CUOTA_DESDE,
-  ESTADO_LABEL,
-  FILTROS,
-  STOCK_TOTAL,
-  VEHICULOS,
-  cuotaDesde,
-  formatearKm,
-  formatearPrecio,
-} from '../data/vehiculos'
-import type { EstadoUnidad, Vehiculo } from '../data/vehiculos'
+import { repo } from '../data/repo'
+import type { Vehiculo } from '../types/vehiculo'
 
 const S = seccion('vehiculos')
 
-/** Chip de estado. El rojo aparece solo acá y en los errores del formulario. */
-const CHIP: Record<EstadoUnidad, string> = {
-  disponible: 'bg-amber text-void',
-  reservado: 'bg-flag text-bone',
-  vendido: 'bg-flag text-bone',
-}
+/** Cuántas unidades muestra el home. El stock completo vive en `/catalogo`. */
+const CUANTAS = 3
 
 /**
- * Las cuatro celdas de la fila HUD.
+ * El ancho de la card EN EL RIEL.
  *
- * En desktop es UNA FILA de cuatro; en mobile es una GRILLA de 2×2. En una
- * card de 331 px, cuatro columnas dejan 70 px por celda y los valores salían
- * cortados: "48.5…", "2.0 …", "AUT.…". Una ficha técnica truncada no se lee
- * como diseño, se lee como que el sitio está roto.
+ * En mobile y tablet el riel se desliza: una card casi entera más el borde de
+ * la siguiente, que es lo que dice "hay más para el costado".
  *
- * Las clases van escritas celda por celda en este array y no calculadas con
- * condiciones, por la decisión 33: `border-l` junto a `border-l-0` en el mismo
- * atributo lo resuelve el orden en que Tailwind emite las reglas, no el orden
- * en que uno las escribe. Las variantes `md:` sí son seguras porque el
- * breakpoint las emite después.
+ * EN PC ENTRAN LAS TRES, a tercios exactos del ancho del contenido: al 40%
+ * cada card medía 700 px en un monitor de 1800, la foto sola se comía la
+ * pantalla y el precio quedaba abajo del pliegue. El `2.5rem` son los dos
+ * `gap-5` entre las tres; el `%` de un ítem flex es del contenido del riel,
+ * que ya descuenta el padding del `shell`.
+ *
+ * En la grilla del catálogo la misma card va al 100% de su columna: ese ancho
+ * lo pone `/catalogo`, no este archivo.
  */
-const CELDA = [
-  'pr-3 md:flex-1',
-  'border-l border-graphite pl-3 md:flex-1',
-  'border-t border-graphite pt-3 pr-3 md:flex-1 md:border-t-0 md:border-l md:pt-0 md:pl-3',
-  'border-l border-t border-graphite pt-3 pl-3 md:flex-1 md:border-t-0 md:pt-0',
-]
-
-function Dato({
-  label,
-  valor,
-  i,
-}: {
-  label: string
-  valor: string
-  i: number
-}) {
-  return (
-    <div className={`min-w-0 ${CELDA[i]}`}>
-      <span className="font-hud block text-bone/40">{label}</span>
-      <span className="font-hud num mt-1 block truncate text-bone">{valor}</span>
-    </div>
-  )
-}
+const ANCHO_RIEL = 'w-[85vw] shrink-0 md:w-[56%] lg:w-[calc((100%-2.5rem)/3)]'
 
 /**
- * Una card.
- *
- * El ancho está elegido por el ALTO que resulta. Con la foto en 4:3, una card
- * del 46% del contenedor mide 660 px de ancho y 495 solo de foto, así que en
- * un notebook de 900 px no entran la foto y el precio en la misma pantalla —y
- * el precio es el dato de la sección—. Al 40% la card entera entra, y siguen
- * viéndose dos completas más el borde de la tercera, que es lo que hace que el
- * conjunto se lea como riel y no como grilla.
- */
-function Card({ v }: { v: Vehiculo }) {
-  return (
-    <article className="veh-card w-[85vw] shrink-0 md:w-[56%] lg:w-[40%]">
-      <Bevel variant="outline" bevel={16} outerClassName="block h-full" className="p-0">
-        {/* ── Foto ──────────────────────────────────────────────────
-            El recorte de detalle del hover NO es un archivo nuevo: es la
-            misma imagen ampliada hacia un punto elegido a mano. El barrido
-            es un clip-path de izquierda a derecha sobre una segunda copia,
-            así que lo que se anima es clip-path y transform y nada más. */}
-        <div className="relative aspect-4/3 overflow-hidden bg-void">
-          <img
-            src={v.imagen}
-            alt={v.alt}
-            width={v.ancho}
-            height={v.alto}
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-
-          <img
-            src={v.imagen}
-            alt=""
-            aria-hidden="true"
-            width={v.ancho}
-            height={v.alto}
-            loading="lazy"
-            decoding="async"
-            className="veh-detalle absolute inset-0 h-full w-full object-cover"
-            style={
-              {
-                '--zoom': v.detalle.zoom,
-                transformOrigin: v.detalle.origen,
-              } as CSSProperties
-            }
-          />
-
-          {/* Etiqueta de lo que se está mirando, para que el zoom se lea como
-              una decisión y no como un error de escala. */}
-          <span className="veh-detalle-label font-hud absolute bottom-3 left-3 bg-void/80 px-2 py-1 text-amber">
-            {v.detalle.que.toUpperCase()}
-          </span>
-
-          <Bevel
-            variant="ghost"
-            bevel={8}
-            surfaceClassName={CHIP[v.estado]}
-            className="veh-chip font-hud absolute top-3 right-3 px-3 py-1.5"
-          >
-            {ESTADO_LABEL[v.estado].toUpperCase()}
-          </Bevel>
-        </div>
-
-        {/* ── Datos ─────────────────────────────────────────────────── */}
-        <div className="p-5 md:p-6">
-          <h3 className="font-display text-h2 leading-none text-bone">
-            {v.marca} {v.modelo}
-          </h3>
-          <p className="font-hud mt-2 text-bone/45">{v.version.toUpperCase()}</p>
-
-          <div className="mt-5 grid grid-cols-2 gap-y-3 border-y border-graphite py-3 md:flex md:gap-y-0">
-            <Dato i={0} label="AÑO" valor={String(v.anio)} />
-            <Dato i={1} label="KM" valor={formatearKm(v.km)} />
-            <Dato i={2} label="MOTOR" valor={v.motor} />
-            <Dato i={3} label="CAJA" valor={v.caja} />
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-            <div>
-              <span className="font-hud block text-bone/40">PRECIO</span>
-              <span className="font-hud num mt-1 block text-2xl text-bone md:text-3xl">
-                {formatearPrecio(v.precio)}
-              </span>
-            </div>
-            {/* La cuota va al lado del precio y no debajo: en Argentina es el
-                dato que la gente mira primero, y esconderlo en una línea
-                secundaria sería mentirle a cómo se compra un auto acá. */}
-            <div className="text-right">
-              <span className="font-hud block text-bone/40">
-                CUOTA DESDE · {CUOTA_DESDE.plazos} MESES
-              </span>
-              <span className="font-hud num mt-1 block text-xl text-amber">
-                {formatearPrecio(cuotaDesde(v.precio))}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Bevel>
-    </article>
-  )
-}
-
-/**
- * Catálogo.
+ * Vehículos destacados.
  *
  * RIEL HORIZONTAL, NO GRILLA. Con tres unidades, una grilla de tres columnas
  * se lee como "no tienen más autos"; tres cards grandes en un riel se leen
  * como una selección. Es la misma cantidad de contenido diciendo otra cosa.
  *
- * El riel se arrastra con el puntero además de scrollearse: en desktop no hay
- * gesto táctil y una barra de scroll horizontal sola no invita a moverla.
+ * Los datos salen del repositorio, nunca de un array escrito en el código: hoy
+ * el repo es el mock sobre localStorage y mañana es Supabase, y esta sección
+ * no se entera.
  */
 export function Vehiculos() {
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]['id']>('todos')
+  const [lista, setLista] = useState<Vehiculo[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [fallo, setFallo] = useState(false)
+  const [intento, setIntento] = useState(0)
   const riel = useRef<HTMLDivElement>(null)
-  const arrastre = useRef<{ x: number; scroll: number } | null>(null)
+  const arrastre = useRef<{
+    x: number
+    scroll: number
+    id: number
+    capturado: boolean
+  } | null>(null)
+  const ultimoFueArrastre = useRef(false)
 
-  const lista =
-    filtro === 'todos'
-      ? VEHICULOS
-      : VEHICULOS.filter((v) => v.condicion === filtro)
+  // Destacados; si la dueña todavía no marcó ninguno, los más recientes. El
+  // home nunca puede quedar sin autos por un campo que nadie tildó.
+  useEffect(() => {
+    let vivo = true
+    ;(async () => {
+      try {
+        const destacados = await repo.listarDestacados(CUANTAS)
+        const final =
+          destacados.length > 0
+            ? destacados
+            : await repo.listar({ orden: 'recientes', limite: CUANTAS })
+        if (!vivo) return
+        setLista(final)
+        setFallo(false)
+      } catch {
+        if (vivo) setFallo(true)
+      } finally {
+        if (vivo) setCargando(false)
+      }
+    })()
+    return () => {
+      vivo = false
+    }
+  }, [intento])
 
-  // Arrastre con puntero. Se usa `setPointerCapture` para que soltar fuera del
-  // riel también termine el gesto; sin eso el riel queda "pegado" al mouse.
+  // Las cards y el cartel de error no miden lo mismo que los esqueletos: al
+  // llegar la respuesta, lo de abajo se corre y los pines tienen que volver
+  // a medir.
+  useEffect(() => {
+    if (cargando) return
+    const t = requestAnimationFrame(() => ScrollTrigger.refresh())
+    return () => cancelAnimationFrame(t)
+  }, [cargando, fallo])
+
+  const reintentar = () => {
+    setFallo(false)
+    setCargando(true)
+    setIntento((n) => n + 1)
+  }
+
+  const visibles =
+    filtro === 'todos' ? lista : lista.filter((v) => v.condicion === filtro)
+
+  // Arrastre con puntero. ES DEL RIEL, no de la card: la grilla del catálogo
+  // usa la misma card y ahí no hay nada que arrastrar.
+  //
+  // La captura NO se pide en el `pointerdown` sino recién cuando el gesto
+  // superó el umbral. Pedirla antes rompía la navegación entera: con
+  // `setPointerCapture` puesto, Chrome dispara el `click` sobre el elemento
+  // que capturó —el riel— y no sobre el link de la card, así que un click
+  // limpio en una card no abría nada. Estando puesta solo durante un arrastre
+  // real, se sigue ganando lo que la captura da: soltar el mouse fuera del
+  // riel termina el gesto en vez de dejarlo pegado.
+  const UMBRAL = 6
+
   const alBajar = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType !== 'mouse' || !riel.current) return
-    arrastre.current = { x: e.clientX, scroll: riel.current.scrollLeft }
-    riel.current.setPointerCapture(e.pointerId)
+    arrastre.current = {
+      x: e.clientX,
+      scroll: riel.current.scrollLeft,
+      id: e.pointerId,
+      capturado: false,
+    }
   }
+
   const alMover = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!arrastre.current || !riel.current) return
-    riel.current.scrollLeft = arrastre.current.scroll - (e.clientX - arrastre.current.x)
+    const a = arrastre.current
+    if (!a || !riel.current) return
+    const dx = e.clientX - a.x
+    if (!a.capturado) {
+      if (Math.abs(dx) < UMBRAL) return
+      a.capturado = true
+      riel.current.setPointerCapture(a.id)
+    }
+    riel.current.scrollLeft = a.scroll - dx
   }
-  const alSoltar = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!arrastre.current || !riel.current) return
+
+  const alSoltar = () => {
+    const a = arrastre.current
+    if (!a || !riel.current) return
+    if (a.capturado) riel.current.releasePointerCapture(a.id)
     arrastre.current = null
-    riel.current.releasePointerCapture(e.pointerId)
+    // Se recuerda hasta el `click`, que llega justo después del `pointerup`.
+    ultimoFueArrastre.current = a.capturado
+  }
+
+  // Arrastrar el riel terminaba abriendo la ficha de la card donde se soltó el
+  // mouse. Se cancela el click cuando el gesto movió el riel; un click limpio
+  // pasa igual que antes.
+  const alClickear = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ultimoFueArrastre.current) return
+    e.preventDefault()
+    e.stopPropagation()
+    ultimoFueArrastre.current = false
   }
 
   return (
-    <section
-      id={S.id}
-      className="border-b border-graphite/60 py-20 md:py-28"
-    >
+    <section id={S.id} className="border-b border-graphite/60 py-20 md:py-28">
       <div className="shell">
         <SectionHeader index={S.indice} eyebrow={S.eyebrow} title={S.titulo} />
 
-        <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Filtrar por condición">
+        <div
+          className="mt-8 flex flex-wrap gap-2"
+          role="group"
+          aria-label="Filtrar por condición"
+        >
           {FILTROS.map((f) => {
             const activo = f.id === filtro
             return (
@@ -223,9 +176,11 @@ export function Vehiculos() {
                 onClick={() => setFiltro(f.id)}
                 aria-pressed={activo}
                 outerClassName={
-                  activo ? undefined : 'block transition-colors duration-200 hover:bg-amber'
+                  activo
+                    ? undefined
+                    : 'block transition-colors duration-200 hover:bg-amber'
                 }
-                className="font-hud px-5 py-2.5"
+                className="font-hud flex min-h-11 items-center px-5"
               >
                 {f.label.toUpperCase()}
               </Bevel>
@@ -243,32 +198,46 @@ export function Vehiculos() {
         onPointerMove={alMover}
         onPointerUp={alSoltar}
         onPointerCancel={alSoltar}
+        onClickCapture={alClickear}
+        // El navegador arrastra links e imágenes por su cuenta, y eso pisa el
+        // gesto del riel con el fantasma del link colgando del mouse.
+        onDragStart={(e) => e.preventDefault()}
       >
-        {lista.map((v) => (
-          <Card key={v.slug} v={v} />
-        ))}
+        {/* Mientras llegan, esqueletos del mismo ancho que las cards: debajo
+            hay secciones con pin, y una sección que crece de golpe cuando
+            responde la red corre todos los puntos de ScrollTrigger. */}
+        {cargando
+          ? Array.from({ length: CUANTAS }, (_, i) => (
+              <VehiculoCardEsqueleto key={i} className={ANCHO_RIEL} />
+            ))
+          : visibles.map((v) => <VehiculoCard key={v.id} v={v} className={ANCHO_RIEL} />)}
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4 shell">
-        <p className="font-hud text-bone/50">
-          MOSTRAMOS{' '}
-          <span className="num text-amber">
-            {String(lista.length).padStart(2, '0')}
-          </span>{' '}
-          DE <span className="num text-amber">{STOCK_TOTAL}</span> UNIDADES EN
-          STOCK
+      {fallo && (
+        <div className="shell">
+          <ErrorCarga
+            titulo="No pudimos traer las unidades"
+            onReintentar={reintentar}
+            conWhatsapp
+          />
+        </div>
+      )}
+
+      {!cargando && !fallo && visibles.length === 0 && (
+        <p className="mt-2 text-bone/55 shell">
+          No hay unidades cargadas con esa condición. Escribinos y te avisamos
+          apenas entre alguna.
         </p>
+      )}
+
+      <div className="mt-8 shell">
         <Bevel
-          as="a"
+          as={Link}
           variant="outline"
           bevel={12}
-          href="#contacto"
-          onClick={(e: React.MouseEvent) => {
-            e.preventDefault()
-            scrollTo('#contacto')
-          }}
-          outerClassName="block transition-colors duration-200 hover:bg-amber"
-          className="font-hud px-5 py-3 text-bone"
+          to="/catalogo"
+          outerClassName="inline-flex min-h-11 transition-colors duration-200 hover:bg-amber"
+          className="font-hud flex items-center px-5 py-3 text-bone"
         >
           VER CATÁLOGO COMPLETO
         </Bevel>

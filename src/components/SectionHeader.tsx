@@ -11,6 +11,16 @@ type SectionHeaderProps = {
   lead?: ReactNode
   /** Invierte los colores para las secciones claras (FAQ, menú). */
   tone?: 'dark' | 'light'
+  /**
+   * Cuánto pesa el titular.
+   *
+   * `'portada'` es la escala de siempre (`--text-h1`): el home y el catálogo,
+   * donde el titular ES la entrada a la sección. `'contenido'` la baja a
+   * `--text-h1-ficha` —la misma con techo— para las páginas que vienen a
+   * mostrar otra cosa: en la ficha de un auto lo que importa es la foto y el
+   * precio, y un nombre de modelo a 80 px los empuja fuera de pantalla.
+   */
+  escala?: 'portada' | 'contenido'
   className?: string
   id?: string
 }
@@ -26,6 +36,7 @@ export function SectionHeader({
   title,
   lead,
   tone = 'dark',
+  escala = 'portada',
   className = '',
   id,
 }: SectionHeaderProps) {
@@ -48,7 +59,9 @@ export function SectionHeader({
       </p>
 
       <h2
-        className={`font-display-xl text-h1 text-balance ${light ? 'text-void' : 'text-bone'}`}
+        className={`font-display-xl text-balance ${
+          escala === 'contenido' ? 'text-h1-ficha' : 'text-h1'
+        } ${light ? 'text-void' : 'text-bone'}`}
       >
         {title}
       </h2>

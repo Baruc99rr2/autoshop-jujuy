@@ -12,11 +12,21 @@ export type NombreIcono =
   | 'telefono'
   | 'ubicacion'
   | 'reloj'
-  | 'calendario'
-  | 'pieza'
-  | 'service'
-  | 'accesorio'
+  | 'seguro'
+  | 'escaneo'
+  | 'garantia'
+  | 'limpieza'
+  | 'aceite'
+  | 'llave'
   | 'chat'
+  | 'play'
+  | 'lista'
+  | 'grilla'
+  | 'cerrar'
+  | 'izquierda'
+  | 'derecha'
+  | 'expandir'
+  | 'persona'
 
 const TRAZOS: Record<NombreIcono, React.ReactNode> = {
   /**
@@ -27,6 +37,50 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
    * marca registrada. El botón dice "WhatsApp" con todas las letras, que
    * identifica igual de bien y no copia nada.
    */
+  // Triángulo de play, con el mismo trazo abierto que el resto. Va SIN círculo
+  // alrededor: el botón que lo lleva ya es un bisel ámbar, y un círculo dentro
+  // de una forma biselada es la única curva del sitio.
+  play: <path d="M8.25 5.5 19 12 8.25 18.5V5.5Z" />,
+
+  /**
+   * Los dos estados del catálogo en mobile: una unidad por fila, o dos por
+   * fila. Los íconos DIBUJAN el resultado —una columna de fichas anchas contra
+   * una grilla de cuatro— y no una metáfora: el control no tiene etiqueta
+   * visible, así que el dibujo es todo lo que explica qué hace.
+   *
+   * Sin `border-radius`, como todo el resto: son rectángulos rectos.
+   */
+  lista: (
+    <>
+      <rect x="3.25" y="4.25" width="17.5" height="6" />
+      <rect x="3.25" y="13.75" width="17.5" height="6" />
+    </>
+  ),
+  grilla: (
+    <>
+      <rect x="3.25" y="3.25" width="7.5" height="7.5" />
+      <rect x="13.25" y="3.25" width="7.5" height="7.5" />
+      <rect x="3.25" y="13.25" width="7.5" height="7.5" />
+      <rect x="13.25" y="13.25" width="7.5" height="7.5" />
+    </>
+  ),
+
+  /* El visor a pantalla completa: cerrar, moverse y la señal de que la foto
+     se puede abrir. Las flechas son un solo quiebre, sin asta: al tamaño al
+     que se usan (20-24 px sobre una foto) el asta se pierde igual. */
+  cerrar: <path d="M6 6 18 18M18 6 6 18" />,
+  izquierda: <path d="M14.75 5 7.75 12l7 7" />,
+  derecha: <path d="M9.25 5l7 7-7 7" />,
+  expandir: <path d="M9.5 3.75H3.75V9.5M14.5 3.75h5.75V9.5M9.5 20.25H3.75V14.5M14.5 20.25h5.75V14.5" />,
+  // El acceso al panel, en el header. Cabeza y hombros: el gesto universal de
+  // "mi cuenta". Los hombros cierran recto abajo, sin curva de base, como el
+  // resto de la familia.
+  persona: (
+    <>
+      <circle cx="12" cy="8" r="4.25" />
+      <path d="M4.25 20.5c.6-4.1 3.8-6.75 7.75-6.75s7.15 2.65 7.75 6.75" />
+    </>
+  ),
   chat: (
     <>
       <path d="M20.5 12.4c0 4-3.8 7.2-8.5 7.2a9.9 9.9 0 0 1-3-.45L4.2 20.5l1.4-3.35A6.8 6.8 0 0 1 3.5 12.4c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2Z" />
@@ -54,40 +108,84 @@ const TRAZOS: Record<NombreIcono, React.ReactNode> = {
       <path d="M12 6.75V12l3.5 2.25" />
     </>
   ),
-  // ── Post-venta ───────────────────────────────────────────────────────────
-  calendario: (
+  /* ── Servicios ─────────────────────────────────────────────────────────
+     Los seis que puede elegir un servicio en el panel (ver
+     `ICONOS_SERVICIO`). Reemplazaron a los cuatro de post-venta —turnos,
+     repuestos, mantenimiento y accesorios—, que se fueron con los servicios
+     que nombraban.
+
+     SEGURO Y GARANTÍA SON LO MÁS DIFÍCIL DE SEPARAR: los dos son "algo que te
+     cubre", y el escudo sirve para cualquiera de los dos. Por eso el seguro es
+     un paraguas —el símbolo del rubro desde hace un siglo— y la garantía es el
+     escudo CON EL TILDE, que es lo que la distingue: algo ya revisado y
+     aprobado. Dibujados los dos como escudo, en una fila de tres quedaban dos
+     tiles que parecían el mismo servicio. */
+
+  // Paraguas: cúpula cerrada por abajo, mango con el gancho y la punta arriba.
+  seguro: (
     <>
-      <rect x="3.25" y="5.25" width="17.5" height="15.5" />
-      <path d="M3.25 10h17.5M8 3.25v4M16 3.25v4M8.5 14.5l2.25 2.25L15.5 12" />
+      <path d="M3 12a9 9 0 0 1 18 0Z" />
+      <path d="M12 12v6.25a2.25 2.25 0 0 0 4.5 0" />
+      <path d="M12 1.75V3" />
     </>
   ),
-  // Filtro de aceite: cilindro con nervaduras y cuello. Antes había un círculo
-  // con ocho rayos radiales que se leía como un sol de brillo, no como un
-  // repuesto.
-  pieza: (
+
+  // Lector de diagnóstico: la pantalla con la traza y el cable al conector
+  // OBD. Un auto con una lupa encima se leería como "buscar un auto", que es
+  // lo que hace el catálogo.
+  escaneo: (
     <>
-      <path d="M9.25 7.25V5.5h5.5v1.75" />
-      <rect x="6.75" y="7.25" width="10.5" height="11.25" />
-      <path d="M6.75 11h10.5M6.75 14.75h10.5" />
+      <rect x="6.75" y="3.25" width="10.5" height="12" />
+      <path d="M8.75 9.5h1.75l1.25-2.5 1.5 4.25 1-1.75h1.5" />
+      <path d="M12 15.25v3.5a2 2 0 0 0 2 2h4.75" />
     </>
   ),
-  // Cuentakilómetros: el mantenimiento programado se cuenta por km, así que la
-  // aguja dice más que un auto de frente, que era lo que había antes.
-  service: (
+
+  // Escudo con el tilde. Ver la nota de arriba: el tilde NO es decoración, es
+  // lo único que lo separa del paraguas del seguro.
+  garantia: (
     <>
-      <path d="M3.75 17.5a8.25 8.25 0 1 1 16.5 0" />
-      <path d="M12 17.5 16.25 10" />
-      <circle cx="12" cy="17.5" r="1.15" />
+      <path d="M12 3.25 19.25 6v5.75c0 3.9-2.95 7.05-7.25 8.5-4.3-1.45-7.25-4.6-7.25-8.5V6L12 3.25Z" />
+      <path d="M9 11.9l2.3 2.35 4-4.6" />
     </>
   ),
-  // Baúl de techo con las correas. Un volante o una llanta se leerían como
-  // "repuesto", que es el tile de al lado.
-  accesorio: (
+
+  // Pulverizador: cabezal, pico, cuello y cuerpo con la etiqueta. Unas
+  // burbujas sueltas o un brillo se leerían como "limpio" en abstracto; una
+  // botella se lee como el trabajo que se contrata.
+  limpieza: (
     <>
-      <path d="M8.75 8V6.25h6.5V8" />
-      <rect x="3.75" y="8" width="16.5" height="9.75" />
-      <path d="M9.25 8v9.75M14.75 8v9.75" />
+      <rect x="7.5" y="8.25" width="9" height="12.5" />
+      <rect x="9.5" y="3.25" width="4.5" height="3" />
+      <path d="M10.75 6.25v2M12.75 6.25v2" />
+      <path d="M9.75 12h4.5" />
+      <path d="M14 4.25h3" />
+      {/* El rociado. Además de decir "esto sale a presión", es lo que le da
+          ancho al ícono: la botella sola medía 10 px de los 24 y al lado del
+          paraguas y de la aceitera se leía como un ícono más chico. */}
+      <path d="M17.75 2.75 19.5 4.25M17.5 4.25h2.75M17.75 5.75 19.5 4.25" />
     </>
+  ),
+
+  // Aceitera con la gota cayendo del pico. El filtro de aceite que había antes
+  // decía "repuesto"; acá lo que se vende es el service, o sea el acto de
+  // cambiarlo.
+  aceite: (
+    <>
+      <rect x="3.25" y="12.25" width="9" height="6.5" />
+      <path d="M6 12.25V9.75h4.25v2.5" />
+      <path d="M12.25 13.5 18.25 9.25" />
+      <path d="M19.4 5.5c1.05 1.35 1.6 2.25 1.6 3a1.6 1.6 0 0 1-3.2 0c0-.75.55-1.65 1.6-3Z" />
+    </>
+  ),
+
+  // Llave de boca, en diagonal: el comodín para un servicio nuevo que no
+  // calce con los otros cinco. Es el símbolo del taller en general, así que
+  // no promete nada puntual que el título después desmienta. Cabeza de 5 de
+  // radio con la boca abierta hacia arriba a la derecha, mango de 3.2 de
+  // ancho con la punta redondeada.
+  llave: (
+    <path d="M19.98 6.28 18.19 8.08 15.92 5.81 17.72 4.02A5 5 0 0 0 11.02 10.72L5.18 16.56A1.6 1.6 0 0 0 7.44 18.82L13.28 12.98A5 5 0 0 0 19.98 6.28Z" />
   ),
 }
 
