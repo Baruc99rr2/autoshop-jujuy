@@ -964,32 +964,6 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PANEL DEL VIDEO DEL HERO (desktop)
-
-   El tamaño sale de la ALTURA y el ancho lo deriva `aspect-ratio`. Al revés
-   —ancho del contenedor, alto por aspecto— el alto depende de un ancho que a
-   su vez depende del contenido, y el panel colapsa a cero.
-
-   La altura tiene DOS topes y se toma el menor:
-   - `vw` acota el ANCHO del panel, para que en md no se coma la columna del
-     titular. Sin este tope, en una tablet alta (768×1366) el panel pedía 300+
-     px de ancho contra los ~200 que quedaban libres.
-   - `svh` acota el ALTO, para que en un notebook de pantalla baja el panel no
-     empuje el hero más allá del viewport y choque con la barra MENU.
-   ───────────────────────────────────────────────────────────── */
-
-.hero-panel {
-  aspect-ratio: 9 / 16;
-  height: min(38vw, 52svh);
-}
-
-@media (min-width: 1024px) {
-  .hero-panel {
-    height: min(46vw, 66svh);
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────
    CARRUSEL DE SEGMENTOS
 
    El ítem activo pasa a ámbar con el mismo barrido de izquierda a derecha que

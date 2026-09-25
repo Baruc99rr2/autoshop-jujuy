@@ -1,10 +1,9 @@
 /**
  * Datos de la concesionaria.
  *
- * El número de WhatsApp es EL REAL. El resto —dirección, teléfono fijo, mail,
- * horarios y redes— todavía es de muestra y verosímil para San Salvador de
- * Jujuy: cuando lleguen los datos reales se reemplazan acá y no hay que tocar
- * ningún componente.
+ * Son REALES el WhatsApp, el teléfono, los horarios y las redes. La dirección
+ * y el mail todavía son de muestra: cuando lleguen los reales se reemplazan
+ * acá y no hay que tocar ningún componente.
  */
 
 /**
@@ -54,13 +53,13 @@ export const CONTACTO: Contacto = {
   direccion: 'Av. Éxodo 1450',
   ciudad: 'San Salvador de Jujuy',
   provincia: 'Jujuy',
-  telefono: '0388 423-7788',
-  telefonoHref: '+543884237788',
+  telefono: '388 465-2485',
+  telefonoHref: '+543884652485',
   whatsapp: '+54 9 388 465-2485',
   email: 'ventas@autoshopjujuy.com.ar',
   horarios: [
-    { dias: 'Lunes a viernes', horas: '9:00 a 13:00 · 17:00 a 20:30' },
-    { dias: 'Sábados', horas: '9:30 a 13:30' },
+    { dias: 'Lunes a viernes', horas: '9:30 a 13:30 · 17:15 a 21:30' },
+    { dias: 'Sábados', horas: '9:30 a 13:40' },
   ],
   coordenadas: '24.1858°S 65.2995°W',
   desde: 2015,
@@ -76,13 +75,16 @@ export interface Red {
 export const REDES: Red[] = [
   {
     label: 'Instagram',
-    href: 'https://instagram.com/autoshopjujuy',
-    usuario: '@autoshopjujuy',
+    href: 'https://instagram.com/autoshopjuy',
+    usuario: '@autoshopjuy',
   },
   {
     label: 'Facebook',
-    href: 'https://facebook.com/autoshopjujuy',
-    usuario: '/autoshopjujuy',
+    /* La página se llama «Autoshop Jujuy», con espacio, y eso no es una
+       dirección: hasta tener el link exacto de la página, el enlace abre la
+       búsqueda de Facebook con ese nombre. */
+    href: 'https://www.facebook.com/search/top?q=Autoshop%20Jujuy',
+    usuario: 'Autoshop Jujuy',
   },
   {
     label: 'WhatsApp',

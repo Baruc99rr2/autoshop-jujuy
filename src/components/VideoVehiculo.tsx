@@ -46,10 +46,20 @@ const FORMA_INTERIOR = { '--b': '15px', '--c': '33px' } as CSSProperties
 export function VideoVehiculo({
   video,
   titulo,
+  poster,
 }: {
   video: Video
   titulo: string
+  /**
+   * La imagen de reposo. La ficha pasa la PRIMERA FOTO de la unidad: el
+   * póster que se guarda al subir el video puede ser un cuadro del propio
+   * video —con uno grabado en vertical, un recorte cualquiera— y en reposo
+   * esto tiene que verse como el auto, no como un reproductor en pausa. Sin
+   * fotos, queda el póster del video.
+   */
+  poster?: string
 }) {
+  const imagen = poster ?? video.posterUrl
   const fino = useMedia(PUNTERO_FINO)
 
   const [montado, setMontado] = useState(false)
@@ -182,7 +192,7 @@ export function VideoVehiculo({
                   el atributo está para que el navegador sepa la proporción
                   mientras la imagen viaja. */}
               <img
-                src={video.posterUrl}
+                src={imagen}
                 alt=""
                 width={1280}
                 height={720}
@@ -196,7 +206,7 @@ export function VideoVehiculo({
                 <video
                   ref={ref}
                   src={video.url}
-                  poster={video.posterUrl}
+                  poster={imagen}
                   muted={!expandido}
                   loop={!expandido}
                   controls={expandido}

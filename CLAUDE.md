@@ -14,7 +14,7 @@ Sitio de **Automotores AutoShop Jujuy**, concesionaria de 0km y usados en San Sa
 - Mueble fijo de abajo: el contenedor de MENU apila `encima` (prop `barra` de `PaginaInterna`); la ficha pone ahí su barra de WhatsApp mobile, que solo aparece si el botón del panel de precio no está libre (`useBotonLibre`): UN WhatsApp visible por vez. Escondidos van `inert`.
 - Piso táctil: todo control ≥ 44 px, sitio y panel (medido en 360/390/768/1440). Links de texto: padding + margen negativo. `html` tiene `scroll-padding-block` para que el Tab no quede bajo header/MENU. En `Bevel variant="outline"` el TAMAÑO va en `outerClassName`.
 - `/admin` listado: lista o grilla (2 col mobile), en localStorage `autoshop.panel.vista`. `/catalogo`: chips + buscador en la URL, vista en `autoshop.catalogo.vista`. Títulos de tramo del panel: `TituloSeccion` (ámbar).
-- Riel del home: activa la sección que cruza la MITAD del viewport (no la de más %). Riel de vehículos: 3 cards a tercios desde `lg`. Ficha en `lg`: la foto llena la columna (alto entre 16:10 y 2:1).
+- Riel del home: activa la sección que cruza la MITAD del viewport (no la de más %). Riel de vehículos: 3 cards a tercios desde `lg`. Ficha en `lg`: la foto llena la columna (alto entre 16:10 y 2:1); el video de la ficha usa la 1.ª foto como póster. Hero: video a sangre también en PC (recorte en `ENCUADRE`).
 - Íconos: `favicon.svg`/`.ico` (bandera a cuadros geométrica, negro sobre ámbar), `apple-touch-icon.png`, `icon-192/512.png` + `manifest.webmanifest`. El Flip de la intro apunta al `<svg>` del logo, no al enlace. Malla quieta de rectas (sin filtro, sin `<pattern>`). Pendiente: en el riel del inicio una card a veces pinta la foto en negro (headless).
 
 ---

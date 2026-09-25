@@ -20,6 +20,7 @@ import {
 import { getLenis } from '../lib/smooth'
 import { useTitulo } from '../lib/titulo'
 import { linkAlCatalogo } from '../lib/ultimo-catalogo'
+import { portada } from '../types/vehiculo'
 import type { EstadoVehiculo, Vehiculo as TVehiculo } from '../types/vehiculo'
 import NoEncontrado from './NoEncontrado'
 
@@ -505,7 +506,7 @@ export function Vehiculo() {
             <div className="mt-10">
               <Titulo>EN VIDEO</Titulo>
               <div className="mt-4">
-                <VideoVehiculo video={v.video} titulo={v.titulo} />
+                <VideoVehiculo video={v.video} titulo={v.titulo} poster={portada(v)?.url} />
               </div>
             </div>
           )}

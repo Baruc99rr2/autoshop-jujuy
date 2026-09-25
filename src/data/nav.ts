@@ -1,4 +1,4 @@
-import { WHATSAPP_URL } from './contacto'
+import { REDES } from './contacto'
 
 /**
  * Índice de secciones del home. Es la fuente única del orden, los ids de ancla
@@ -149,18 +149,8 @@ export const FOOTER: ColumnaFooter[] = [
   },
   {
     titulo: 'REDES',
-    items: [
-      {
-        label: 'Instagram',
-        href: 'https://instagram.com/autoshopjujuy',
-        externo: true,
-      },
-      {
-        label: 'Facebook',
-        href: 'https://facebook.com/autoshopjujuy',
-        externo: true,
-      },
-      { label: 'WhatsApp', href: WHATSAPP_URL, externo: true },
-    ],
+    // Salen de `REDES`: con los links escritos acá también, cambiar una red
+    // era acordarse de tocarla en dos archivos.
+    items: REDES.map((r) => ({ label: r.label, href: r.href, externo: true })),
   },
 ]

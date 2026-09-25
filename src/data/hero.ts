@@ -51,10 +51,9 @@ export const TICKER: string[] = [
 ]
 
 /**
- * El video del hero es VERTICAL (9:16). No es un detalle de compresión: define
- * el layout entero. En desktop va en un panel vertical a la derecha —estirarlo
- * a 16:9 perdería el farol o perdería el auto, que es lo que hace bueno al
- * encuadre— y en mobile va a sangre, que es su formato natural.
+ * El video del hero es VERTICAL (9:16). Va a sangre en los dos layouts: en
+ * mobile es su formato natural, y en desktop se recorta a horizontal con el
+ * encuadre bajado hasta el auto (ver `ENCUADRE` en `HeroVideo`).
  */
 export const VIDEO_HERO = {
   desktop: '/video/hero-desktop.mp4',

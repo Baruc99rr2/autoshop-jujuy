@@ -9,25 +9,21 @@ import { useMedia } from '../lib/use-media'
 const S = seccion('hero')
 
 /**
- * HERO PARTIDO EN DESKTOP, FULL-BLEED EN MOBILE.
+ * EL VIDEO VA DE FONDO, A SANGRE, EN LOS DOS LAYOUTS.
  *
- * El video es vertical (9:16). En desktop no se puede usar a sangre: escalado
- * a 1920 de ancho el alto pasa a 3413 px y en un viewport de 1080 se vería un
- * tercio del encuadre — o el farol o el auto, nunca los dos. La solución no es
- * recortar sino cambiar el layout: texto a la izquierda sobre negro, panel
- * vertical biselado con el video a la derecha, a altura de viewport.
+ * El video es vertical (9:16). En mobile es el formato de la pantalla y se ve
+ * casi entero. En PC se recorta a horizontal: escalado al ancho se ve una
+ * franja de un tercio del alto, y esa franja se baja hasta el auto (ver
+ * `ENCUADRE` en `HeroVideo`). Antes iba en un panel vertical a la derecha y
+ * en una pantalla ancha se leía como un celular apoyado en el escritorio.
  *
- * En mobile el 9:16 ES el formato de la pantalla, así que el video vuelve a
- * fondo completo y el titular va encima.
- *
- * Un componente, dos layouts: el mismo `<HeroVideo>` cambia de caja, no de
- * contenido.
+ * El titular va encima, a la izquierda. Lo que cambia entre los dos layouts
+ * es el overlay: en mobile tapa parejo, en PC oscurece el lado del texto y
+ * deja el auto a la vista.
  */
 export function Hero() {
-  // El layout se elige en JS y no con `md:hidden`, porque las dos variantes
-  // montan un <video>: con las dos en el DOM había dos elementos con el mismo
-  // `src` y el oculto igual pedía la metadata del archivo. El breakpoint es el
-  // mismo `768px` que usa Tailwind para `md`.
+  // Decide solo el overlay: el video es uno y el mismo en los dos layouts.
+  // El breakpoint es el mismo `768px` que usa Tailwind para `md`.
   const esMobile = useMedia('(max-width: 767px)')
 
   const salto = (href: string) => (e: React.MouseEvent) => {
@@ -40,10 +36,11 @@ export function Hero() {
       id={S.id}
       className="relative flex min-h-svh flex-col overflow-hidden"
     >
-      {/* ── MOBILE: el video a sangre, detrás de todo ───────────────── */}
-      {esMobile && (
-        <HeroVideo className="absolute inset-0" overlay="fuerte" />
-      )}
+      {/* ── El video a sangre, detrás de todo ───────────────────── */}
+      <HeroVideo
+        className="absolute inset-0"
+        overlay={esMobile ? 'fuerte' : 'lateral'}
+      />
 
       {/* ── TICKER ──────────────────────────────────────────────────
           Arriba del todo y a sangre de borde a borde, POR ENCIMA del riel:
@@ -116,19 +113,6 @@ export function Hero() {
             </Bevel>
           </div>
         </div>
-
-        {/* ── DESKTOP: el panel vertical del video ──────────────────
-            El tamaño se deriva de la ALTURA, no del ancho: `h-[…]` fija el
-            alto disponible y `aspect-9/16` saca el ancho de ahí. Al revés
-            —ancho del contenedor y alto por aspecto— el alto depende de un
-            ancho que a su vez depende del contenido, y el panel colapsa. */}
-        {!esMobile && (
-          <div className="flex flex-1 items-center justify-end">
-            <Bevel variant="outline" bevel={18} outerClassName="block" className="p-0">
-              <HeroVideo className="hero-panel" />
-            </Bevel>
-          </div>
-        )}
       </div>
     </section>
   )
