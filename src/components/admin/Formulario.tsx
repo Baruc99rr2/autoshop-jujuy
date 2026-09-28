@@ -10,6 +10,7 @@ import Marco, { AvisoError, Volver } from './Marco'
 import VideoUnidad from './VideoUnidad'
 import { repo } from '../../data/repo'
 import { marcarSinGuardar } from '../../data/sesion'
+import { olvidarContenido } from '../../lib/contenido'
 import { leerMiles, separarMiles, soloDigitos } from '../../lib/formato'
 import { esProvisoria, estaVacia, slugProvisorio, TITULO_PROVISORIO } from '../../lib/provisoria'
 import { SLUG_VALIDO, slugificar } from '../../lib/texto'
@@ -447,6 +448,9 @@ export function Formulario({ id }: FormularioProps) {
         setB(d)
         setGuardada(v)
         setAviso('Listo, se guardaron los cambios.')
+        // Las marcas del inicio salen de los títulos publicados: un título
+        // nuevo o una unidad recién publicada puede sumar o sacar una.
+        olvidarContenido()
       } else {
         const v = await repo.crear(datos)
         // Se pasa a la dirección de edición: de acá en adelante hay algo que
@@ -470,6 +474,7 @@ export function Formulario({ id }: FormularioProps) {
     setOcupado(true)
     try {
       await repo.eliminar(id)
+      olvidarContenido()
       navegar('/admin', { replace: true })
     } catch (err) {
       setDialogo(null)

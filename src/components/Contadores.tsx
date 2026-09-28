@@ -152,7 +152,7 @@ export function Contadores({
           >
             <dt className="font-hud text-void/65">{c.etiqueta}</dt>
 
-            <dd className="num flex items-baseline font-bold text-void">
+            <dd className="font-cifra flex items-baseline text-void">
               <span
                 data-cifra={valorContador(c, datos.apertura)}
                 className="text-[clamp(2.75rem,7vw,4.5rem)] leading-none"

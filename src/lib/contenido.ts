@@ -1,10 +1,11 @@
 import { useEffect, useSyncExternalStore } from 'react'
-import { repoContenido, SEMILLA_CONTACTO, SEMILLA_SEGMENTOS } from '../data/repo'
+import { marcasEnTitulos } from '../data/marcas'
+import type { Marca } from '../data/marcas'
+import { repo, repoContenido, SEMILLA_CONTACTO } from '../data/repo'
 import type {
   Contadores,
   DatosContacto,
   Pregunta,
-  Segmento,
   Servicio,
 } from '../types/contenido'
 
@@ -20,11 +21,17 @@ import type {
  * CADA PARTE CAE POR SU LADO. Si falla una sola (una tabla que todavía no se
  * creó, por ejemplo), las otras se muestran igual. Lo que falla se queda con
  * lo último bueno, y si nunca hubo nada, con su respaldo:
- * - contadores, servicios y preguntas: nada (la sección no se dibuja);
- * - segmentos y contacto: la semilla. Los segmentos eran fijos hasta que
- *   pasaron al panel y sus fotos son archivos del sitio, así que la semilla
- *   siempre se puede dibujar; y un botón de WhatsApp con el número de
- *   siempre sirve más que uno que no lleva a ningún lado.
+ * - contadores, servicios, preguntas y marcas: nada (la sección no se dibuja);
+ * - contacto: la semilla. Un botón de WhatsApp con el número de siempre
+ *   sirve más que uno que no lleva a ningún lado.
+ *
+ * LAS MARCAS SALEN DEL STOCK, no del panel: son las del diccionario de
+ * `data/marcas.ts` que aparecen en los títulos de las unidades publicadas.
+ * Viajan acá y no en la sección porque de si hay o no hay depende la
+ * numeración del riel, igual que con servicios y preguntas.
+ *
+ * Los SEGMENTOS se sacaron del sitio: la tabla y sus datos siguen en
+ * Supabase, pero ya no se piden.
  *
  * SI FALLA, REINTENTA SOLO. Mientras tanto el inicio se dibuja sin cifras,
  * sin servicios y sin preguntas —mejor que un inicio que no termina de
@@ -43,7 +50,8 @@ export interface ContenidoSitio {
   contadores: Contadores | null
   servicios: Servicio[]
   preguntas: Pregunta[]
-  segmentos: Segmento[]
+  /** Las marcas del catálogo publicado, en el orden del diccionario. */
+  marcas: Marca[]
   /** Nunca falta: si no llegó, es la semilla. */
   contacto: DatosContacto
 }
@@ -53,7 +61,7 @@ const RESPALDO: ContenidoSitio = {
   contadores: null,
   servicios: [],
   preguntas: [],
-  segmentos: SEMILLA_SEGMENTOS,
+  marcas: [],
   contacto: SEMILLA_CONTACTO,
 }
 
@@ -80,10 +88,10 @@ function cargar(): void {
     repoContenido.obtenerContadores(),
     repoContenido.listarServicios(),
     repoContenido.listarPreguntas(),
-    repoContenido.listarSegmentos(),
+    repo.listar().then((lista) => marcasEnTitulos(lista.map((v) => v.titulo))),
     repoContenido.obtenerContacto(),
   ])
-    .then(([contadores, servicios, preguntas, segmentos, contacto]) => {
+    .then(([contadores, servicios, preguntas, marcas, contacto]) => {
       const antes = estado ?? RESPALDO
       const tomar = <T,>(r: PromiseSettledResult<T>, previo: T): T =>
         r.status === 'fulfilled' ? r.value : previo
@@ -91,10 +99,10 @@ function cargar(): void {
         contadores: tomar(contadores, antes.contadores),
         servicios: tomar(servicios, antes.servicios),
         preguntas: tomar(preguntas, antes.preguntas),
-        segmentos: tomar(segmentos, antes.segmentos),
+        marcas: tomar(marcas, antes.marcas),
         contacto: tomar(contacto, antes.contacto),
       }
-      const fallo = [contadores, servicios, preguntas, segmentos, contacto].some(
+      const fallo = [contadores, servicios, preguntas, marcas, contacto].some(
         (r) => r.status === 'rejected',
       )
       viejo = fallo
@@ -159,7 +167,7 @@ export function useContacto(): DatosContacto {
 export function seccionesOcultas(c: ContenidoSitio | null): string[] {
   if (!c) return []
   return ocultasPorCantidad({
-    segmentos: c.segmentos.length,
+    marcas: c.marcas.length,
     servicios: c.servicios.length,
     preguntas: c.preguntas.length,
   })
@@ -171,12 +179,12 @@ export function seccionesOcultas(c: ContenidoSitio | null): string[] {
  * apenas se guarda una lista (ver `Contenido.tsx`).
  */
 export function ocultasPorCantidad(n: {
-  segmentos: number
+  marcas: number
   servicios: number
   preguntas: number
 }): string[] {
   const fuera: string[] = []
-  if (n.segmentos === 0) fuera.push('segmentos')
+  if (n.marcas === 0) fuera.push('marcas')
   if (n.servicios === 0) fuera.push('postventa')
   if (n.preguntas === 0) fuera.push('preguntas')
   return fuera

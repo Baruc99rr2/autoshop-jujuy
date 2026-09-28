@@ -4,19 +4,17 @@ import ErrorCarga from '../ErrorCarga'
 import BloqueContacto from './BloqueContacto'
 import BloqueContadores from './BloqueContadores'
 import BloquePreguntas from './BloquePreguntas'
-import BloqueSegmentos from './BloqueSegmentos'
 import BloqueServicios from './BloqueServicios'
 import Dialogo from './Dialogo'
 import Marco from './Marco'
 import { repoContenido } from '../../data/repo'
 import { seccionesVisibles } from '../../data/nav'
 import { marcarSinGuardar } from '../../data/sesion'
-import { ocultasPorCantidad } from '../../lib/contenido'
+import { ocultasPorCantidad, useContenido } from '../../lib/contenido'
 import type {
   Contadores,
   DatosContacto,
   Pregunta,
-  Segmento,
   Servicio,
 } from '../../types/contenido'
 
@@ -28,14 +26,13 @@ import type {
  * las unidades se tocan todos los días y esto una vez por mes, cuando cambia
  * un precio o aparece una pregunta nueva.
  *
- * Cinco bloques con su propio guardado (ver `Bloque.tsx`). La pantalla solo
+ * Cuatro bloques con su propio guardado (ver `Bloque.tsx`). La pantalla solo
  * los carga y lleva la cuenta de cuáles tienen cambios, para avisar antes de
  * irse a las unidades o de cerrar la pestaña.
  */
 
 type Datos = {
   contadores: Contadores
-  segmentos: Segmento[]
   servicios: Servicio[]
   preguntas: Pregunta[]
   contacto: DatosContacto
@@ -48,7 +45,6 @@ export function Contenido() {
   const [falla, setFalla] = useState<string | null>(null)
   const [sucios, setSucios] = useState<Record<Bloque, boolean>>({
     contadores: false,
-    segmentos: false,
     servicios: false,
     preguntas: false,
     contacto: false,
@@ -60,13 +56,12 @@ export function Contenido() {
     let vivo = true
     Promise.all([
       repoContenido.obtenerContadores(),
-      repoContenido.listarSegmentos(),
       repoContenido.listarServicios(),
       repoContenido.listarPreguntas(),
       repoContenido.obtenerContacto(),
     ])
-      .then(([contadores, segmentos, servicios, preguntas, contacto]) => {
-        if (vivo) setDatos({ contadores, segmentos, servicios, preguntas, contacto })
+      .then(([contadores, servicios, preguntas, contacto]) => {
+        if (vivo) setDatos({ contadores, servicios, preguntas, contacto })
       })
       .catch((e) => {
         if (vivo) setFalla(e instanceof Error ? e.message : 'No se pudo leer el contenido.')
@@ -84,7 +79,6 @@ export function Contenido() {
     [],
   )
   const onContadores = useCallback((s: boolean) => marcar('contadores', s), [marcar])
-  const onSegmentos = useCallback((s: boolean) => marcar('segmentos', s), [marcar])
   const onServicios = useCallback((s: boolean) => marcar('servicios', s), [marcar])
   const onPreguntas = useCallback((s: boolean) => marcar('preguntas', s), [marcar])
   const onContacto = useCallback((s: boolean) => marcar('contacto', s), [marcar])
@@ -96,23 +90,26 @@ export function Contenido() {
   // con cero preguntas la sección no existe en el sitio y lo que viene
   // después se corre. Las cantidades arrancan en lo guardado y se actualizan
   // cuando un bloque guarda, así el número cambia en el acto.
+  //
+  // Las marcas no se editan acá —salen de los títulos del catálogo publicado—
+  // pero de ellas depende si la sección Marcas existe, y Contacto va después:
+  // se leen del mismo contenido compartido que usa el sitio. Mientras no
+  // llegó se supone que hay, que es lo que hace el sitio también.
+  const marcas = useContenido()?.marcas.length ?? 1
   const [cantidades, setCantidades] = useState<{
-    segmentos: number
     servicios: number
     preguntas: number
   } | null>(null)
   const cant = cantidades ?? {
-    segmentos: datos?.segmentos.length ?? 0,
     servicios: datos?.servicios.length ?? 0,
     preguntas: datos?.preguntas.length ?? 0,
   }
-  const visibles = seccionesVisibles(ocultasPorCantidad(cant))
+  const visibles = seccionesVisibles(ocultasPorCantidad({ ...cant, marcas }))
   /** Una sección oculta no tiene número en la web: el panel muestra un guion. */
   const indice = (id: string) => visibles.find((s) => s.id === id)?.indice ?? '—'
   const poner = useCallback(
-    (k: 'segmentos' | 'servicios' | 'preguntas') => (n: number) =>
+    (k: 'servicios' | 'preguntas') => (n: number) =>
       setCantidades((prev) => ({
-        segmentos: prev?.segmentos ?? datos?.segmentos.length ?? 0,
         servicios: prev?.servicios ?? datos?.servicios.length ?? 0,
         preguntas: prev?.preguntas ?? datos?.preguntas.length ?? 0,
         [k]: n,
@@ -142,7 +139,7 @@ export function Contenido() {
       indice="02"
       eyebrow="CONTENIDO"
       titulo="Contenido del sitio"
-      lead="Los números, los segmentos, los servicios, las preguntas y los datos de contacto. Cada bloque se guarda con su propio botón."
+      lead="Los números, los servicios, las preguntas y los datos de contacto. Cada bloque se guarda con su propio botón."
       ancho="formulario"
       pestania="contenido"
       antesDeIr={(to) => {
@@ -170,27 +167,18 @@ export function Contenido() {
            En mobile, una columna en este orden. En PC:
 
              NÚMEROS   │ CONTACTO
-             SEGMENTOS (a lo ancho)
              SERVICIOS (a lo ancho)
              PREGUNTAS (a lo ancho)
 
            Números y contacto son formularios cortos de campos sueltos y se
            entienden en media pantalla; contacto sube a la par de números
-           con `row-start` para no dejar un hueco al lado. Los otros tres son
+           con `row-start` para no dejar un hueco al lado. Los otros dos son
            LISTAS: en media columna cada ficha quedaba angosta y larga, así
            que van a lo ancho y sus fichas se reparten de a dos. Cada bloque
            sigue guardando lo suyo. */
         <div className="mt-10 grid grid-cols-1 gap-14 lg:grid-cols-2 lg:items-start lg:gap-x-12">
           <div className="lg:col-start-1 lg:row-start-1">
             <BloqueContadores inicial={datos.contadores} onSucio={onContadores} indice={indice('contadores')} />
-          </div>
-          <div className="lg:col-span-2">
-            <BloqueSegmentos
-              inicial={datos.segmentos}
-              onSucio={onSegmentos}
-              indice={indice('segmentos')}
-              onCantidad={poner('segmentos')}
-            />
           </div>
           <div className="lg:col-span-2">
             <BloqueServicios
@@ -239,7 +227,7 @@ export function Contenido() {
 function ContenidoEsqueleto() {
   return (
     <div className="mt-10 grid animate-pulse grid-cols-1 gap-14 lg:grid-cols-2 lg:gap-x-12" aria-hidden="true">
-      {[4, 2, 3, 3, 4].map((filas, i) => (
+      {[4, 4, 3, 3].map((filas, i) => (
         <div key={i} className="border-t border-graphite pt-8">
           <div className="h-4 w-40 bg-graphite/60" />
           <div className="mt-3 h-3 w-3/4 bg-graphite/30" />

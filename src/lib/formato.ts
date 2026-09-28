@@ -23,6 +23,22 @@ export function formatearPrecio(n: number | null): string {
   return n === null ? SIN_PRECIO : pesos.format(n)
 }
 
+/**
+ * Lo que va detrás del precio de una UNIDAD en el sitio público: el precio
+ * publicado no incluye la transferencia ni los gastos de patentamiento, y así
+ * se dice de entrada en vez de aparecer recién en la charla por WhatsApp.
+ *
+ * Solo con precio: "Consultar precio" queda igual. Y solo en el sitio: el
+ * panel muestra la cifra pelada, que es lo que la dueña carga. Los componentes
+ * lo dibujan aparte de la cifra (la cifra va en mono, esto no).
+ */
+export const MAS_GASTOS = '+ gastos'
+
+/** El precio de una unidad como texto corrido: para la meta description. */
+export function precioPublico(n: number | null): string {
+  return n === null ? SIN_PRECIO : `${pesos.format(n)} ${MAS_GASTOS}`
+}
+
 /** `null` es "no lo sabemos"; `0` es un 0km y se escribe. */
 export function formatearKm(n: number | null): string {
   return n === null ? '—' : enteros.format(n)

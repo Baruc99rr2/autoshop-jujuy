@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import SectionHeader from './SectionHeader'
-import { MARCAS } from '../data/marcas'
-import { seccion } from '../data/nav'
-
-/**
- * Índice y eyebrow salen de `nav.ts`, no escritos acá: al insertar una
- * sección nueva se corren todos los números, y con el índice a mano el riel
- * diría una cosa y el encabezado de la sección otra.
- */
-const S = seccion('marcas')
+import type { Marca } from '../data/marcas'
+import type { Seccion } from '../data/nav'
 
 /**
  * Listado tipográfico de marcas. Sin logos: ver `src/data/marcas.ts`.
+ *
+ * SOLO LAS QUE HAY EN EL CATÁLOGO, deducidas de los títulos de las unidades
+ * publicadas (ver `marcasEnTitulos`). Sin ninguna, la sección no se dibuja:
+ * eso lo decide el home con `seccionesOcultas`, que además renumera el riel.
  *
  * En reposo los nombres van en `--color-graphite`, casi fundidos con el negro.
  * Se encienden en ámbar con una micro-distorsión de 90 ms — dos copias
@@ -29,7 +26,7 @@ const S = seccion('marcas')
  *    recorre la lista, y es el mismo gesto de barrido del resto del sitio.
  */
 
-export function Marcas() {
+export function Marcas({ s: S, marcas }: { s: Seccion; marcas: Marca[] }) {
   const lista = useRef<HTMLUListElement>(null)
   const [enLinea, setEnLinea] = useState<string | null>(null)
 
@@ -55,7 +52,7 @@ export function Marcas() {
     )
     filas.forEach((f) => io.observe(f))
     return () => io.disconnect()
-  }, [])
+  }, [marcas])
 
   return (
     <section
@@ -66,11 +63,11 @@ export function Marcas() {
         index={S.indice}
         eyebrow={S.eyebrow}
         title="Trabajamos con"
-        lead="Doce marcas pasan por el salón. Estas son las ocho que más entregamos, entre 0km y usados seleccionados."
+        lead="Las marcas que tenemos hoy en el salón, entre 0km y usados seleccionados."
       />
 
       <ul ref={lista} className="mt-16 md:mt-20">
-        {MARCAS.map((m) => (
+        {marcas.map((m) => (
           <li key={m.id}>
             <span
               data-marca-id={m.id}

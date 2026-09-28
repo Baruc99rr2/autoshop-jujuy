@@ -42,11 +42,10 @@ export const SECCIONES: Seccion[] = [
     titulo: 'Entregando autos en Jujuy',
     fondo: 'ambar',
   },
-  { indice: '03', id: 'segmentos', eyebrow: 'SEGMENTOS', titulo: 'Qué estás buscando' },
-  { indice: '04', id: 'vehiculos', eyebrow: 'VEHÍCULOS', titulo: 'Unidades disponibles hoy' },
-  { indice: '05', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
+  { indice: '03', id: 'vehiculos', eyebrow: 'VEHÍCULOS', titulo: 'Unidades disponibles hoy' },
+  { indice: '04', id: 'marcas', eyebrow: 'MARCAS', titulo: 'Trabajamos con' },
   {
-    indice: '06',
+    indice: '05',
     /* El id se quedó en `postventa` a propósito aunque la sección pase a
        llamarse SERVICIOS: es el ancla de `#postventa`, no un nombre visible, y
        renombrarlo rompería cualquier link ya compartido sin que nadie vea la
@@ -56,14 +55,14 @@ export const SECCIONES: Seccion[] = [
     titulo: 'No termina cuando te llevás el auto',
   },
   {
-    indice: '07',
+    indice: '06',
     id: 'preguntas',
     eyebrow: 'PREGUNTAS',
     titulo: 'Lo que todos preguntan',
     tono: 'claro',
     fondo: 'claro',
   },
-  { indice: '08', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
+  { indice: '07', id: 'contacto', eyebrow: 'CONTACTO', titulo: 'Escribinos' },
 ]
 
 /**
@@ -141,7 +140,6 @@ export const FOOTER: ColumnaFooter[] = [
     items: [
       { label: 'Vehículos', href: '#vehiculos' },
       { label: 'Catálogo', href: '/catalogo' },
-      { label: 'Segmentos', href: '#segmentos' },
       { label: 'Marcas', href: '#marcas' },
       { label: 'Servicios', href: '#postventa' },
     ],

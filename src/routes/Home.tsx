@@ -14,7 +14,6 @@ import WhatsApp from '../components/WhatsApp'
 import Intro, { INTRO_SEEN_KEY } from '../components/Intro'
 import MeshOverlay from '../components/MeshOverlay'
 import Servicios from '../components/Servicios'
-import Segmentos from '../components/Segmentos'
 import Rail from '../components/Rail'
 import { SECCIONES, seccionesVisibles } from '../data/nav'
 import type { Seccion } from '../data/nav'
@@ -32,10 +31,9 @@ type ComponenteSeccion = (p: PropsSeccion) => React.ReactElement | null
  * `SECCIONES` no aparece acá es un error de programación, y `componenteDe`
  * tira en vez de dibujar un hueco silencioso.
  *
- * Las que edita la dueña reciben su parte del contenido. Segmentos dibuja
- * un esqueleto mientras carga (es un pin: aparecer de golpe correría todo lo
- * de abajo). Servicios y Preguntas no se dibujan mientras carga: con la lista vacía no deberían
- * existir, y dibujarlas vacías un instante sería un salto de layout.
+ * Las que dependen del contenido reciben su parte. Servicios, Preguntas y
+ * Marcas no se dibujan mientras carga: con la lista vacía no deberían existir,
+ * y dibujarlas vacías un instante sería un salto de layout.
  */
 const SECCION_COMPONENTE: Record<string, ComponenteSeccion> = {
   contacto: ({ s }) => <Contacto s={s} />,
@@ -43,14 +41,12 @@ const SECCION_COMPONENTE: Record<string, ComponenteSeccion> = {
     <Contadores s={s} datos={contenido?.contadores ?? null} />
   ),
   hero: () => <Hero />,
-  marcas: () => <Marcas />,
+  marcas: ({ s, contenido }) =>
+    contenido ? <Marcas s={s} marcas={contenido.marcas} /> : null,
   postventa: ({ s, contenido }) =>
     contenido ? <Servicios s={s} servicios={contenido.servicios} /> : null,
   preguntas: ({ s, contenido }) =>
     contenido ? <Faq s={s} preguntas={contenido.preguntas} /> : null,
-  segmentos: ({ s, contenido }) => (
-    <Segmentos s={s} segmentos={contenido?.segmentos ?? null} />
-  ),
   vehiculos: () => <Vehiculos />,
 }
 
@@ -109,9 +105,8 @@ export function Home() {
     [contenido],
   )
 
-  // Servicios y Preguntas entran al DOM recién con el contenido y Segmentos
-  // cambia su esqueleto por la lista, así que todo lo que está debajo se
-  // corre: los ScrollTrigger de Contacto y del footer quedarían midiendo
+  // Servicios, Preguntas y Marcas entran al DOM recién con el contenido, así
+  // que todo lo que está debajo se corre: los ScrollTrigger de Contacto y del footer quedarían midiendo
   // posiciones viejas.
   useEffect(() => {
     if (!contenido) return

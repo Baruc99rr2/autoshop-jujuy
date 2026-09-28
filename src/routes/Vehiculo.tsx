@@ -17,6 +17,8 @@ import {
   formatearAnio,
   formatearKm,
   formatearPrecio,
+  MAS_GASTOS,
+  precioPublico,
 } from '../lib/formato'
 import { getLenis } from '../lib/smooth'
 import { useTitulo } from '../lib/titulo'
@@ -138,6 +140,14 @@ function Precio({ valor }: { valor: number | null }) {
       style={{ fontSize: '2rem' }}
     >
       {formatearPrecio(valor)}
+      {/* En el MISMO renglón y dentro del `<p>` que mide `useFitText`: así el
+          ajuste cuenta también este texto y el precio completo entra en el
+          recuadro. En `em` para que achique junto con la cifra. */}
+      {valor !== null && (
+        <span className="font-display ml-[0.35em] text-[0.5em] text-bone/60">
+          {MAS_GASTOS}
+        </span>
+      )}
     </p>
   )
 }
@@ -165,7 +175,7 @@ function descripcionDe(v: TVehiculo): string {
   const datos = [
     v.anio === null ? null : formatearAnio(v.anio),
     v.km === null ? null : `${formatearKm(v.km)} km`,
-    formatearPrecio(v.precio),
+    precioPublico(v.precio),
   ].filter(Boolean)
   return `${v.titulo} ${CONDICION_LABEL[v.condicion].toLowerCase()} en AutoShop Jujuy: ${datos.join(' · ')}. Consultalo por WhatsApp.`
 }

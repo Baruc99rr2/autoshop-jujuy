@@ -7,6 +7,7 @@ import {
   formatearAnio,
   formatearKm,
   formatearPrecio,
+  MAS_GASTOS,
 } from '../lib/formato'
 import { useMedia } from '../lib/use-media'
 import { portada } from '../types/vehiculo'
@@ -257,12 +258,22 @@ export function VehiculoCard({
                   {formatearPrecio(null)}
                 </span>
               ) : (
+                /* "+ gastos" va en Archivo y más chico: la mono es para cifras,
+                   y así la cifra sigue siendo lo que se lee primero. Sin
+                   `truncate`: en la grilla de dos columnas del celular no
+                   entra en un renglón, y es mejor que baje entero a que se
+                   corte en "+ gas…". */
                 <span
-                  className={`font-hud num mt-1 block truncate text-bone ${
+                  className={`mt-1 flex flex-wrap items-baseline gap-x-2 text-bone ${
                     compacta ? 'text-base sm:text-xl md:text-2xl' : 'text-xl md:text-2xl'
                   }`}
                 >
-                  {formatearPrecio(v.precio)}
+                  <span className="font-hud num whitespace-nowrap">
+                    {formatearPrecio(v.precio)}
+                  </span>
+                  <span className="font-display text-[0.6em] whitespace-nowrap text-bone/60">
+                    {MAS_GASTOS}
+                  </span>
                 </span>
               )}
             </div>

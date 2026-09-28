@@ -32,10 +32,14 @@ const dest = join(root, 'public', 'fonts')
  *
  * Martian Mono va en la variante `wght`: solo se usan pesos 400–700 y el eje
  * de ancho no se toca nunca, así que los 15 KB de diferencia no se pagan.
+ *
+ * Nunito, también `wght`: se usa en un solo lugar y a un solo peso fuerte.
  */
 const FUENTES = [
   ['@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2', 'archivo-latin-wdth.woff2'],
   ['@fontsource-variable/martian-mono/files/martian-mono-latin-wght-normal.woff2', 'martian-mono-latin-wght.woff2'],
+  // Solo para las cifras de la franja de contadores (ver `font-cifra`).
+  ['@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2', 'nunito-latin-wght.woff2'],
 ]
 
 mkdirSync(dest, { recursive: true })
