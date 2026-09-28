@@ -16,8 +16,28 @@
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Automotores AutoShop Jujuy — 0km y usados en San Salvador de Jujuy. Financiación propia y toma de tu usado como parte de pago."
+      content="Automotores AutoShop Jujuy — 0km y usados en San Salvador de Jujuy. Tomamos tu usado como parte de pago."
     />
+
+    <!--
+      El dominio del sitio va escrito acá y en `src/data/sitio.ts` (SITIO_URL).
+      Acá no hay otra forma: los que leen estas etiquetas —la vista previa de
+      WhatsApp, Facebook, los buscadores— no ejecutan JS, así que la URL
+      tiene que venir escrita en el HTML. Las rutas internas corrigen el
+      canonical al navegar (ver `lib/titulo.ts`).
+    -->
+    <link rel="canonical" href="https://autoshopjujuy.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Automotores AutoShop Jujuy" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:url" content="https://autoshopjujuy.com/" />
+    <meta property="og:title" content="Automotores AutoShop Jujuy — 0km y usados" />
+    <meta
+      property="og:description"
+      content="0km y usados en San Salvador de Jujuy. Tomamos tu usado como parte de pago."
+    />
+    <meta property="og:image" content="https://autoshopjujuy.com/img/hero-poster.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
 
     <!--
       Fuentes autoalojadas. Antes esto era un <link> a fonts.googleapis.com con

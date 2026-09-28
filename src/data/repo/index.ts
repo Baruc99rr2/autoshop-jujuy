@@ -38,6 +38,7 @@ export const repoContenido: RepoContenido = {
 
 export { ErrorRepo } from './tipos'
 export type {
+  OrdenVehiculos,
   CambiosVehiculo,
   FiltrosVehiculos,
   NuevoVehiculo,

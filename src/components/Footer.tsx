@@ -64,8 +64,8 @@ export function Footer() {
       </h2>
 
       <p className="mt-8 max-w-[46ch] text-bone/55">
-        0km y usados en {NEGOCIO.ciudad}. Financiación propia y toma de tu
-        usado como parte de pago.
+        0km y usados en {NEGOCIO.ciudad}. Tomamos tu usado como parte de
+        pago.
       </p>
 
       <div className="mt-20 grid gap-14 md:grid-cols-3 md:gap-8">

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useLayoutEffect } from 'react'
 import type { ReactNode } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router'
+import { useCanonical } from './lib/titulo'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Catalogo from './routes/Catalogo'
 import Home from './routes/Home'
@@ -76,6 +77,7 @@ function TransicionDeRuta({ children }: { children: ReactNode }) {
 
 function Rutas() {
   const { pathname } = useLocation()
+  useCanonical(pathname)
 
   return (
     <TransicionDeRuta key={pathname}>

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { NEGOCIO } from '../data/contacto'
+import { SITIO_URL } from '../data/sitio'
 
 /**
  * El `<title>` de la pestaña.
@@ -21,6 +22,19 @@ const DESCRIPCION_BASE =
 
 function ponerDescripcion(texto: string): void {
   document.querySelector('meta[name="description"]')?.setAttribute('content', texto)
+}
+
+/**
+ * El canonical y el `og:url` de la página, con el dominio oficial y la ruta
+ * en la que está el navegador. Sin los parámetros: `/catalogo?orden=…` es la
+ * misma página que `/catalogo`. Lo llama `App` en cada cambio de ruta.
+ */
+export function useCanonical(pathname: string): void {
+  useEffect(() => {
+    const url = `${SITIO_URL}${pathname === '/' ? '/' : pathname}`
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', url)
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content', url)
+  }, [pathname])
 }
 
 /**

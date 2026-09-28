@@ -7,7 +7,8 @@ import PaginaInterna from '../components/PaginaInterna'
 import VehiculoCard, {
   VehiculoCardEsqueleto,
 } from '../components/VehiculoCard'
-import { FILTROS } from '../data/catalogo'
+import { FILTROS, ORDEN_POR_DEFECTO, ORDENES } from '../data/catalogo'
+import type { OrdenVehiculos } from '../data/repo'
 import { whatsappUrl } from '../data/contacto'
 import { useContacto } from '../lib/contenido'
 import { repo } from '../data/repo'
@@ -36,6 +37,13 @@ const ES_FILTRO = new Set<string>(FILTROS.map((f) => f.id))
 /** Un `?condicion=` inventado a mano no rompe nada: cae en "todos". */
 function leerCondicion(valor: string | null): IdFiltro {
   return valor && ES_FILTRO.has(valor) ? (valor as IdFiltro) : 'todos'
+}
+
+const ES_ORDEN = new Set<string>(ORDENES.map((o) => o.id))
+
+/** Lo mismo con `?orden=`: uno que no existe cae en "más recientes". */
+function leerOrden(valor: string | null): OrdenVehiculos {
+  return valor && ES_ORDEN.has(valor) ? (valor as OrdenVehiculos) : ORDEN_POR_DEFECTO
 }
 
 /** Cuántos esqueletos se dibujan en la primera carga: una fila de la grilla. */
@@ -90,9 +98,11 @@ function leerVista(): Vista {
 /**
  * Los vendidos al fondo.
  *
- * `sort` es estable, así que el resto conserva el orden que trajo el repo (más
- * reciente primero). Un reservado NO se manda al fondo: sigue siendo una
- * unidad que puede liberarse, y el chip rojo ya avisa.
+ * El orden lo hace la base; esto solo aparta los vendidos. `sort` es estable,
+ * así que el resto conserva exactamente el orden que trajo el repo —por
+ * precio, año, km o fecha— y los vendidos quedan al final EN ESE MISMO orden.
+ * Un reservado NO se manda al fondo: sigue siendo una unidad que puede
+ * liberarse, y el chip rojo ya avisa.
  */
 function vendidosAlFinal(lista: Vehiculo[]): Vehiculo[] {
   const peso = (v: Vehiculo) => (v.estado === 'vendido' ? 1 : 0)
@@ -114,6 +124,7 @@ export function Catalogo() {
 
   const condicion = leerCondicion(params.get('condicion'))
   const q = params.get('q') ?? ''
+  const orden = leerOrden(params.get('orden'))
 
   // Se anota por dónde iba el visitante para que la ficha pueda ofrecer la
   // vuelta a ESTOS filtros. Ver `lib/ultimo-catalogo.ts`.
@@ -142,7 +153,7 @@ export function Catalogo() {
   // `setCargando(true)` al principio del efecto— es un render de más por cada
   // tecla y deja el estado mintiendo durante un frame: dice "listo" con el
   // filtro nuevo y la lista vieja.
-  const consulta = `${condicion}|${q}`
+  const consulta = `${condicion}|${q}|${orden}`
   const [datos, setDatos] = useState<{ consulta: string; lista: Vehiculo[] }>()
   const lista = datos?.lista ?? []
   // La falla también se guarda con su consulta: cambiar de filtro después de
@@ -202,10 +213,23 @@ export function Catalogo() {
     })
   }
 
+  // El orden también es una decisión y empuja al historial. El de siempre no
+  // se escribe: `/catalogo` pelado sigue siendo "más recientes".
+  const ordenar = (id: OrdenVehiculos) => {
+    setParams((p) => {
+      const n = new URLSearchParams(p)
+      if (id === ORDEN_POR_DEFECTO) n.delete('orden')
+      else n.set('orden', id)
+      return n
+    })
+  }
+
   const limpiarTodo = () => {
     ultimoEscrito.current = ''
     setTexto('')
-    setParams(new URLSearchParams())
+    // "Ver todas" limpia los FILTROS, no el orden: quien ordenó por precio
+    // quiere ver todo el stock ordenado por precio.
+    setParams(orden === ORDEN_POR_DEFECTO ? new URLSearchParams() : new URLSearchParams({ orden }))
   }
 
   // El filtrado lo hace el REPO, no el componente: el día que sea Supabase, la
@@ -218,7 +242,7 @@ export function Catalogo() {
         const encontrados = await repo.listar({
           condicion: condicion === 'todos' ? undefined : (condicion as Condicion),
           texto: q,
-          orden: 'recientes',
+          orden,
         })
         if (!vivo) return
         setDatos({ consulta, lista: vendidosAlFinal(encontrados) })
@@ -229,7 +253,7 @@ export function Catalogo() {
     return () => {
       vivo = false
     }
-  }, [condicion, q, consulta, intento])
+  }, [condicion, q, orden, consulta, intento])
 
   const hayFiltro = condicion !== 'todos' || q !== ''
   // Los esqueletos son para la PRIMERA carga, cuando no hay nada que mostrar.
@@ -310,10 +334,49 @@ export function Catalogo() {
           </div>
         </div>
 
+        <div className="flex flex-col gap-3 sm:flex-row lg:items-stretch">
+        {/* ── Ordenar por ─────────────────────────────────────────────
+            Un `<select>` NATIVO dentro del bisel, en todos los tamaños: en
+            el celular abre la rueda o la lista del sistema, que es lo más
+            cómodo con el dedo, y con teclado se maneja con flechas sin nada
+            escrito a mano. Lo que se diseña es la caja; la lista la pone el
+            sistema. `appearance-none` saca la flecha del navegador y va la
+            del sitio, que no cambia de dibujo entre Android y iPhone. */}
+        <Bevel
+          variant="outline"
+          bevel={12}
+          borderClassName="bg-graphite"
+          outerClassName="block shrink-0 transition-colors duration-200 focus-within:bg-amber hover:bg-amber"
+          className="relative flex min-h-11 items-center gap-3 pl-4"
+        >
+          <label htmlFor={`${uid}-orden`} className="font-hud shrink-0 text-bone/45">
+            ORDENAR
+          </label>
+          <select
+            id={`${uid}-orden`}
+            value={orden}
+            onChange={(e) => ordenar(e.target.value as OrdenVehiculos)}
+            /* 16 px como el buscador: menos y iOS hace zoom al tocarlo. */
+            className="h-full min-h-11 w-full min-w-0 cursor-pointer appearance-none bg-transparent py-2 pr-10 text-base text-bone outline-none"
+          >
+            {ORDENES.map((o) => (
+              <option key={o.id} value={o.id} className="bg-asphalt text-bone">
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-4 font-hud text-amber"
+          >
+            ↓
+          </span>
+        </Bevel>
+
         {/* `role="search"` y no un `<form>` que envía: no hay a dónde enviar,
             el resultado se actualiza mientras se escribe. El Enter no recarga
             porque no hay submit. */}
-        <div role="search" className="lg:w-[22rem]">
+        <div role="search" className="sm:flex-1 lg:w-[22rem] lg:flex-none">
           <Bevel
             variant="outline"
             bevel={12}
@@ -346,6 +409,7 @@ export function Catalogo() {
               </button>
             )}
           </Bevel>
+        </div>
         </div>
       </div>
 

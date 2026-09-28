@@ -3,7 +3,7 @@ import { MAX_FOTOS } from '../../types/vehiculo'
 import type { Foto, Vehiculo, Video } from '../../types/vehiculo'
 import { borrarBlobs, guardarBlob, urlDeBlob } from './blobs'
 import { SEMILLA } from './semilla'
-import { ErrorRepo } from './tipos'
+import { ErrorRepo, ORDEN_POR_DATO } from './tipos'
 import type {
   CambiosVehiculo,
   FiltrosVehiculos,
@@ -191,15 +191,24 @@ const ultimoTocadoPrimero = (a: Vehiculo, b: Vehiculo) =>
   b.actualizadoEn.localeCompare(a.actualizadoEn)
 
 /**
- * `null` va SIEMPRE al final, ordene como ordene: "Consultar precio" no es ni
- * el más barato ni el más caro, y ponerlo primero en el orden ascendente haría
- * que el catálogo arranque con las unidades sin dato.
+ * Precio, año o km. `null` va SIEMPRE al final, ordene como ordene:
+ * "Consultar precio" no es ni el más barato ni el más caro, y ponerlo primero
+ * en el orden ascendente haría que el catálogo arranque con las unidades sin
+ * dato. Es lo mismo que hace Supabase con `nullsFirst: false`.
  */
-function porPrecio(a: Vehiculo, b: Vehiculo, asc: boolean): number {
-  if (a.precio === null && b.precio === null) return masNuevoPrimero(a, b)
-  if (a.precio === null) return 1
-  if (b.precio === null) return -1
-  return asc ? a.precio - b.precio : b.precio - a.precio
+function porDato(
+  a: Vehiculo,
+  b: Vehiculo,
+  campo: 'precio' | 'anio' | 'km',
+  asc: boolean,
+): number {
+  const x = a[campo]
+  const y = b[campo]
+  if (x === null && y === null) return masNuevoPrimero(a, b)
+  if (x === null) return 1
+  if (y === null) return -1
+  if (x === y) return masNuevoPrimero(a, b)
+  return asc ? x - y : y - x
 }
 
 // ── Repositorio ───────────────────────────────────────────────────────────
@@ -229,7 +238,8 @@ export const repoMock: RepoVehiculos = {
     lista.sort((a, b) => {
       if (orden === 'recientes') return masNuevoPrimero(a, b)
       if (orden === 'actualizados') return ultimoTocadoPrimero(a, b)
-      return porPrecio(a, b, orden === 'precio-asc')
+      const { campo, asc } = ORDEN_POR_DATO[orden]
+      return porDato(a, b, campo, asc)
     })
 
     return hidratarLista(limite ? lista.slice(0, limite) : lista)

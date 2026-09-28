@@ -18,6 +18,33 @@ import { MAX_SEGMENTOS } from '../../types/contenido'
 import { coordenadasValidas, numeroWhatsapp } from '../contacto'
 
 /**
+ * Los órdenes del listado. Los de precio, año y km son los del selector
+ * «Ordenar por» del catálogo (ver `data/catalogo.ts`); en los dos repositorios
+ * una unidad SIN el dato va siempre al final, ordene como ordene.
+ */
+export type OrdenVehiculos =
+  | 'recientes'
+  | 'actualizados'
+  | 'precio-asc'
+  | 'precio-desc'
+  | 'anio-desc'
+  | 'anio-asc'
+  | 'km-asc'
+  | 'km-desc'
+
+/** Columna y sentido de cada orden por dato. `recientes` y `actualizados` van aparte. */
+export const ORDEN_POR_DATO = {
+  'precio-asc': { campo: 'precio', asc: true },
+  'precio-desc': { campo: 'precio', asc: false },
+  'anio-desc': { campo: 'anio', asc: false },
+  'anio-asc': { campo: 'anio', asc: true },
+  'km-asc': { campo: 'km', asc: true },
+  'km-desc': { campo: 'km', asc: false },
+} as const satisfies Partial<
+  Record<OrdenVehiculos, { campo: 'precio' | 'anio' | 'km'; asc: boolean }>
+>
+
+/**
  * Filtros del listado.
  *
  * `soloPublicados` viene en `true` por defecto A PROPÓSITO: el sitio público
@@ -37,7 +64,7 @@ export interface FiltrosVehiculos {
    * unidad nueva— y el panel lo segundo: ahí arriba tiene que estar lo que se
    * estuvo tocando recién.
    */
-  orden?: 'recientes' | 'actualizados' | 'precio-asc' | 'precio-desc'
+  orden?: OrdenVehiculos
   limite?: number
 }
 

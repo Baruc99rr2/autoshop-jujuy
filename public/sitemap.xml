@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Las dos páginas fijas del sitio. Las fichas de cada unidad no van: el stock
+  rota todas las semanas y un sitemap estático las listaría vencidas. Los
+  buscadores las encuentran desde el catálogo.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://autoshopjujuy.com/</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://autoshopjujuy.com/catalogo</loc>
+    <changefreq>daily</changefreq>
+  </url>
+</urlset>

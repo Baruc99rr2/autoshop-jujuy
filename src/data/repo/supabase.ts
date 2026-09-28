@@ -4,7 +4,7 @@ import { MAX_FOTOS } from '../../types/vehiculo'
 import type { Etiqueta, Foto, Vehiculo, Video } from '../../types/vehiculo'
 import { BUCKET, cliente } from '../supabase'
 import { traducir } from './errores'
-import { ErrorRepo } from './tipos'
+import { ErrorRepo, ORDEN_POR_DATO } from './tipos'
 import type {
   CambiosVehiculo,
   FiltrosVehiculos,
@@ -304,10 +304,13 @@ export const repoSupabase: RepoVehiculos = {
       if (orden === 'recientes') q = q.order('creado_en', { ascending: false })
       else if (orden === 'actualizados') q = q.order('actualizado_en', { ascending: false })
       else {
-        // `null` va SIEMPRE al final: "Consultar precio" no es ni el más
-        // barato ni el más caro.
+        // El orden lo hace la base. `null` va SIEMPRE al final, suba o baje:
+        // "Consultar precio" no es ni el más barato ni el más caro, y un año
+        // o unos km vacíos no son ni los más viejos ni los más nuevos. A
+        // igual dato, el más reciente primero.
+        const { campo, asc } = ORDEN_POR_DATO[orden]
         q = q
-          .order('precio', { ascending: orden === 'precio-asc', nullsFirst: false })
+          .order(campo, { ascending: asc, nullsFirst: false })
           .order('creado_en', { ascending: false })
       }
       if (limite) q = q.limit(limite)

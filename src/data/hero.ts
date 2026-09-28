@@ -32,7 +32,7 @@ export const HERO: Hero = {
      lo agrega el componente, al final de la última. */
   titulo: ['La ruta', 'que te lleva', 'a cumplir', 'tu sueño'],
   bajada:
-    'Cero kilómetro y usados con garantía, financiación propia y toma de tu usado como parte de pago. Vení al salón o escribinos y coordinamos.',
+    'Cero kilómetro y usados con garantía, y tomamos tu usado como parte de pago. Vení al salón o escribinos y coordinamos.',
   accionPrimaria: { label: 'Ver vehículos', href: '#vehiculos' },
   accionSecundaria: { label: 'Escribinos', href: '#contacto' },
 }
@@ -46,7 +46,7 @@ export const TICKER: string[] = [
   NEGOCIO.ciudad.toUpperCase(),
   NEGOCIO.coordenadas.toUpperCase(),
   '0KM Y USADOS',
-  'FINANCIACIÓN PROPIA',
+  'TOMAMOS TU USADO',
   `EST. ${NEGOCIO.desde}`,
 ]
 
