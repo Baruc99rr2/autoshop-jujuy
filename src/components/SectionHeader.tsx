@@ -26,7 +26,7 @@ type SectionHeaderProps = {
 }
 
 /**
- * Eyebrow (índice + nombre) sobre titular en Archivo extendido, alineado a la
+ * Eyebrow (índice + nombre) sobre titular en Manrope 800, alineado a la
  * izquierda. Alineación izquierda siempre: nada centrado salvo el logo del
  * intro y la barra MENU.
  */

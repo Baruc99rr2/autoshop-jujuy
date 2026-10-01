@@ -157,7 +157,7 @@ export function BloqueContadores({
                   error={errores[id.apertura]}
                   inputMode="numeric"
                   maxLength={4}
-                  monoespaciado
+                  cifras
                   placeholder="2023"
                   ayuda="La cifra no se escribe: se calcula desde este año y sube sola cada 1 de enero."
                   className="mt-5"

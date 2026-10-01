@@ -133,10 +133,6 @@ export async function auditarReducedMotion(browser, BASE, shot) {
       contadores: num('#contadores .num'),
       // El ticker quieto pero con su texto.
       tickerTexto: document.querySelector('#hero .font-hud')?.textContent?.trim().slice(0, 30),
-      // El carrusel sin pin: las cuatro imágenes tienen que ser alcanzables.
-      segmentosVisibles: [...document.querySelectorAll('#segmentos img')].filter(
-        (n) => n.getBoundingClientRect().width > 0,
-      ).length,
     }
   })
   console.log('[shots] reduced-motion contenido:', JSON.stringify(contenido))
@@ -207,8 +203,6 @@ export async function auditarTactil(browser, BASE, shot) {
       // Marcas: se encienden por scroll, no por hover (decisión 34).
       marcaEncendida:
         document.querySelector('#marcas [data-encendida="true"]')?.textContent ?? null,
-      // Segmentos: sin pin, riel horizontal con las cuatro cards.
-      segmentosCards: document.querySelectorAll('#segmentos .seg-card').length,
       // Post-venta: cada tile es un <a> real, así que el tap lleva a algún lado.
       tilesConEnlace: [...document.querySelectorAll('#postventa .tile-host')].filter(
         (n) => n.tagName === 'A' && n.getAttribute('href'),
@@ -258,37 +252,108 @@ export async function auditarTactil(browser, BASE, shot) {
   await ctx.close()
 }
 
+/**
+ * ¿Cuántos píxeles cambian entre dos capturas del mismo recorte? Se decodifica
+ * en una página aparte, con un canvas: sin dependencias de imágenes en Node.
+ */
+async function pixelesDistintos(lector, a, b) {
+  return lector.evaluate(
+    async ([a64, b64]) => {
+      const leer = async (b64) => {
+        const img = new Image()
+        img.src = `data:image/png;base64,${b64}`
+        await img.decode()
+        const c = document.createElement('canvas')
+        c.width = img.width
+        c.height = img.height
+        const x = c.getContext('2d')
+        x.drawImage(img, 0, 0)
+        return x.getImageData(0, 0, c.width, c.height).data
+      }
+      const [da, db] = await Promise.all([leer(a64), leer(b64)])
+      if (da.length !== db.length) return Infinity
+      let n = 0
+      for (let i = 0; i < da.length; i += 4) {
+        const d = Math.max(
+          Math.abs(da[i] - db[i]),
+          Math.abs(da[i + 1] - db[i + 1]),
+          Math.abs(da[i + 2] - db[i + 2]),
+        )
+        if (d > 48) n += 1
+      }
+      return n
+    },
+    [a.toString('base64'), b.toString('base64')],
+  )
+}
+
+/**
+ * El anillo de foco, MEDIDO EN PÍXELES y no leído del CSS.
+ *
+ * La versión anterior aceptaba cualquier `drop-shadow` o `outline` declarado,
+ * y así dio por buenos durante meses los botones biselados, donde el
+ * `clip-path` recortaba ese mismo `drop-shadow` y no se veía nada. Ahora, en
+ * cada parada del Tab, se captura el control (con un margen de 8 px, por si
+ * el anillo va afuera) con el foco y sin él, y se cuentan los píxeles que
+ * cambian. Por debajo de `MINIMO`, el foco no se ve.
+ *
+ * Los videos se pausan: un fotograma nuevo detrás de un botón transparente
+ * cambiaría píxeles aunque el foco no dibujara nada.
+ */
 export async function auditarTeclado(browser, BASE, shot, nuevaPagina, esperarFinDeIntro) {
+  const MINIMO = 40
   const { ctx, page } = await nuevaPagina(browser, { width: 1440, height: 900 })
+  const lector = await ctx.newPage()
+  await page.bringToFront()
   await page.goto(BASE, { waitUntil: 'load' })
   await esperarFinDeIntro(page)
+  await page.evaluate(() => document.querySelectorAll('video').forEach((v) => v.pause()))
 
   const recorrido = []
-  let sinAnillo = 0
+  const sinAnillo = []
   for (let i = 0; i < 40; i += 1) {
     await page.keyboard.press('Tab')
+    await page.waitForTimeout(420) // las transiciones de foco duran 0,35 s
     const paso = await page.evaluate(() => {
       const el = document.activeElement
       if (!el || el === document.body) return null
-      const cs = getComputedStyle(el)
+      el.setAttribute('data-auditoria-foco', '')
       const r = el.getBoundingClientRect()
       return {
         que: `${el.tagName.toLowerCase()}:${(el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 22)}`,
-        // El anillo del sitio se dibuja con outline en unos lados y con
-        // drop-shadow adentro de las formas biseladas (decisión 11), así que
-        // se aceptan los dos.
-        anillo:
-          (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) ||
-          cs.filter.includes('drop-shadow') ||
-          cs.boxShadow !== 'none',
-        enPantalla: r.top > -5 && r.bottom < window.innerHeight + 5,
+        biselado: el.classList.contains('bevel'),
+        caja: { x: r.x - 8, y: r.y - 8, width: r.width + 16, height: r.height + 16 },
+        enPantalla: r.top > 8 && r.bottom < window.innerHeight - 8 && r.width > 0,
       }
     })
     if (!paso) break
-    if (!paso.anillo) sinAnillo += 1
     recorrido.push(paso.que)
+    if (!paso.enPantalla) continue
+
+    const clip = {
+      x: Math.max(paso.caja.x, 0),
+      y: Math.max(paso.caja.y, 0),
+      width: Math.min(paso.caja.width, 1440 - Math.max(paso.caja.x, 0)),
+      height: paso.caja.height,
+    }
+    const conFoco = await page.screenshot({ clip })
+    // Se saca el foco sin moverlo del lugar en el orden del Tab: `blur` y,
+    // después de la captura, se vuelve a enfocar con el teclado a la vista.
+    await page.evaluate(() => document.activeElement?.blur())
+    await page.waitForTimeout(420)
+    const sinFoco = await page.screenshot({ clip })
+    await page.evaluate(() => {
+      const el = document.querySelector('[data-auditoria-foco]')
+      el?.removeAttribute('data-auditoria-foco')
+      el?.focus({ preventScroll: true, focusVisible: true })
+    })
+    const n = await pixelesDistintos(lector, conFoco, sinFoco)
+    if (n < MINIMO) sinAnillo.push(`${paso.que} (${n} px${paso.biselado ? ', biselado' : ''})`)
   }
-  console.log(`[shots] teclado — ${recorrido.length} paradas, ${sinAnillo} sin anillo visible`)
+  console.log(
+    `[shots] teclado — ${recorrido.length} paradas,`,
+    sinAnillo.length ? `✗ ${sinAnillo.length} sin anillo visible: ${JSON.stringify(sinAnillo)}` : 'todas con anillo visible ✓',
+  )
   console.log('[shots] teclado recorrido:', JSON.stringify(recorrido.slice(0, 24)))
 
   // Una captura con el foco puesto en un botón biselado, para mirar el anillo.
@@ -339,8 +404,10 @@ export async function auditarBarraDelNavegador(browser, BASE, esperarFinDeIntro)
   await esperarFinDeIntro(page)
   await page.waitForTimeout(800)
 
-  // Tres paradas: antes del carrusel pinneado, dentro de él, y después.
-  const paradas = ['contadores', 'segmentos', 'contacto']
+  // Tres paradas: arriba, en el medio y al final de la página. Eran
+  // contadores, segmentos y contacto; el carrusel pinneado de segmentos se
+  // sacó del sitio y la del medio pasó a ser la sección de vehículos.
+  const paradas = ['contadores', 'vehiculos', 'contacto']
   const resultados = []
 
   for (const id of paradas) {
@@ -351,19 +418,21 @@ export async function auditarBarraDelNavegador(browser, BASE, esperarFinDeIntro)
 
     const leer = (s) => {
       const el = document.getElementById(s)
-      const st = window.__segST
+      // Una sección que ya no está no rompe el pase entero: se informa.
+      if (!el) return null
       return {
         scrollY: Math.round(window.scrollY),
         altoDoc: document.documentElement.scrollHeight,
         // Posición del elemento en el DOCUMENTO, no en el viewport: la del
         // viewport cambia legítimamente al cambiar el alto de la ventana.
         topEnDoc: Math.round(el.getBoundingClientRect().top + window.scrollY),
-        // El largo del pin del carrusel: es lo que ScrollTrigger recalcula si
-        // refresca, y lo que hace crecer o encoger el documento entero.
-        largoPin: st ? Math.round(st.end - st.start) : null,
       }
     }
     const antes = await page.evaluate(leer, id)
+    if (!antes) {
+      resultados.push({ en: id, falta: true })
+      continue
+    }
 
     // La barra se contrae…
     await page.setViewportSize({ width: 390, height: ALTO_CONTRAIDO })
@@ -379,17 +448,15 @@ export async function auditarBarraDelNavegador(browser, BASE, esperarFinDeIntro)
       scrollY: despues.scrollY - antes.scrollY,
       altoDoc: despues.altoDoc - antes.altoDoc,
       topEnDoc: despues.topEnDoc - antes.topEnDoc,
-      largoPin:
-        antes.largoPin === null ? null : despues.largoPin - antes.largoPin,
     })
   }
 
   const quieto = resultados.every(
     (r) =>
+      !r.falta &&
       r.scrollY === 0 &&
       r.altoDoc === 0 &&
-      r.topEnDoc === 0 &&
-      (r.largoPin === null || r.largoPin === 0),
+      r.topEnDoc === 0,
   )
   console.log(
     '[shots] barra del navegador:',

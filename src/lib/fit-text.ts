@@ -11,8 +11,8 @@ const SONDA = 100
  * Por qué no un `clamp()` en vw: el logotipo del footer es una sola línea que
  * tiene que llegar de margen a margen, como en la referencia. Con un clamp hay
  * que adivinar un factor a partir del ancho de los glifos, y ese ancho cambia
- * con la fuente (Archivo vs. el fallback mientras carga), con el eje `wdth` y
- * con el texto — que se va a reemplazar cuando llegue el contenido real. El
+ * con la fuente (Manrope vs. el fallback mientras carga), con el peso y con
+ * el texto — que se va a reemplazar cuando llegue el contenido real. El
  * primer intento con `clamp(2rem, 11.4vw, 13rem)` cortaba el logotipo en
  * "AUTOSHOP\JU" tanto en 1440 como en 390.
  *

@@ -1,7 +1,8 @@
 import { useId, useState } from 'react'
 import Bevel from '../Bevel'
-import { BotonChico, Seccion } from './Campos'
+import { BotonChico, Interruptor, Seccion } from './Campos'
 import Dialogo from './Dialogo'
+import { MAX_EN_TARJETA, rotuloEtiqueta } from '../../types/vehiculo'
 import type { Etiqueta, Foto } from '../../types/vehiculo'
 
 /**
@@ -19,7 +20,9 @@ import type { Etiqueta, Foto } from '../../types/vehiculo'
  * tiene diez por unidad.
  *
  * NO HAY TOPE. Son texto, pesan nada, y son la única parte de la ficha donde
- * se puede contar lo que quiera de la unidad.
+ * se puede contar lo que quiera de la unidad. El tope es solo para las que
+ * salen TAMBIÉN en la card (`MAX_EN_TARJETA`): ahí van junto al precio, y una
+ * tercera ya no entra de un vistazo.
  */
 
 const MAX_TITULO = 24
@@ -63,6 +66,7 @@ function FilaEtiqueta({
   indice,
   total,
   fotos,
+  otrasEnTarjeta,
   onCambio,
   onMover,
   onBorrar,
@@ -71,11 +75,27 @@ function FilaEtiqueta({
   indice: number
   total: number
   fotos: Foto[]
+  /** Los títulos de las OTRAS etiquetas que ya salen en la card. */
+  otrasEnTarjeta: string[]
   onCambio: (cambios: Partial<Etiqueta>) => void
   onMover: (hacia: number) => void
   onBorrar: () => void
 }) {
   const uid = useId()
+  // El porqué de un "no", visible hasta que se apague otra o se la vuelva a
+  // intentar con lugar. Con la llave sin reaccionar y sin explicación, parece
+  // que el panel se colgó.
+  const [sinLugar, setSinLugar] = useState(false)
+  const lleno = otrasEnTarjeta.length >= MAX_EN_TARJETA
+
+  const cambiarTarjeta = (v: boolean) => {
+    if (v && lleno) {
+      setSinLugar(true)
+      return
+    }
+    setSinLugar(false)
+    onCambio({ enTarjeta: v })
+  }
 
   return (
     <Bevel
@@ -151,6 +171,32 @@ function FilaEtiqueta({
           className={`${CAJA} resize-y leading-relaxed`}
         />
       </Bevel>
+
+      {/* ── En la card ─────────────────────────────────────────────────
+          Sale junto al precio, con el mismo formato que AÑO y KM: el título
+          arriba y el texto abajo, en un renglón. */}
+      <Interruptor
+        id={`${uid}-tarjeta`}
+        label="Mostrar en la tarjeta"
+        ayuda={
+          etiqueta.enTarjeta
+            ? 'Sale en la card, junto al precio: el título arriba y el texto abajo.'
+            : `Sale en la card, junto al precio. Hasta ${MAX_EN_TARJETA} por unidad.`
+        }
+        valor={Boolean(etiqueta.enTarjeta)}
+        onCambio={cambiarTarjeta}
+        className="mt-3"
+      />
+      {sinLugar && lleno && !etiqueta.enTarjeta && (
+        <p role="alert" className="font-hud mt-2 flex gap-2 text-flag normal-case">
+          <span aria-hidden="true">\</span>
+          <span>
+            Ya hay {MAX_EN_TARJETA} en la tarjeta ({otrasEnTarjeta.map((t) => `«${t}»`).join(' y ')}),
+            que es lo máximo: con más, la card no se lee de un vistazo. Apagá una
+            para mostrar esta.
+          </span>
+        </p>
+      )}
 
       {/* ── Foto de fondo ──────────────────────────────────────────────
           Una fila que se scrollea de costado y no una grilla: con diez fotos,
@@ -243,7 +289,7 @@ export function Etiquetas({ etiquetas, fotos, onCambio }: EtiquetasProps) {
     onCambio(
       renumerar([
         ...etiquetas,
-        { id: nuevoId(), titulo, texto: '', fotoFondoId: null, orden: 0 },
+        { id: nuevoId(), titulo, texto: '', fotoFondoId: null, orden: 0, enTarjeta: false },
       ]),
     )
   }
@@ -272,12 +318,13 @@ export function Etiquetas({ etiquetas, fotos, onCambio }: EtiquetasProps) {
   }
 
   const usados = new Set(etiquetas.map((e) => e.titulo.trim().toLowerCase()))
+  const enTarjeta = etiquetas.filter((e) => e.enTarjeta)
 
   return (
     <Seccion
       titulo="ETIQUETAS"
       contador={String(etiquetas.length)}
-      ayuda="Lo que quieras destacar de esta unidad, en bloques cortos. No hay límite. Se guardan con el botón de abajo, junto con el resto de los datos."
+      ayuda={`Lo que quieras destacar de esta unidad, en bloques cortos. No hay límite; hasta ${MAX_EN_TARJETA} pueden salir también en la tarjeta, junto al precio. Se guardan con el botón de abajo, junto con el resto de los datos.`}
     >
       {/* ── Las seis de un toque ─────────────────────────────────────── */}
       <p className="font-hud mt-5 text-bone/45">EMPEZAR CON</p>
@@ -321,6 +368,9 @@ export function Etiquetas({ etiquetas, fotos, onCambio }: EtiquetasProps) {
               indice={i}
               total={etiquetas.length}
               fotos={fotos}
+              otrasEnTarjeta={enTarjeta
+                .filter((o) => o.id !== e.id)
+                .map((o) => rotuloEtiqueta(o.titulo) || 'sin título')}
               onCambio={(cambios) => editar(e.id, cambios)}
               onMover={(hacia) => mover(i, hacia)}
               onBorrar={() => pedirBorrar(e)}

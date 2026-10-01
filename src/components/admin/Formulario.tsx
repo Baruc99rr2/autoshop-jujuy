@@ -101,7 +101,11 @@ function desdeVehiculo(v: Vehiculo): Borrador {
     slug: provisoria ? '' : v.slug,
     // Ordenadas acá y no al dibujar: la lista del panel ES el orden, así que
     // subir una y guardar tiene que mandar lo que se ve, no lo que vino.
-    etiquetas: [...v.etiquetas].sort((a, b) => a.orden - b.orden),
+    // `enTarjeta` a booleano: puede venir ausente (datos viejos), y
+    // "ausente" contra `false` marcaría cambios sin guardar que no existen.
+    etiquetas: [...v.etiquetas]
+      .sort((a, b) => a.orden - b.orden)
+      .map((e) => ({ ...e, enTarjeta: Boolean(e.enTarjeta) })),
   }
 }
 
@@ -612,7 +616,7 @@ export function Formulario({ id }: FormularioProps) {
           }}
           error={errores.slug}
           prefijo="/vehiculo/"
-          monoespaciado
+          cifras
           ayuda={
             <>
               Se arma sola del título. Cambiala solo si hace falta: si ya
@@ -688,7 +692,7 @@ export function Formulario({ id }: FormularioProps) {
             error={errores.anio}
             inputMode="numeric"
             maxLength={4}
-            monoespaciado
+            cifras
             placeholder="2021"
             ayuda="Cuatro cifras. Se puede dejar vacío."
           />
@@ -837,8 +841,13 @@ export function Formulario({ id }: FormularioProps) {
         {/* ── Barra de guardar ──────────────────────────────────────────
             Pegada abajo: el formulario mide dos pantallas y media en un
             celular, y un botón de guardar al final obliga a scrollear a
-            ciegas cada vez que se corrige algo de arriba. */}
-        <div className="sticky bottom-0 z-10 mt-10 border-t border-graphite bg-void/95 py-4 backdrop-blur-sm">
+            ciegas cada vez que se corrige algo de arriba.
+
+            Negro PLENO, sin transparencia ni `backdrop-blur`: las esquinas
+            cortadas del botón muestran el fondo de la barra, y con un velo
+            al 95% sobre un desenfoque cada esquina podía dejar ver algo
+            distinto de lo que pasaba por detrás: el bisel se veía desparejo. */}
+        <div className="sticky bottom-0 z-10 mt-10 border-t border-graphite bg-void py-4">
           <div className="flex items-center gap-4">
             <Bevel
               as="button"

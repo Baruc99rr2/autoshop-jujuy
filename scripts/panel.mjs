@@ -247,7 +247,11 @@ export async function capturarPanel(browser, BASE, shot) {
   await foto('01-listado')
 
   // ── 02 · Alta ────────────────────────────────────────────────────────
+  // «Nueva» crea en el acto una unidad PROVISORIA y salta a su edición (ver
+  // `lib/provisoria.ts`): el formulario vacío ya vive en /admin/editar/:id.
   await page.goto(`${BASE}/admin/nuevo`, { waitUntil: 'load' })
+  await page.waitForURL(/\/admin\/editar\//, { timeout: 8000 })
+  await page.getByLabel('TÍTULO').waitFor()
   await page.waitForTimeout(500)
   await foto('02-nuevo-vacio')
 
@@ -261,8 +265,10 @@ export async function capturarPanel(browser, BASE, shot) {
   await page.waitForTimeout(300)
   await foto('03-nuevo-cargado')
 
-  await page.getByRole('button', { name: 'CREAR UNIDAD' }).click()
-  await page.waitForURL(/\/admin\/editar\//, { timeout: 8000 })
+  // Guardarla con título la convierte en una unidad normal: el botón pasa de
+  // GUARDAR UNIDAD a GUARDAR CAMBIOS.
+  await page.getByRole('button', { name: 'GUARDAR UNIDAD' }).click()
+  await page.getByRole('button', { name: 'GUARDAR CAMBIOS' }).waitFor({ timeout: 8000 })
   await page.waitForTimeout(700)
   await foto('04-creada-con-bloques')
   console.log('[panel] la unidad quedó en', page.url().replace(BASE, ''))
@@ -358,6 +364,26 @@ export async function capturarPanel(browser, BASE, shot) {
   await page.waitForTimeout(400)
   await foto('14-etiquetas-reordenadas')
 
+  // En la tarjeta: dos entran, la tercera no y el panel dice por qué.
+  const tarjeta = page.getByRole('switch', { name: /Mostrar en la tarjeta/ })
+  await tocar(page, tarjeta.nth(0))
+  await tocar(page, tarjeta.nth(1))
+  await tocar(page, tarjeta.nth(2))
+  await page.waitForTimeout(300)
+  const tope = {
+    marcadas: await tarjeta.evaluateAll((els) =>
+      els.map((e) => e.getAttribute('aria-checked')).join(','),
+    ),
+    aviso: (await page.getByRole('alert').first().textContent().catch(() => null))?.slice(0, 40),
+  }
+  console.log(
+    '[panel] tope de etiquetas en la tarjeta:',
+    tope.marcadas === 'true,true,false' && tope.aviso ? '✓' : '✗',
+    JSON.stringify(tope),
+  )
+  await page.locator('.adm-etq').nth(2).scrollIntoViewIfNeeded()
+  await foto('14b-etiquetas-tope-tarjeta')
+
   // Desde arriba y con la página quieta: medida a mitad de scroll, la lista de
   // controles por debajo de los 44 px cambiaba de una corrida a la otra, y una
   // medición que no repite no sirve para decidir nada.
@@ -411,10 +437,12 @@ export async function capturarPanel(browser, BASE, shot) {
  */
 async function capturarContenido(browser, page, BASE, shot) {
   const foto = (n, o) => shot(page, `panel/${n}`, o)
+  // El título del bloque lleva adelante el índice de su sección en la web
+  // («02 NÚMEROS»), que cambia si se ocultan secciones: se busca por el final.
   const bloque = (t) =>
     page
       .locator('main section')
-      .filter({ has: page.getByRole('heading', { name: t, exact: true }) })
+      .filter({ has: page.getByRole('heading', { name: new RegExp(`(^|\\s)${t}$`) }) })
 
   // ── 20 · La pantalla ─────────────────────────────────────────────────
   await page.goto(`${BASE}/admin/contenido`, { waitUntil: 'load' })

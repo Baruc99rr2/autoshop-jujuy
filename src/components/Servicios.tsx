@@ -76,9 +76,9 @@ export function Servicios({ s: S, servicios }: { s: Seccion; servicios: Servicio
                 {s.titulo}
               </h3>
 
-              {/* La línea de abajo se COMPONE: la cifra en Martian Mono y la
-                  condición en Archivo. La mono es para cifras y nada más, así
-                  que "con débito automático" en mono se leería como un código
+              {/* La línea de abajo se COMPONE: la cifra en rótulo (`font-hud
+                  num`) y la condición en texto corrido; "con débito
+                  automático" en mayúscula espaciada se leería como un código
                   de error. Y el precio va a opacidad plena mientras que el
                   detalle va al 60%: el número es el dato que se vino a buscar.
 

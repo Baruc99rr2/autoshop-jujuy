@@ -111,7 +111,7 @@ function Titulo({ children }: { children: string }) {
  * Es el mismo `useFitText` del logotipo del footer y por el mismo motivo: acá
  * el ancho disponible es fijo (el panel mide 21rem en desktop y lo que mida la
  * pantalla en mobile) pero el texto no, y la diferencia entre "$ 9.900.000" y
- * "$ 123.400.000" es de cuatro caracteres en una tipografía monoespaciada.
+ * "$ 123.400.000" es de cuatro cifras tabulares.
  * Con un tamaño fijo, el segundo tocaba los dos bordes del bisel.
  *
  * El caso peor realista son nueve dígitos —un utilitario importado pasa
@@ -119,9 +119,9 @@ function Titulo({ children }: { children: string }) {
  * midiendo, sin que nadie tenga que adivinar un `clamp` por cantidad de
  * cifras.
  *
- * "Consultar precio" pasa por el mismo ajuste pero NO en Martian Mono: la mono
- * es para cifras, y la frase en mono a este tamaño se lee como un error del
- * sistema. Es el mismo criterio que en la card.
+ * "Consultar precio" pasa por el mismo ajuste pero como titular, no como
+ * cifra: en rótulo espaciado a este tamaño se lee como un error del sistema.
+ * Es el mismo criterio que en la card.
  */
 function Precio({ valor }: { valor: number | null }) {
   const ref = useRef<HTMLParagraphElement>(null)

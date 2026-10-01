@@ -246,25 +246,14 @@ async function capturarPagina(browser, nombreVp) {
   await page.goto(BASE, { waitUntil: 'load' })
   await esperarFinDeIntro(page)
 
-  // ¿Cargó la tipografía de verdad o quedó la fallback? Todo el lenguaje
-  // visual del sitio depende del eje de ancho de Archivo, y si el pedido a
-  // Google Fonts falla el sitio se cae a Arial sin avisar. Se chequea midiendo
-  // el ancho de una misma cadena en Archivo y en la fallback: si dan lo mismo,
-  // Archivo no está.
+  // ¿Cargó la tipografía de verdad o quedó la fallback? La fallback está
+  // ajustada a las métricas de Manrope, así que medir anchos no la delata:
+  // se pregunta directamente si la cara quedó cargada.
   const fuentes = await page.evaluate(async () => {
     await document.fonts.ready
-    const medir = (familia) => {
-      const s = document.createElement('span')
-      s.textContent = 'AUTOSHOPJUJUY'
-      s.style.cssText = `position:absolute;visibility:hidden;font-size:100px;font-weight:700;font-variation-settings:'wdth' 125;font-family:${familia}`
-      document.body.append(s)
-      const w = s.getBoundingClientRect().width
-      s.remove()
-      return Math.round(w)
-    }
     return {
-      archivo: medir("'Archivo', sans-serif"),
-      fallback: medir('sans-serif'),
+      manrope: document.fonts.check("800 16px 'Manrope'") &&
+        [...document.fonts].some((f) => f.family.replace(/['"]/g, '') === 'Manrope' && f.status === 'loaded'),
       cargadas: [...document.fonts]
         .filter((f) => f.status === 'loaded')
         .map((f) => f.family),
@@ -400,133 +389,6 @@ async function capturarPagina(browser, nombreVp) {
         v.play().catch(() => {})
       }
     })
-  }
-
-  // ── CARRUSEL DE SEGMENTOS ──────────────────────────────────────────
-  // Lo que hay que verificar no es que "se vea bien" sino que la lista y la
-  // imagen NUNCA muestren cosas distintas. Se recorre el pin en cuatro
-  // posiciones y en cada una se lee cuál es el ítem encendido y cuánto está
-  // recortada cada imagen, y se comparan.
-  const segmentos = page.locator('#segmentos')
-  if (await segmentos.count()) {
-    const alto = viewport.height
-    // El arranque del pin NO se calcula: se alcanza y después se lee. Medirlo
-    // de antemano daba 1848 contra los 1132 reales —la sección está dentro de
-    // un pin-spacer que ScrollTrigger crea y redimensiona en cada refresh— y
-    // con 716 px de error el recorrido arrancaba ya en el segundo segmento,
-    // así que las capturas mostraban un estado y se leían como otro.
-    // Se posiciona y se CORRIGE, hasta tres veces, en vez de calcular. Un
-    // `scrollIntoView` sobre esta sección deja el borde superior 720 px arriba
-    // del viewport: entre el pin-spacer que ScrollTrigger crea, el
-    // `ScrollTrigger.refresh()` que disparan las imágenes al cargar y el snap
-    // que reacomoda la posición, el layout se mueve DESPUÉS del scroll. En vez
-    // de perseguir la causa, se lee el error y se resta, que converge en dos
-    // iteraciones y deja constancia de cuánto se corrigió.
-    let correccion = 0
-    for (let intento = 0; intento < 3; intento += 1) {
-      const dy = await page.evaluate(() => {
-        const t = Math.round(
-          document.getElementById('segmentos').getBoundingClientRect().top,
-        )
-        if (Math.abs(t) > 2) window.scrollBy(0, t)
-        return t
-      })
-      await page.waitForTimeout(600)
-      correccion += dy
-      if (Math.abs(dy) <= 2) break
-    }
-    // El arranque REAL sale del propio ScrollTrigger, no de la posición de la
-    // sección: son cosas distintas y confundirlas fue el origen del enredo.
-    const st = await page.evaluate(() => {
-      const t = window.__segST
-      return t ? { start: Math.round(t.start), end: Math.round(t.end) } : null
-    })
-    const base = st ? st.start : await page.evaluate(() => Math.round(window.scrollY))
-    console.log(
-      `[shots] ${nombreVp} segmentos pin:`,
-      JSON.stringify({ ...st, corregido: correccion }),
-    )
-
-    // Un paso por tramo, y se scrollea DOS VECES al mismo punto.
-    //
-    // El `snap` de ScrollTrigger es direccional por defecto: al llegar bajando
-    // no se queda en el punto donde uno cae, avanza al siguiente. Es el
-    // comportamiento correcto para el usuario —scrolleás hacia abajo, el
-    // carrusel avanza— pero para medir hace que el primer paso informe el
-    // segundo segmento. El segundo scroll al mismo destino sale desde el punto
-    // ya asentado y no tiene dirección, así que el snap lo deja donde cae.
-    const pasos = nombreVp === 'mobile' ? [] : [0, 1, 2, 3]
-    for (const [i, k] of pasos.entries()) {
-      const destino = base + k * alto * 0.8
-      for (const espera of [900, 500]) {
-        await page.evaluate(
-          ([y]) => window.scrollTo({ top: y, behavior: 'instant' }),
-          [destino],
-        )
-        await page.waitForTimeout(espera)
-      }
-      await shot(page, `${nombreVp}/1${i}-segmentos-${i + 1}`)
-      void k
-
-      const estado = await page.evaluate(() => {
-        const activo = document.querySelector('#segmentos [data-activo="true"]')
-        const imgs = [...document.querySelectorAll('#segmentos .seg-img')]
-        // La imagen "que se ve" es la última que no está recortada del todo.
-        const recortes = imgs.map((el) => getComputedStyle(el).clipPath)
-        const visible = recortes.reduce(
-          (acc, c, idx) => (c.includes('100%') ? acc : idx),
-          0,
-        )
-        const contador = document.querySelector('#segmentos .seg-contador')
-        const sec = document.getElementById('segmentos')
-        const t = window.__segST
-        return {
-          progreso: t ? +t.progress.toFixed(3) : null,
-          encendido: activo?.querySelector('span')?.textContent ?? 'ninguno',
-          imagenVisible: visible,
-          contador: contador?.textContent?.replace(/\s+/g, ' ').trim(),
-          scrollY: Math.round(window.scrollY),
-          secTop: Math.round(sec.getBoundingClientRect().top),
-          secAlto: Math.round(sec.getBoundingClientRect().height),
-        }
-      })
-      console.log(`[shots] ${nombreVp} segmentos paso ${i + 1}:`, JSON.stringify(estado))
-    }
-
-    // MOBILE: no hay pin ni ScrollTrigger, hay un riel con scroll-snap. Se
-    // recorre card por card llevando el riel a cada una.
-    if (nombreVp === 'mobile') {
-      const riel = page.locator('#segmentos .seg-riel')
-      const cards = await page.locator('#segmentos .seg-card').count()
-      for (let i = 0; i < cards; i += 1) {
-        await riel.evaluate((el, idx) => {
-          const card = el.children[idx]
-          el.scrollTo({ left: card.offsetLeft - el.offsetLeft, behavior: 'instant' })
-        }, i)
-        await page.waitForTimeout(500)
-        await shot(page, `${nombreVp}/1${i}-segmentos-${i + 1}`)
-      }
-      const rielInfo = await riel.evaluate((el) => ({
-        anchoVisible: el.clientWidth,
-        anchoTotal: el.scrollWidth,
-        snap: getComputedStyle(el).scrollSnapType,
-        cards: el.children.length,
-      }))
-      console.log(`[shots] ${nombreVp} segmentos riel:`, JSON.stringify(rielInfo))
-    }
-
-    // Contraste del texto sobre la imagen: las cuatro fotos son oscuras, pero
-    // el copy va sobre el negro de la columna izquierda, no sobre la foto.
-    // Lo que sí se comprueba es que la caja de la imagen no tape la lista.
-    const solape = await page.evaluate(() => {
-      const lista = document.querySelector('#segmentos ul')
-      const caja = document.querySelector('#segmentos .seg-img')?.parentElement
-      if (!lista || !caja) return null
-      const a = lista.getBoundingClientRect()
-      const b = caja.getBoundingClientRect()
-      return { listaDerecha: Math.round(a.right), imagenIzquierda: Math.round(b.left) }
-    })
-    console.log(`[shots] ${nombreVp} segmentos solape:`, JSON.stringify(solape))
   }
 
   // ── CATÁLOGO ───────────────────────────────────────────────────────
@@ -977,30 +839,21 @@ async function capturarOffline(browser, nombreVp) {
   await page.goto(BASE, { waitUntil: 'load' })
   await esperarFinDeIntro(page)
 
-  // La misma medición que el pase normal. Si Archivo cargó con todo lo externo
-  // cortado, es porque sale del propio origen.
+  // La misma verificación que el pase normal. Si Manrope cargó con todo lo
+  // externo cortado, es porque sale del propio origen.
   const fuentes = await page.evaluate(async () => {
     await document.fonts.ready
-    const medir = (familia) => {
-      const s = document.createElement('span')
-      s.textContent = 'AUTOSHOPJUJUY'
-      s.style.cssText = `position:absolute;visibility:hidden;font-size:100px;font-weight:700;font-variation-settings:'wdth' 125;font-family:${familia}`
-      document.body.append(s)
-      const w = s.getBoundingClientRect().width
-      s.remove()
-      return Math.round(w)
-    }
     return {
-      archivo: medir("'Archivo', sans-serif"),
-      mono: medir("'Martian Mono', monospace"),
-      fallback: medir('sans-serif'),
+      manrope: [...document.fonts].some(
+        (f) => f.family.replace(/['"]/g, '') === 'Manrope' && f.status === 'loaded',
+      ),
     }
   })
 
   console.log(
     `[shots] ${nombreVp} OFFLINE fuentes:`,
     JSON.stringify(fuentes),
-    fuentes.archivo === fuentes.fallback ? '✗ ARCHIVO NO CARGÓ' : '✓',
+    fuentes.manrope ? '✓' : '✗ MANROPE NO CARGÓ',
   )
   console.log(
     `[shots] ${nombreVp} OFFLINE peticiones externas bloqueadas:`,

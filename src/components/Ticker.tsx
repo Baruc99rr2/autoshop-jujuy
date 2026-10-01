@@ -9,7 +9,7 @@ type TickerProps = {
 }
 
 /**
- * Marquesina infinita en Martian Mono.
+ * Marquesina infinita, en rótulo (`font-hud`).
  *
  * El contenido va DUPLICADO y el tween corre de xPercent 0 a -50 sobre el
  * contenedor de las dos copias: cuando la primera copia terminó de salir, la
@@ -44,7 +44,7 @@ export function Ticker({ items, className = '' }: TickerProps) {
     <div className="flex shrink-0 items-center" aria-hidden={copia === 1}>
       {items.map((t) => (
         <span key={t} className="flex shrink-0 items-center">
-          <span className="font-hud num whitespace-nowrap text-bone/55">{t}</span>
+          <span className="font-hud whitespace-nowrap text-bone/55">{t}</span>
           <span aria-hidden="true" className="px-5 text-amber md:px-7">
             ·
           </span>

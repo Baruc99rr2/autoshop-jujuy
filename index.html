@@ -45,24 +45,16 @@
       Arial y la identidad tipográfica desaparece. Ahora salen de public/fonts/
       y el sitio funciona sin red.
 
-      Las dos van precargadas porque las dos se usan arriba del pliegue:
-      Archivo en el titular del hero y Martian Mono en el ticker.
-      `crossorigin` es obligatorio aun siendo del mismo origen — las fuentes se
-      piden en modo CORS, y sin el atributo el navegador descarga el archivo
-      dos veces en vez de reusar el precargado.
+      Va precargada porque se usa arriba del pliegue (titular del hero,
+      ticker, header). `crossorigin` es obligatorio aun siendo del mismo
+      origen — las fuentes se piden en modo CORS, y sin el atributo el
+      navegador descarga el archivo dos veces en vez de reusar el precargado.
     -->
     <link
       rel="preload"
       as="font"
       type="font/woff2"
-      href="/fonts/archivo-latin-wdth.woff2"
-      crossorigin
-    />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href="/fonts/martian-mono-latin-wght.woff2"
+      href="/fonts/manrope-latin-wght.woff2"
       crossorigin
     />
 

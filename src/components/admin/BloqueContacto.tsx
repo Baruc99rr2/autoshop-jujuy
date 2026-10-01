@@ -265,7 +265,7 @@ export function BloqueContacto({
           inputMode="text"
           placeholder="-24.19541"
           maxLength={40}
-          monoespaciado
+          cifras
         />
         <Campo
           id={id.lng}
@@ -276,7 +276,7 @@ export function BloqueContacto({
           inputMode="text"
           placeholder="-65.29769"
           maxLength={40}
-          monoespaciado
+          cifras
         />
       </div>
       <p className="font-hud mt-2 text-bone/40 normal-case">

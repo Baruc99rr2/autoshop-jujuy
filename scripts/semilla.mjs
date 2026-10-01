@@ -94,19 +94,33 @@ async function subir(sb) {
       peso_bytes: v.video.pesoBytes,
     })),
   )
-  await paso(
-    'etiquetas',
-    SEMILLA.flatMap((v) =>
-      v.etiquetas.map((e) => ({
-        id: e.id,
-        vehiculo_id: v.id,
-        titulo: e.titulo,
-        texto: e.texto,
-        foto_fondo_id: e.fotoFondoId,
-        orden: e.orden,
-      })),
-    ),
+  const etiquetas = SEMILLA.flatMap((v) =>
+    v.etiquetas.map((e) => ({
+      id: e.id,
+      vehiculo_id: v.id,
+      titulo: e.titulo,
+      texto: e.texto,
+      foto_fondo_id: e.fotoFondoId,
+      orden: e.orden,
+      en_tarjeta: Boolean(e.enTarjeta),
+    })),
   )
+  try {
+    await paso('etiquetas', etiquetas)
+  } catch (e) {
+    // La columna la agrega `supabase/003_etiquetas_en_tarjeta.sql`, que se
+    // corre a mano: sin ella se cargan igual, sin marcar ninguna para la card.
+    if (!/en_tarjeta/.test(e.message)) throw e
+    console.warn('Falta la columna etiquetas.en_tarjeta (003): se cargan sin marcar para la card.')
+    await paso(
+      'etiquetas',
+      etiquetas.map((f) => {
+        const sin = { ...f }
+        delete sin.en_tarjeta
+        return sin
+      }),
+    )
+  }
 }
 
 const orden = process.argv[2]

@@ -25,8 +25,8 @@ export interface Hero {
 export const HERO: Hero = {
   kicker: 'San Salvador de Jujuy',
   /* CUATRO LÍNEAS. El titular tiene nueve palabras y la escala del hero es
-     extendida y en mayúsculas: un carácter mide unos 0.74 em, así que en la
-     columna del 56% de 1440 entran doce caracteres por renglón y no veinte.
+     pesada y en mayúsculas, así que en la columna del 56% de 1440 entran
+     unos doce caracteres por renglón y no veinte.
      Cortado en cuatro, la línea más larga es "que te lleva" y ninguna queda
      con una palabra sola, que es el corte que hay que evitar. El punto ámbar
      lo agrega el componente, al final de la última. */
@@ -38,9 +38,8 @@ export const HERO: Hero = {
 }
 
 /**
- * Ítems del ticker. Se muestran separados por `·` y en Martian Mono, que es la
- * tipografía de las cifras de telemetría: coordenadas y año entran justo en
- * ese registro.
+ * Ítems del ticker. Se muestran separados por `·`, en rótulo con cifras
+ * tabulares: coordenadas y año entran justo en ese registro.
  */
 export const TICKER: string[] = [
   NEGOCIO.ciudad.toUpperCase(),

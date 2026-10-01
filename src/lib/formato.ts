@@ -30,7 +30,7 @@ export function formatearPrecio(n: number | null): string {
  *
  * Solo con precio: "Consultar precio" queda igual. Y solo en el sitio: el
  * panel muestra la cifra pelada, que es lo que la dueña carga. Los componentes
- * lo dibujan aparte de la cifra (la cifra va en mono, esto no).
+ * lo dibujan aparte de la cifra (la cifra va en `num`, esto no).
  */
 export const MAS_GASTOS = '+ gastos'
 

@@ -26,20 +26,13 @@ const dest = join(root, 'public', 'fonts')
  * latin-ext y vietnamese duplicaría el peso para cubrir glifos que este sitio
  * no escribe nunca.
  *
- * Archivo va en la variante `wdth`, que trae los DOS ejes (wdth 62–125 y
- * wght 100–900). La variante `wght` pesa 35 KB contra 90, pero sin el eje de
- * ancho el display extendido —la firma tipográfica del sitio— no existe.
- *
- * Martian Mono va en la variante `wght`: solo se usan pesos 400–700 y el eje
- * de ancho no se toca nunca, así que los 15 KB de diferencia no se pagan.
- *
- * Nunito, también `wght`: se usa en un solo lugar y a un solo peso fuerte.
+ * Manrope va en la variante `wght` (200–800): es la fuente del sitio y del
+ * panel —texto, títulos, botones, rótulos y cifras—, y la ÚNICA familia del
+ * proyecto. No tiene eje de ancho; los titulares se resuelven con peso 800 y
+ * tracking negativo.
  */
 const FUENTES = [
-  ['@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2', 'archivo-latin-wdth.woff2'],
-  ['@fontsource-variable/martian-mono/files/martian-mono-latin-wght-normal.woff2', 'martian-mono-latin-wght.woff2'],
-  // Solo para las cifras de la franja de contadores (ver `font-cifra`).
-  ['@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2', 'nunito-latin-wght.woff2'],
+  ['@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2', 'manrope-latin-wght.woff2'],
 ]
 
 mkdirSync(dest, { recursive: true })

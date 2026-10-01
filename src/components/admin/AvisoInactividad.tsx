@@ -4,7 +4,7 @@ import { cerrarSesion } from '../../data/sesion'
 import { useInactividad } from '../../lib/inactividad'
 import { startScroll, stopScroll } from '../../lib/smooth'
 
-/** "1:59", con la cifra en mono. */
+/** "1:59", con cifras tabulares. */
 function reloj(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`

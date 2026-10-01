@@ -41,6 +41,8 @@ type FilaEtiqueta = {
   texto: string
   foto_fondo_id: string | null
   orden: number
+  /** Falta mientras no se corra `003_etiquetas_en_tarjeta.sql`. */
+  en_tarjeta?: boolean
 }
 type FilaVehiculo = {
   id: string
@@ -63,13 +65,51 @@ type FilaVehiculo = {
   etiquetas: FilaEtiqueta[] | null
 }
 
-const SELECT = `
+const select = (conEnTarjeta: boolean) => `
   id, slug, titulo, descripcion, condicion, precio, anio, km, estado,
   publicado, destacado, creado_en, actualizado_en,
   fotos ( id, url, ancho, alto, orden ),
   videos ( url, poster_url, peso_bytes ),
-  etiquetas ( id, titulo, texto, foto_fondo_id, orden )
+  etiquetas ( id, titulo, texto, foto_fondo_id, orden${conEnTarjeta ? ', en_tarjeta' : ''} )
 `
+
+/**
+ * LA COLUMNA `etiquetas.en_tarjeta` PUEDE NO EXISTIR TODAVÍA: la agrega
+ * `supabase/003_etiquetas_en_tarjeta.sql`, que se corre a mano en el SQL
+ * Editor. Sin esto, subir el código antes que el SQL dejaría el sitio entero
+ * sin stock, porque pedir una columna que no existe hace fallar la consulta
+ * completa.
+ *
+ * Se pide siempre con la columna. Si la base contesta que no existe —42703 en
+ * una lectura, PGRST204 en una escritura; los dos nombran la columna—, se
+ * recuerda por el resto de la sesión y se repite sin ella: las cards salen
+ * sin etiquetas y todo lo demás anda igual.
+ */
+let hayEnTarjeta = true
+
+const FALTA_EN_TARJETA =
+  'Todavía no se pueden mostrar etiquetas en la tarjeta: falta actualizar la base. Apagá «Mostrar en la tarjeta» para guardar el resto, y avisá a quien mantiene el sitio.'
+
+async function tolerarSinEnTarjeta<T>(hacer: () => Promise<T>): Promise<T> {
+  try {
+    return await hacer()
+  } catch (e) {
+    const m = (e as { message?: string } | null)?.message ?? ''
+    if (!hayEnTarjeta || !/en_tarjeta/.test(m)) throw e
+    hayEnTarjeta = false
+    console.warn('[repo] Falta la columna etiquetas.en_tarjeta: correr supabase/003_etiquetas_en_tarjeta.sql.')
+    return hacer()
+  }
+}
+
+/** Una consulta de vehículos con el `select` que la base acepte. */
+function consultar<T>(armar: (campos: string) => PromiseLike<{ data: T; error: unknown }>): Promise<T> {
+  return tolerarSinEnTarjeta(async () => {
+    const { data, error } = await armar(select(hayEnTarjeta))
+    if (error) throw error
+    return data
+  })
+}
 
 const porOrden = <T extends { orden: number }>(a: T, b: T) => a.orden - b.orden
 
@@ -98,6 +138,7 @@ function aVehiculo(f: FilaVehiculo): Vehiculo {
         texto: e.texto,
         fotoFondoId: e.foto_fondo_id,
         orden: e.orden,
+        enTarjeta: e.en_tarjeta ?? false,
       }))
       .sort(porOrden),
     creadoEn: f.creado_en,
@@ -216,9 +257,13 @@ async function laUsaUnaFoto(sb: SupabaseClient, ruta: string): Promise<boolean> 
 }
 
 async function leer(sb: SupabaseClient, campo: 'id' | 'slug', valor: string): Promise<Vehiculo | null> {
-  const { data, error } = await sb.from('vehiculos').select(SELECT).eq(campo, valor).maybeSingle()
-  if (error) throw traducir(error, 'No se pudo leer la unidad')
-  return data ? aVehiculo(data as unknown as FilaVehiculo) : null
+  let data: unknown
+  try {
+    data = await consultar((campos) => sb.from('vehiculos').select(campos).eq(campo, valor).maybeSingle())
+  } catch (error) {
+    throw traducir(error, 'No se pudo leer la unidad')
+  }
+  return data ? aVehiculo(data as FilaVehiculo) : null
 }
 
 async function leerOFallar(sb: SupabaseClient, vid: string): Promise<Vehiculo> {
@@ -266,11 +311,23 @@ async function guardarEtiquetas(sb: SupabaseClient, vid: string, lista: Etiqueta
     texto: e.texto,
     foto_fondo_id: e.fotoFondoId,
     orden: i,
+    enTarjeta: Boolean(e.enTarjeta),
   }))
 
   if (filas.length > 0) {
-    const { error } = await sb.from('etiquetas').upsert(filas)
-    if (error) throw traducir(error, 'No se pudieron guardar las etiquetas')
+    try {
+      await tolerarSinEnTarjeta(async () => {
+        // Sin la columna, lo que no se marcó se guarda igual; lo marcado NO
+        // se descarta en silencio: la dueña se enteraría recién al ver la card.
+        if (!hayEnTarjeta && filas.some((f) => f.enTarjeta)) throw new ErrorRepo(FALTA_EN_TARJETA)
+        const { error } = await sb.from('etiquetas').upsert(
+          filas.map(({ enTarjeta, ...f }) => (hayEnTarjeta ? { ...f, en_tarjeta: enTarjeta } : f)),
+        )
+        if (error) throw error
+      })
+    } catch (error) {
+      throw traducir(error, 'No se pudieron guardar las etiquetas')
+    }
   }
 
   let borrar = sb.from('etiquetas').delete().eq('vehiculo_id', vid)
@@ -294,30 +351,30 @@ export const repoSupabase: RepoVehiculos = {
 
     try {
       const sb = await cliente()
-      let q = sb.from('vehiculos').select(SELECT)
-      if (soloPublicados) q = q.eq('publicado', true)
-      if (condicion) q = q.eq('condicion', condicion)
-      if (estado) q = q.eq('estado', estado)
-      const buscado = texto ? sinComodines(plano(texto)) : ''
-      if (buscado) q = q.ilike('busqueda', `%${buscado}%`)
+      const filas = await consultar<FilaVehiculo[]>((campos) => {
+        let q = sb.from('vehiculos').select(campos)
+        if (soloPublicados) q = q.eq('publicado', true)
+        if (condicion) q = q.eq('condicion', condicion)
+        if (estado) q = q.eq('estado', estado)
+        const buscado = texto ? sinComodines(plano(texto)) : ''
+        if (buscado) q = q.ilike('busqueda', `%${buscado}%`)
 
-      if (orden === 'recientes') q = q.order('creado_en', { ascending: false })
-      else if (orden === 'actualizados') q = q.order('actualizado_en', { ascending: false })
-      else {
-        // El orden lo hace la base. `null` va SIEMPRE al final, suba o baje:
-        // "Consultar precio" no es ni el más barato ni el más caro, y un año
-        // o unos km vacíos no son ni los más viejos ni los más nuevos. A
-        // igual dato, el más reciente primero.
-        const { campo, asc } = ORDEN_POR_DATO[orden]
-        q = q
-          .order(campo, { ascending: asc, nullsFirst: false })
-          .order('creado_en', { ascending: false })
-      }
-      if (limite) q = q.limit(limite)
-
-      const { data, error } = await q
-      if (error) throw error
-      return (data as unknown as FilaVehiculo[]).map(aVehiculo)
+        if (orden === 'recientes') q = q.order('creado_en', { ascending: false })
+        else if (orden === 'actualizados') q = q.order('actualizado_en', { ascending: false })
+        else {
+          // El orden lo hace la base. `null` va SIEMPRE al final, suba o baje:
+          // "Consultar precio" no es ni el más barato ni el más caro, y un año
+          // o unos km vacíos no son ni los más viejos ni los más nuevos. A
+          // igual dato, el más reciente primero.
+          const { campo, asc } = ORDEN_POR_DATO[orden]
+          q = q
+            .order(campo, { ascending: asc, nullsFirst: false })
+            .order('creado_en', { ascending: false })
+        }
+        if (limite) q = q.limit(limite)
+        return q as unknown as PromiseLike<{ data: FilaVehiculo[]; error: unknown }>
+      })
+      return filas.map(aVehiculo)
     } catch (e) {
       throw traducir(e, 'No se pudo leer el stock')
     }
@@ -345,15 +402,17 @@ export const repoSupabase: RepoVehiculos = {
   async listarDestacados(limite = 3) {
     try {
       const sb = await cliente()
-      const { data, error } = await sb
-        .from('vehiculos')
-        .select(SELECT)
-        .eq('publicado', true)
-        .eq('destacado', true)
-        .order('creado_en', { ascending: false })
-        .limit(limite)
-      if (error) throw error
-      return (data as unknown as FilaVehiculo[]).map(aVehiculo)
+      const filas = await consultar(
+        (campos) =>
+          sb
+            .from('vehiculos')
+            .select(campos)
+            .eq('publicado', true)
+            .eq('destacado', true)
+            .order('creado_en', { ascending: false })
+            .limit(limite) as unknown as PromiseLike<{ data: FilaVehiculo[]; error: unknown }>,
+      )
+      return filas.map(aVehiculo)
     } catch (e) {
       throw traducir(e, 'No se pudieron leer los destacados')
     }

@@ -55,6 +55,13 @@ export interface Etiqueta {
   /** id de una `Foto` del MISMO vehículo, o null para fondo liso. */
   fotoFondoId: string | null
   orden: number
+  /**
+   * Se muestra también en la card, junto al precio, como AÑO y KM. Hasta
+   * `MAX_EN_TARJETA` por unidad (lo cuida el panel). Opcional porque puede
+   * faltar —datos viejos del mock, o la base antes de correr
+   * `supabase/003_etiquetas_en_tarjeta.sql`—, y ausente es `false`.
+   */
+  enTarjeta?: boolean
 }
 
 export interface Vehiculo {
@@ -94,6 +101,30 @@ export interface Vehiculo {
  * un vistazo en vez de ser un álbum.
  */
 export const MAX_FOTOS = 10
+
+/**
+ * Dos etiquetas en la card, como mucho. La card ya lleva precio, año y km;
+ * con una tercera, la fila del precio deja de leerse de un vistazo.
+ */
+export const MAX_EN_TARJETA = 2
+
+/**
+ * El título de una etiqueta como rótulo, sin el ":" del final ("Mínimo
+ * anticipo:" → "Mínimo anticipo"): en la card el rótulo va ARRIBA del valor,
+ * no a su lado, y los dos puntos quedan colgando.
+ */
+export function rotuloEtiqueta(titulo: string): string {
+  return titulo.trim().replace(/\s*:+\s*$/, '')
+}
+
+/** Las etiquetas que van en la card, listas para mostrar. Las vacías no salen. */
+export function etiquetasEnTarjeta(v: Vehiculo): { id: string; rotulo: string; valor: string }[] {
+  return v.etiquetas
+    .filter((e) => e.enTarjeta)
+    .map((e) => ({ id: e.id, rotulo: rotuloEtiqueta(e.titulo), valor: e.texto.trim() }))
+    .filter((e) => e.rotulo || e.valor)
+    .slice(0, MAX_EN_TARJETA)
+}
 
 /** La portada, o `null` si la unidad todavía no tiene fotos. */
 export function portada(v: Vehiculo): Foto | null {

@@ -10,7 +10,7 @@ import {
   MAS_GASTOS,
 } from '../lib/formato'
 import { useMedia } from '../lib/use-media'
-import { portada } from '../types/vehiculo'
+import { etiquetasEnTarjeta, portada } from '../types/vehiculo'
 import type { EstadoVehiculo, Vehiculo } from '../types/vehiculo'
 
 /**
@@ -49,6 +49,9 @@ const CHIP: Record<EstadoVehiculo, string> = {
  * en que uno las escribe.
  */
 const CELDA = ['flex-1 pr-3', 'flex-1 border-l border-graphite pl-3']
+
+/** Una celda de la fila del precio. Ver ahí el porqué del filete. */
+const CELDA_PRECIO = 'min-w-0 max-w-full border-l border-graphite px-3'
 
 function Dato({ label, valor, i }: { label: string; valor: string; i: number }) {
   return (
@@ -93,6 +96,7 @@ export function VehiculoCard({
   compacta = false,
 }: VehiculoCardProps) {
   const foto = portada(v)
+  const tarjeta = etiquetasEnTarjeta(v)
   const segunda = v.fotos.length > 1 ? v.fotos[1] : null
   const fino = useMedia(PUNTERO_FINO)
 
@@ -240,42 +244,69 @@ export function VehiculoCard({
               <Dato i={1} label="KM" valor={formatearKm(v.km)} />
             </div>
 
-            <div className={compacta ? 'mt-2 sm:mt-4 sm:mb-4' : 'mt-4 mb-4'}>
-              <span
-                className={`font-hud block text-bone/40 ${compacta ? 'hidden sm:block' : ''}`}
-              >
-                PRECIO
-              </span>
-              {/* "Consultar precio" NO va en Martian Mono: la mono es para
-                  cifras, y una frase de dos palabras en mono a 30px se come el
-                  ancho de la card y se lee como un error. */}
-              {v.precio === null ? (
-                <span
-                  className={`font-display mt-1 block truncate text-bone ${
-                    compacta ? 'text-base sm:text-lg' : 'text-lg'
-                  }`}
-                >
-                  {formatearPrecio(null)}
-                </span>
-              ) : (
-                /* "+ gastos" va en Archivo y más chico: la mono es para cifras,
-                   y así la cifra sigue siendo lo que se lee primero. Sin
-                   `truncate`: en la grilla de dos columnas del celular no
-                   entra en un renglón, y es mejor que baje entero a que se
-                   corte en "+ gas…". */
-                <span
-                  className={`mt-1 flex flex-wrap items-baseline gap-x-2 text-bone ${
-                    compacta ? 'text-base sm:text-xl md:text-2xl' : 'text-xl md:text-2xl'
-                  }`}
-                >
-                  <span className="font-hud num whitespace-nowrap">
-                    {formatearPrecio(v.precio)}
+            {/* El precio y, a su lado, las etiquetas que la dueña marcó para la
+                card ("Mínimo anticipo"), con el formato de AÑO y KM: rótulo
+                arriba, valor abajo. `flex-wrap`: si no entran al lado de un
+                precio largo, bajan a un renglón propio en vez de apretarlo.
+
+                El filete entre celdas es de CADA celda (`border-l`), y la fila
+                se corre a la izquierda lo que miden filete y sangría, dentro
+                de un `overflow-hidden`: así el filete de la primera celda de
+                cada renglón queda afuera y nunca cuelga uno al principio,
+                caiga donde caiga el corte. */}
+            <div
+              className={`overflow-hidden ${compacta ? 'mt-2 sm:mt-4 sm:mb-4' : 'mt-4 mb-4'}`}
+            >
+              <div className="-ml-[calc(0.75rem+1px)] flex flex-wrap items-start gap-y-3">
+                <div className={CELDA_PRECIO}>
+                  <span
+                    className={`font-hud block text-bone/40 ${compacta ? 'hidden sm:block' : ''}`}
+                  >
+                    PRECIO
                   </span>
-                  <span className="font-display text-[0.6em] whitespace-nowrap text-bone/60">
-                    {MAS_GASTOS}
-                  </span>
-                </span>
-              )}
+                  {/* "Consultar precio" va como titular y no como cifra: en rótulo
+                      espaciado, una frase de dos palabras se come el ancho de la
+                      card y se lee como un error. */}
+                  {v.precio === null ? (
+                    <span
+                      className={`font-display mt-1 block truncate text-bone ${
+                        compacta ? 'text-base sm:text-lg' : 'text-lg'
+                      }`}
+                    >
+                      {formatearPrecio(null)}
+                    </span>
+                  ) : (
+                    /* "+ gastos" va como texto corrido y más chico: así la cifra
+                       sigue siendo lo que se lee primero. Sin
+                       `truncate`: en la grilla de dos columnas del celular no
+                       entra en un renglón, y es mejor que baje entero a que se
+                       corte en "+ gas…". */
+                    <span
+                      className={`mt-1 flex flex-wrap items-baseline gap-x-2 text-bone ${
+                        compacta ? 'text-base sm:text-xl md:text-2xl' : 'text-xl md:text-2xl'
+                      }`}
+                    >
+                      <span className="font-hud num whitespace-nowrap">
+                        {formatearPrecio(v.precio)}
+                      </span>
+                      <span className="font-display text-[0.6em] whitespace-nowrap text-bone/60">
+                        {MAS_GASTOS}
+                      </span>
+                    </span>
+                  )}
+                </div>
+                {/* En la grilla compacta del celular no: ahí la card se queda con
+                    foto, título y precio (ver la prop). */}
+                {tarjeta.map((e) => (
+                  <div
+                    key={e.id}
+                    className={`${CELDA_PRECIO} ${compacta ? 'hidden sm:block' : ''}`}
+                  >
+                    <span className="font-hud block truncate text-bone/40">{e.rotulo}</span>
+                    <span className="font-hud num mt-1 block truncate text-bone">{e.valor}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Barrido ámbar de izquierda a derecha, el mismo gesto de la FAQ y

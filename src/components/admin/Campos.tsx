@@ -108,8 +108,8 @@ type CampoProps = Base & {
   type?: 'text' | 'email' | 'password'
   maxLength?: number
   autoComplete?: string
-  /** Solo para el campo de la dirección, que es una cifra de nada. */
-  monoespaciado?: boolean
+  /** Cifras tabulares (`num`): para campos que son números. */
+  cifras?: boolean
 }
 
 export function Campo({
@@ -127,7 +127,7 @@ export function Campo({
   type = 'text',
   maxLength,
   autoComplete = 'off',
-  monoespaciado = false,
+  cifras = false,
 }: CampoProps) {
   return (
     <div className={className}>
@@ -153,7 +153,7 @@ export function Campo({
           autoComplete={autoComplete}
           aria-invalid={error ? true : undefined}
           aria-describedby={error || ayuda ? `${id}-msj` : undefined}
-          className={`${CAJA} ${ALTO} ${monoespaciado ? 'num' : ''}`}
+          className={`${CAJA} ${ALTO} ${cifras ? 'num' : ''}`}
         />
       </Marco>
       <Pie id={id} ayuda={ayuda} error={error} />

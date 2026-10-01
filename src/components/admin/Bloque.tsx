@@ -21,7 +21,8 @@ import { AvisoError } from './Marco'
  * PEGADO ABAJO DENTRO DE SU BLOQUE: con diez servicios el bloque mide cinco
  * pantallas en el celular, y el botón al final obliga a bajar a ciegas cada
  * vez que se corrige un precio. Al estar dentro de la `<section>`, se despega
- * cuando el bloque termina y no tapa al siguiente.
+ * cuando el bloque termina y no tapa al siguiente. Negro pleno y sin
+ * `backdrop-blur`, igual que la barra del formulario: ver ahí el porqué.
  */
 export function BarraGuardar({
   etiqueta,
@@ -46,7 +47,7 @@ export function BarraGuardar({
           <AvisoError texto={falla} />
         </div>
       )}
-      <div className="sticky bottom-0 z-10 mt-6 border-t border-graphite bg-void/95 py-4 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-10 mt-6 border-t border-graphite bg-void py-4">
         <Bevel
           as="button"
           type="button"

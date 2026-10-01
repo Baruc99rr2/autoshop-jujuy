@@ -79,9 +79,14 @@ export function Bevel({
     )
   }
 
+  const superficie = surfaceClassName ?? SURFACE[variant]
+  // Sobre ámbar el anillo de foco va negro (ver `.bevel:focus-visible`). Solo
+  // `bg-amber` pleno: con opacidad (`bg-amber/10`) el fondo sigue siendo oscuro.
+  const sobreAmbar = /(^|\s)bg-amber(\s|$)/.test(superficie) ? ' bevel-sobre-ambar' : ''
+
   return (
     <Tag
-      className={`bevel ${surfaceClassName ?? SURFACE[variant]} ${className}`}
+      className={`bevel${sobreAmbar} ${superficie} ${className}`}
       style={shape}
       {...rest}
     >
