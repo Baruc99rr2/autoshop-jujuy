@@ -316,7 +316,10 @@ function Fila({ v }: { v: Vehiculo }) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-center py-1">
-        <h2 className="font-display truncate text-lg text-bone sm:text-xl">
+        {/* Entero, sin `truncate`: los títulos reales se distinguen al final
+            ("FORD KA 1.5 SEL" y "FORD KA 1.5 SEL AUT"), y cortados en un
+            celular quedaban iguales. */}
+        <h2 className="font-display text-lg leading-tight break-words text-bone sm:text-xl">
           {v.titulo}
         </h2>
 
@@ -350,9 +353,10 @@ function Fila({ v }: { v: Vehiculo }) {
 
 /**
  * Una unidad en la grilla: la foto arriba y, debajo, lo mismo que la fila
- * —título, precio y avisos— apretado a media pantalla. El título va en dos
- * líneas y no truncado a una: a 160 px de ancho, una línea sola corta casi
- * todos los nombres antes del modelo.
+ * —título, precio y avisos— apretado a media pantalla. El título va ENTERO,
+ * en los renglones que pida: a 160 px de ancho, una línea sola corta casi
+ * todos los nombres antes del modelo, y dos cortaban los títulos reales
+ * ("VOLKSWAGEN AMAROK DC 2.0L TDI…") justo donde se distinguen.
  */
 function Tarjeta({ v }: { v: Vehiculo }) {
   const foto = portada(v)
@@ -387,11 +391,11 @@ function Tarjeta({ v }: { v: Vehiculo }) {
       </div>
 
       <div className="flex flex-1 flex-col px-1 pt-2.5 pb-1">
-        <h2 className="font-display line-clamp-2 text-base leading-tight text-bone">
+        <h2 className="font-display text-base leading-tight break-words text-bone">
           {v.titulo}
         </h2>
 
-        <p className="font-hud num mt-1.5 truncate text-bone/70">
+        <p className="font-hud num mt-1.5 text-bone/70">
           {formatearPrecio(v.precio)}
         </p>
 

@@ -64,7 +64,7 @@ function Pie({
   }
   if (ayuda) {
     return (
-      <p id={`${id}-msj`} className="font-hud mt-2 text-bone/40 normal-case">
+      <p id={`${id}-msj`} className="font-hud mt-2 max-w-[68ch] text-bone/40 normal-case">
         {ayuda}
       </p>
     )
@@ -377,7 +377,7 @@ export function Opciones<T extends string>({
         })}
       </div>
       {ayuda && (
-        <p className="font-hud mt-2 text-bone/40 normal-case">{ayuda}</p>
+        <p className="font-hud mt-2 max-w-[68ch] text-bone/40 normal-case">{ayuda}</p>
       )}
     </div>
   )
@@ -521,7 +521,7 @@ export function Seccion({
         )}
       </div>
       {ayuda && (
-        <p className="font-hud mt-2 text-bone/40 normal-case">{ayuda}</p>
+        <p className="font-hud mt-2 max-w-[68ch] text-bone/40 normal-case">{ayuda}</p>
       )}
       {children}
     </section>

@@ -138,8 +138,13 @@ export function Contadores({
       <dl
         className="grid grid-cols-2 gap-y-10 md:grid-cols-4 md:gap-y-0"
         /* Solo el padding del shell: el hueco del riel ya lo puso el margen,
-           así que las cifras siguen alineadas con el resto de la página. */
-        style={{ paddingInline: 'var(--shell-pad)' }}
+           así que las cifras siguen alineadas con el resto de la página. A la
+           derecha, el mismo tope que el `shell` (acá el 100% ya no incluye el
+           riel): en 2560 las cuatro cifras se abrían a toda la pantalla. */
+        style={{
+          paddingInline:
+            'var(--shell-pad) max(var(--shell-pad), calc(100% - var(--shell-pad) - var(--shell-max)))',
+        }}
       >
         {datos?.lista.map((c, i) => (
           // column-reverse: en el DOM va primero el término y después la cifra

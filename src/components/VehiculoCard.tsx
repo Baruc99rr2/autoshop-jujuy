@@ -223,7 +223,7 @@ export function VehiculoCard({
             <h3
               className={`font-display leading-tight text-bone ${
                 compacta
-                  ? 'line-clamp-2 text-base sm:line-clamp-none sm:text-xl md:text-2xl'
+                  ? 'text-base break-words sm:text-xl md:text-2xl'
                   : 'text-xl md:text-2xl'
               }`}
             >
@@ -269,7 +269,7 @@ export function VehiculoCard({
                       card y se lee como un error. */}
                   {v.precio === null ? (
                     <span
-                      className={`font-display mt-1 block truncate text-bone ${
+                      className={`font-display mt-1 block text-bone ${
                         compacta ? 'text-base sm:text-lg' : 'text-lg'
                       }`}
                     >

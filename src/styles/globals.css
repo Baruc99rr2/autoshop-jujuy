@@ -32,6 +32,17 @@
 :root {
   --rail-w: 16px; /* mobile; el desktop lo sube el media query */
   --shell-pad: 1.25rem;
+  /* Tope del ancho de contenido. Es lo que mide en 1920 (1920 − riel −
+     sangrías), así que hasta ahí nada cambia; en 2560 las cards medían 800 px
+     y el mapa del footer una pantalla entera. Pasado el tope, el aire va a la
+     DERECHA: el sitio sigue alineado a la izquierda, contra el riel. */
+  --shell-max: 1800px;
+  /* Sangría derecha: la de siempre, o lo que sobre pasado el tope. El `100%`
+     se resuelve en el elemento que la usa (el ancho de su contenedor). */
+  --shell-fin: max(
+    var(--shell-pad),
+    calc(100% - var(--rail-w) - var(--shell-pad) - var(--shell-max))
+  );
   --mx: 50%;
   --my: 40%;
 
@@ -373,18 +384,31 @@
     drop-shadow(0 0 22px rgb(253 185 22 / 0.45));
 }
 
-/* Ancho de contenido: arranca después del riel. */
+/* Ancho de contenido: arranca después del riel y no pasa de `--shell-max`. */
 @utility shell {
+  padding-inline: calc(var(--rail-w) + var(--shell-pad)) var(--shell-fin);
+}
+
+/* El mismo arranque, sin tope: para el mueble fijo (header), que va de borde
+   a borde como el riel, la barra MENU y el botón de WhatsApp. */
+@utility shell-pleno {
   padding-inline: calc(var(--rail-w) + var(--shell-pad)) var(--shell-pad);
 }
 
+/* Transiciones en 0 s y sin retardo, NO en 0.01ms: con una duración mayor que
+   cero cada cambio de estilo sigue siendo una transición (y
+   `transition-property` vale `all` por defecto), así que quien mide justo
+   después de cambiar un tamaño lee el valor viejo. `useFitText` dejaba el
+   precio de la ficha en el techo de 44 px y desbordaba el panel en todos los
+   anchos. Nadie escucha `transitionend`, que era la razón del 0.01ms. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 }
@@ -559,7 +583,10 @@
    ve como un parpadeo. La demora solo aplica al entrar, no al salir.
    Texto sobre ámbar: siempre negro. */
 .faq-q,
+/* Con tope de renglón: la columna de la FAQ crece con la pantalla y en 2560
+   la respuesta corría a ~145 caracteres por línea, que ya no se lee. */
 .faq-a {
+  max-width: 68ch;
   color: color-mix(in srgb, var(--color-void) 68%, transparent);
   transition: color 0.25s ease;
 }
@@ -1117,7 +1144,9 @@
 .veh-riel {
   scroll-snap-type: x mandatory;
   scroll-padding-inline-start: calc(var(--rail-w) + var(--shell-pad));
-  padding-inline: calc(var(--rail-w) + var(--shell-pad)) var(--shell-pad);
+  /* `--shell-fin`: en PC las tres cards van a tercios del CONTENIDO, y con el
+     tope del shell el contenido deja de crecer en 2560. */
+  padding-inline: calc(var(--rail-w) + var(--shell-pad)) var(--shell-fin);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   /* Con arrastre por puntero, el navegador intentaría además seleccionar el

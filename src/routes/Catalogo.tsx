@@ -270,7 +270,10 @@ export function Catalogo() {
       lead="Todo lo que hay en el salón, con foto y precio. El detalle de cada unidad lo cerramos por WhatsApp."
     >
       {/* ── Filtros ─────────────────────────────────────────────────── */}
-      <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between">
+      {/* En una fila recién desde `xl`: en 1024 los chips, el orden y el
+          buscador de 22rem pedían 36 px más que la pantalla y la página
+          entera scrolleaba de costado. En `lg` apilan como en tablet. */}
+      <div className="mt-10 flex flex-col gap-4 xl:flex-row xl:items-stretch xl:justify-between">
         <div className="flex items-start justify-between gap-3">
         <div
           className="flex flex-wrap gap-2"
@@ -334,7 +337,7 @@ export function Catalogo() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row lg:items-stretch">
+        <div className="flex flex-col gap-3 sm:flex-row xl:items-stretch">
         {/* ── Ordenar por ─────────────────────────────────────────────
             Un `<select>` NATIVO dentro del bisel, en todos los tamaños: en
             el celular abre la rueda o la lista del sistema, que es lo más
@@ -376,7 +379,7 @@ export function Catalogo() {
         {/* `role="search"` y no un `<form>` que envía: no hay a dónde enviar,
             el resultado se actualiza mientras se escribe. El Enter no recarga
             porque no hay submit. */}
-        <div role="search" className="sm:flex-1 lg:w-[22rem] lg:flex-none">
+        <div role="search" className="sm:flex-1 xl:w-[22rem] xl:flex-none">
           <Bevel
             variant="outline"
             bevel={12}
