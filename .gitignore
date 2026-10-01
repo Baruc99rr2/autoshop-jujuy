@@ -28,3 +28,6 @@ dist-real
 # Capturas del arnés de verificación: 3+ MB por corrida y se regeneran con
 # `npm run shots`. Versionarlas infla el repo sin aportar nada.
 docs/shots/
+
+# Imágenes castigadas de `npm run qr`: se regeneran y pesan ~4 MB.
+docs/qr/pruebas/
